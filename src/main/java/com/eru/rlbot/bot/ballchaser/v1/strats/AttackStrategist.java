@@ -63,6 +63,11 @@ public class AttackStrategist implements Strategist {
   }
 
   @Override
+  public void abort() {
+    tacticManager.clearTactics();
+  }
+
+  @Override
   public ControlsOutput execute(DataPacket input) {
     ControlsOutput output = new ControlsOutput();
     tacticManager.execute(input, output);

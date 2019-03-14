@@ -5,6 +5,7 @@ import com.eru.rlbot.common.boost.BoostPad;
 import com.eru.rlbot.common.input.DataPacket;
 import com.eru.rlbot.common.output.ControlsOutput;
 import com.eru.rlbot.common.vector.Vector2;
+import com.eru.rlbot.common.vector.Vector3;
 import rlbot.Bot;
 
 import java.util.Comparator;
@@ -28,6 +29,9 @@ public class StrategyManager {
 
   private Bot bot;
 
+  private Vector3 lastBallPosition;
+  private Vector3 lastCarPosition;
+
   public StrategyManager(Bot bot) {
     this.bot = bot;
     for(Strategy.Type type : Strategy.Type.values()) {
@@ -37,6 +41,7 @@ public class StrategyManager {
 
   // TODO this only periodically.
   public void updateStrategy(DataPacket input) {
+    checkReset(input);
 
     // TODO(ahatfield): If the ball changes tragectory, reset this.
     if (active == null || active.getType() != Strategy.Type.ATTACK) {
@@ -69,6 +74,34 @@ public class StrategyManager {
 //    }
   }
 
+  private void checkReset(DataPacket input) {
+    if (active != null && ballHasJumped(input) && carHasJumped(input)) {
+      active.abort();
+      active = null;
+    }
+  }
+
+  private boolean carHasJumped(DataPacket input) {
+    if (lastCarPosition == null) {
+      return true;
+    }
+
+    return input.car.position.distance(lastCarPosition) > NORMAL_EXPECTED;
+  }
+
+  private boolean ballHasJumped(DataPacket input) {
+    if (lastBallPosition == null) {
+      return true;
+    }
+
+    return input.ball.position.distance(lastBallPosition) > NORMAL_EXPECTED;
+  }
+
+  private void updateCarAndBallTracking(DataPacket input) {
+    lastCarPosition = input.car.position;
+    lastBallPosition = input.ball.position;
+  }
+
   private static Comparator<? super BoostPad> selectBoost(DataPacket input) {
     Vector2 noseVector = input.car.orientation.noseVector.flatten();
     Vector2 flatPosition = input.car.position.flatten();
@@ -85,10 +118,15 @@ public class StrategyManager {
   }
 
   public ControlsOutput executeStrategy(DataPacket input) {
+    ControlsOutput output;
     if (active == null) {
       // Park this frame.
-      return new ControlsOutput();
+      output = new ControlsOutput();
+    } else {
+      output = active.execute(input);
     }
-    return active.execute(input);
+
+    updateCarAndBallTracking(input);
+    return output;
   }
 }

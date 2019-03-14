@@ -22,6 +22,11 @@ public class SupportStategist implements Strategist {
   }
 
   @Override
+  public void abort() {
+
+  }
+
+  @Override
   public ControlsOutput execute(DataPacket input) {
     return null;
   }

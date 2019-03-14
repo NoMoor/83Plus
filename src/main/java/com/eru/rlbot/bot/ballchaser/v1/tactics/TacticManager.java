@@ -71,4 +71,8 @@ public class TacticManager {
     // Draw a line from the car to the ball
     renderer.drawLine3d(Color.LIGHT_GRAY, carData.position, getNextTarget());
   }
+
+  public void clearTactics() {
+    tacticList.clear();
+  }
 }
