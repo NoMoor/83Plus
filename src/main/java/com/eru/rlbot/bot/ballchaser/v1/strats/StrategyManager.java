@@ -5,20 +5,16 @@ import com.eru.rlbot.common.boost.BoostPad;
 import com.eru.rlbot.common.input.DataPacket;
 import com.eru.rlbot.common.output.ControlsOutput;
 import com.eru.rlbot.common.vector.Vector2;
-import com.eru.rlbot.common.vector.Vector3;
 import rlbot.Bot;
 
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
 
-import static com.eru.rlbot.bot.common.Constants.FIELD_WIDTH;
+import static com.eru.rlbot.bot.common.Constants.*;
 
 public class StrategyManager {
-
-  private static final Vector3 LEFT_SIDE_WALL = new Vector3(FIELD_WIDTH, 0, 1000);
   private static final Tactic LEFT_WALL_TACTIC = new Tactic(LEFT_SIDE_WALL, Tactic.Type.HIT_BALL);
-  private static final Vector3 RIGHT_SIDE_WALL = new Vector3(-1 * FIELD_WIDTH, 0, 1000);
   private static final Tactic RIGHT_WALL_TACTIC = new Tactic(RIGHT_SIDE_WALL, Tactic.Type.HIT_BALL);
 
   private static boolean grabBoostStrat = false;

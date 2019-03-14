@@ -7,7 +7,8 @@ import com.eru.rlbot.common.vector.Vector2;
 import com.eru.rlbot.common.vector.Vector3;
 import rlbot.Bot;
 
-import static com.eru.rlbot.bot.common.Constants.FIELD_SIZE;
+import static com.eru.rlbot.bot.common.Constants.HALF_LENGTH;
+
 
 public class RollingTactician implements Tactician {
 
@@ -27,14 +28,19 @@ public class RollingTactician implements Tactician {
 
     double flatCorrectionAngle;
     // Need to go up the wall.
-    if (input.car.hasWheelContact && Math.abs(carToTarget.z) > 500 && Math.abs(input.car.position.x) > 2000 && input.car.position.z < 20) {
+    if (input.car.hasWheelContact
+            && Math.abs(carToTarget.z) > 500 // Needs to go upward
+            && Math.abs(input.car.position.x) > 3000 // Near the wall
+            && input.car.position.z < 20) { // On the ground
+
       Vector2 targetVector = targetPosition.flatten();
 
       // TODO(ahatfield): This only works for side walls.
-      // Figure out the x/y component of the vector to add. This is based on projecting the ball out into the wall.
+      // TODO(ahatfield): Fix this. The x coordinate is positive the other way.
+      // Project the height of the ball into the wall.
       float xVector = targetPosition.x > 0 ? targetPosition.z : targetPosition.z * -1;
       // If you are going down field, you need to rid up the wall sooner.
-      float yVector = FIELD_SIZE - Math.abs(targetPosition.x) * (input.car.velocity.y > 0 ? 1 : -1);
+      float yVector = HALF_LENGTH - Math.abs(targetPosition.x) * (input.car.velocity.y > 0 ? 1 : -1);
 
       Vector2 projectedVector = new Vector2(xVector, yVector);
       Vector2 wallAdjustedVector = targetVector.plus(projectedVector);
