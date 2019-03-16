@@ -1,6 +1,7 @@
 package com.eru.rlbot.bot.ballchaser.v1.strats;
 
 import com.eru.rlbot.bot.ballchaser.v1.tactics.Tactic;
+import com.eru.rlbot.bot.common.BotRenderer;
 import com.eru.rlbot.common.boost.BoostPad;
 import com.eru.rlbot.common.input.DataPacket;
 import com.eru.rlbot.common.output.ControlsOutput;
@@ -8,6 +9,7 @@ import com.eru.rlbot.common.vector.Vector2;
 import com.eru.rlbot.common.vector.Vector3;
 import rlbot.Bot;
 
+import java.awt.*;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
@@ -15,12 +17,17 @@ import java.util.Map;
 import static com.eru.rlbot.bot.common.Constants.*;
 
 public class StrategyManager {
+
+  // Delay ~1 frame after a jump to allow prediction propagation.
+  private static final float RESET_DELAY = .1f;
+
   private static final Tactic LEFT_WALL_TACTIC = new Tactic(LEFT_SIDE_WALL, Tactic.Type.HIT_BALL);
   private static final Tactic RIGHT_WALL_TACTIC = new Tactic(RIGHT_SIDE_WALL, Tactic.Type.HIT_BALL);
 
   private static boolean grabBoostStrat = false;
   private static boolean wallRideStrat = false;
   private static boolean hitBallStrat = true;
+  private final BotRenderer botRenderer;
 
   // DO NOT MODIFY
   private Map<Strategy.Type, Strategist> strategists = new HashMap<>();
@@ -31,9 +38,11 @@ public class StrategyManager {
 
   private Vector3 lastBallPosition;
   private Vector3 lastCarPosition;
+  private float resetTime;
 
   public StrategyManager(Bot bot) {
     this.bot = bot;
+    this.botRenderer = BotRenderer.forBot(bot);
     for(Strategy.Type type : Strategy.Type.values()) {
       strategists.put(type, Strategy.stratigistForBot(type, bot));
     }
@@ -41,9 +50,10 @@ public class StrategyManager {
 
   // TODO this only periodically.
   public void updateStrategy(DataPacket input) {
-    checkReset(input);
+    if (checkPause(input)) {
+      return;
+    }
 
-    // TODO(ahatfield): If the ball changes tragectory, reset this.
     if (active == null || active.getType() != Strategy.Type.ATTACK) {
       active = strategists.get(Strategy.Type.ATTACK);
       if (!active.assign(input)) {
@@ -74,11 +84,20 @@ public class StrategyManager {
 //    }
   }
 
-  private void checkReset(DataPacket input) {
+  private boolean checkPause(DataPacket input) {
     if (active != null && ballHasJumped(input) && carHasJumped(input)) {
       active.abort();
       active = null;
+      resetTime = input.car.elapsedSeconds;
     }
+
+    if (resetTime != 0 && resetTime + RESET_DELAY > input.car.elapsedSeconds) {
+      botRenderer.addText("RESET: Wait...", Color.red);
+      return true;
+    }
+
+    resetTime = 0;
+    return false;
   }
 
   private boolean carHasJumped(DataPacket input) {

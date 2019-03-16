@@ -1,6 +1,5 @@
 package com.eru.rlbot.bot.common;
 
-import com.eru.rlbot.bot.ballchaser.v1.tactics.TacticManager;
 import com.eru.rlbot.common.output.ControlsOutput;
 import com.eru.rlbot.common.vector.Vector2;
 import rlbot.Bot;
@@ -17,21 +16,31 @@ import com.eru.rlbot.common.vector.Vector3;
 
 import java.awt.*;
 import java.io.IOException;
+import java.util.*;
+import java.util.List;
 
 /** Renders extra information for the bot such as car path, ball path, etc. */
 public class BotRenderer {
 
-    private Float initalTime = null;
+    private static final int SMOOTHING_INTERVAL = 60;
+    private static Map<Bot, BotRenderer> BOTS = new HashMap<>();
+
+    private Float initialTime = null;
     private long ticks = 0;
+    private LinkedList<Vector3> previousVelocities = new LinkedList<>();
+    private LinkedList<Float> previousVelocityTimes = new LinkedList<>();
 
     private Bot bot;
+    private static final int TEXT_LIST_START_Y = 120;
+    private static final int TEXT_LIST_SPACING_Y = 20;
 
     private BotRenderer(Bot bot) {
         this.bot = bot;
     }
 
     public static BotRenderer forBot(Bot bot) {
-        return new BotRenderer(bot);
+        BOTS.putIfAbsent(bot, new BotRenderer(bot));
+        return BOTS.get(bot);
     }
 
     public void draw(DataPacket input) {
@@ -41,40 +50,35 @@ public class BotRenderer {
     }
 
     private void renderRate(DataPacket input) {
-        Renderer renderer = getRenderer();
-
-        if (initalTime == null) {
-            initalTime = input.car.elapsedSeconds;
+        if (initialTime == null) {
+            initialTime = input.car.elapsedSeconds;
         }
         ticks++;
-        renderer.drawString2d(
-            String.format("FPS %f", (ticks / (input.car.elapsedSeconds - initalTime))),
-            Color.PINK,
-            new java.awt.Point(0, 125),
-            2,
-            2);
+
+        int fps = (int) (ticks / (input.car.elapsedSeconds - initialTime));
+
+        addText(String.format("FPS: %d", fps), Color.PINK);
     }
 
-    private Vector3 previousVelocity;
-    private float previousTime;
-
     public void renderAcceleration(CarData carData) {
-        Renderer renderer = getRenderer();
+        if (previousVelocities.size() == SMOOTHING_INTERVAL) {
 
-        if (previousVelocity != null) {
+            double deltaV = previousVelocities.peekLast().minus(previousVelocities.peekFirst()).flatten().magnitude();
+            double deltaT = previousVelocityTimes.peekLast() - previousVelocityTimes.peekFirst();
+
+            int speed = (int) carData.velocity.flatten().magnitude();
             // Delta V / Delta T
-            double acceleration = carData.velocity.minus(previousVelocity).magnitude()
-                                      / (carData.elapsedSeconds - previousTime);
+            int acceleration = (int) (deltaV / deltaT);
 
-            renderer.drawString2d(
-                String.format("Acc: %d", (int) acceleration),
-                Color.green,
-                new java.awt.Point(0, 85),
-                2,
-                2);
+            addText(String.format("Speed: %d", speed), Color.green);
+            addText(String.format("Accel: %d", acceleration), Color.PINK);
+
+            previousVelocities.removeFirst();
+            previousVelocityTimes.removeFirst();
         }
-        previousVelocity = carData.velocity;
-        previousTime = carData.elapsedSeconds;
+
+        previousVelocities.add(carData.velocity);
+        previousVelocityTimes.add(carData.elapsedSeconds);
     }
 
     public void renderProjection(CarData carData, Vector2 projectedVector) {
@@ -115,10 +119,7 @@ public class BotRenderer {
                 renderer.drawLine3d(Color.CYAN, previousSpot, location);
                 previousSpot = location;
             }
-            // TODO(ahatfield): Remove this dumb IOException...
-        } catch (IOException e) {
-            // Ignore
-        }
+        } catch (IOException e) {}
     }
 
     private Renderer getRenderer() {
@@ -126,8 +127,37 @@ public class BotRenderer {
     }
 
     public void renderOutput(ControlsOutput output) {
+        addText(String.format("Throttle %f", output.getThrottle()), Color.MAGENTA);
+    }
+
+    private final List<RenderedString> renderList = new ArrayList<>();
+
+    public void addText(String text, Color color) {
+        renderList.add(new RenderedString(text, color));
+    }
+
+    public void renderText() {
         Renderer renderer = getRenderer();
 
-        renderer.drawString2d(String.format("Throttle %f", output.getThrottle()), Color.MAGENTA, new java.awt.Point(0, 150), 2, 2);
+        for (int i = 0 ; i < renderList.size(); i++) {
+            RenderedString string = renderList.get(i);
+            renderer.drawString2d(string.text, string.color, new Point(0, TEXT_LIST_START_Y + (TEXT_LIST_SPACING_Y * i)), 2, 2);
+        }
+
+        renderList.clear();
+    }
+
+    public void renderConnection(Vector3 loc1, Vector3 loc2, Color color) {
+        getRenderer().drawLine3d(color, loc1, loc2);
+    }
+
+    private class RenderedString {
+        final String text;
+        final Color color;
+
+        RenderedString(String text, Color color) {
+            this.text = text;
+            this.color = color;
+        }
     }
 }

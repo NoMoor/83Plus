@@ -104,4 +104,8 @@ public class Vector2 {
     public static double angle(Vector2 a, Vector2 b) {
         return Math.abs(a.correctionAngle(b));
     }
+
+    public Vector3 asVector3() {
+        return new Vector3(x, y, 0);
+    }
 }

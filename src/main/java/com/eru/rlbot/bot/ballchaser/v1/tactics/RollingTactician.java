@@ -7,6 +7,8 @@ import com.eru.rlbot.common.vector.Vector2;
 import com.eru.rlbot.common.vector.Vector3;
 import rlbot.Bot;
 
+import java.awt.*;
+
 import static com.eru.rlbot.bot.common.Constants.HALF_LENGTH;
 
 
@@ -52,6 +54,8 @@ public class RollingTactician implements Tactician {
       // How far does the car need to rotate before it's pointing exactly at the ball?
       flatCorrectionAngle = -1 * carDirection.correctionAngle(carToTarget.flatten());
     }
+
+    botRenderer.addText(String.format("Distance: %d", (int) input.ball.position.distance(input.car.position)), Color.green);
 
     output.withSteer((float) flatCorrectionAngle)
         .withSlide(Math.abs(flatCorrectionAngle) > 2)

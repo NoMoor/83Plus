@@ -90,6 +90,8 @@ public class BallChaserV1 implements Bot {
 
         JumpManager.processOutput(output, input);
 
+        botRenderer.renderText();
+
         return output;
     }
 

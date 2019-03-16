@@ -7,6 +7,9 @@ import rlbot.flat.Physics;
 import rlbot.flat.PredictionSlice;
 
 public class Tactic {
+
+  private static final double MIN_DISTANCE = 30;
+
   // DO NOT CHANGE THIS.
   public Moment target;
   public final Type type;
@@ -21,6 +24,14 @@ public class Tactic {
   public Tactic(Vector3 vector3, Type type) {
     this.target = new Moment(vector3);
     this.type = type;
+  }
+
+  public boolean isDone(DataPacket input) {
+    if (input.car.position.distance(target.position) < MIN_DISTANCE) {
+      return true;
+    }
+
+    return false;
   }
 
   public enum Type {
