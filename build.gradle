@@ -32,6 +32,7 @@ startScripts {
 dependencies {
     // Fetch the framework jar file
     compile 'org.rlbot.commons:framework:1.+'
+    compile 'com.google.guava:guava:27.1-jre'
 
     // This is makes it easy to find the dll when running in intellij, where JVM args don't get passed from gradle.
     runtime files(dllDirectory)
