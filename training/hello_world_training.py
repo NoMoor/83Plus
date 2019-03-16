@@ -1,22 +1,15 @@
 from pathlib import Path
 
-from rlbottraining.common_exercises.bronze_goalie import BallRollingToGoalie
-from rlbottraining.common_exercises.bronze_striker import BallInFrontOfGoal
-from rlbottraining.common_exercises.silver_striker import HookShot
 from rlbot.matchconfig.match_config import PlayerConfig, Team
 
-from goalie_jump_training import BallFloatingIntoGoal
-from fast_rolling_goalie import BallRollingToGoal
+from bronze.bronze_exercises import bronze_exercises
+from stone.stone_exercises import stone_exercises
 
 
 def make_default_playlist():
-    exercises = [
-        # BallFloatingIntoGoal('Test'),
-        # BallRollingToGoalie('Hello Exercise world!'),
-        BallRollingToGoal('Test'),
-        # BallInFrontOfGoal('Striker'),
-        # HookShot('Test'),
-    ]
+    exercises = []
+    exercises += stone_exercises
+    # exercises += bronze_exercises
 
     for exercise in exercises:
         exercise.match_config.player_configs = [
