@@ -57,7 +57,7 @@ public class BotRenderer {
 
         int fps = (int) (ticks / (input.car.elapsedSeconds - initialTime));
 
-        addText(String.format("FPS: %d", fps), Color.PINK);
+//        addText(String.format("FPS: %d", fps), Color.PINK);
     }
 
     public void renderAcceleration(CarData carData) {

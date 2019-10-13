@@ -20,19 +20,25 @@ public class TacticManager {
   private final BotRenderer botRenderer;
   private LinkedList<Tactic> tacticList = new LinkedList<>();
   private Map<Tactic.Type, Tactician> TACTICIAN_MAP = new HashMap<>();
-  private static Tactic DEFAULT_TACTIC = new Tactic(Goal.ownGoal(0).center, Tactic.Type.DEFEND);
+
+  private static Tactic DEFEND_TACTIC = new Tactic(Goal.ownGoal(0).center, Tactic.Type.DEFEND);
+  private static Tactic DRIBBLE_TACTIC = new Tactic(Goal.ownGoal(0).center, Tactic.Type.DRIBBLE);
+  private static Tactic DEFAULT_TACTIC = DRIBBLE_TACTIC;
 
   private final Bot bot;
+
+  // Mostly here to draw nice lines.
+  private Vector3 endGoal;
 
   public TacticManager(Bot bot) {
     this.bot = bot;
     this.botRenderer = BotRenderer.forBot(bot);
 
-    // TODO(ahatfield): Add here
     TACTICIAN_MAP.put(Tactic.Type.FRONT_FLIP, new FlipTactician());
     TACTICIAN_MAP.put(Tactic.Type.WALL_RIDE, new SideWallTactician());
     TACTICIAN_MAP.put(Tactic.Type.HIT_BALL, new RollingTactician(bot));
     TACTICIAN_MAP.put(Tactic.Type.DEFEND, new BackupTactician());
+    TACTICIAN_MAP.put(Tactic.Type.DRIBBLE, new DribbleTactician(bot));
   }
 
   // TODO: Probably don't want to call this.
@@ -63,29 +69,48 @@ public class TacticManager {
       tacticList.pop();
     }
 
-    Tactic nextTactic = tacticList.isEmpty() ? DEFAULT_TACTIC : tacticList.get(0);
-    if (TACTICIAN_MAP.containsKey(nextTactic.type)) {
-      TACTICIAN_MAP.get(nextTactic.type).execute(output, input, nextTactic);
-    } else {
-      System.out.println("No tactician found for tactic " + nextTactic.type);
-      System.out.println("map: " + TACTICIAN_MAP.toString());
+    Tactician tactician = getTactician();
+    if (tactician != null) {
+      tactician.execute(output, input, getTactic());
     }
 
-    renderTactic(input.car);
+    renderTactics(input.car);
   }
 
-  public void renderTactic(CarData carData) {
+  private void renderTactics(CarData carData) {
     Renderer renderer = BotLoopRenderer.forBotLoop(bot);
 
-    // Draw a line from the car to the ball
-    renderer.drawLine3d(Color.LIGHT_GRAY, carData.position, getNextTarget());
+    Vector3 previousTarget = carData.position;
 
-//    // Update moment time (abs).
-//    botRenderer.addText(String.format("Tactic Time (abs): %s", renderTime(nextTactic().target.time)), Color.CYAN);
-//    // Update moment time (rel).
-//    botRenderer.addText(String.format("Car Time (abs): %s", renderTime(carData.elapsedSeconds)), Color.CYAN);
+    if (!tacticList.isEmpty()) {
+      for (int i = 0; i < tacticList.size(); i++) {
+        Vector3 nextTarget = tacticList.get(i).target.position;
+        renderer.drawLine3d(i == 0 ? Color.green : Color.ORANGE, previousTarget, nextTarget);
+        previousTarget = nextTarget;
+      }
+    } else {
+      Vector3 nextTarget = getNextTarget();
+      renderer.drawLine3d(Color.green, previousTarget, nextTarget);
+      previousTarget = nextTarget;
+    }
+
+    // Render end goal
+    if (endGoal != null) {
+      renderer.drawLine3d(Color.red, previousTarget, endGoal);
+    }
+
+//    botRenderer.addText(String.format("Tactician: %s", getTactician() == null ? "None" : getTactician().getClass().getSimpleName()), Color.CYAN);
+//    botRenderer.addText(String.format("Tactic: %s", getTactic() == null ? "None" : getTactic()), Color.CYAN);
     // Update moment time (rel).
-    botRenderer.addText(String.format("Tactic Time (rel): %s", renderTime(nextTactic().target.time - carData.elapsedSeconds)), Color.CYAN);
+    //botRenderer.addText(String.format("Tactic Time (rel): %s", renderTime(nextTactic().target.time - carData.elapsedSeconds)), Color.CYAN);
+  }
+
+  private Tactic getTactic() {
+    return tacticList.isEmpty() ? DEFAULT_TACTIC : tacticList.get(0);
+  }
+
+  private Tactician getTactician() {
+    return TACTICIAN_MAP.get(getTactic().type);
   }
 
   private String renderTime(float time) {
@@ -102,5 +127,9 @@ public class TacticManager {
 
   public void clearTactics() {
     tacticList.clear();
+  }
+
+  public void setEndGoal(Vector3 targetLocation) {
+    this.endGoal = targetLocation;
   }
 }

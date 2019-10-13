@@ -26,7 +26,8 @@ public class Constants {
   // Acceleration
   public static final double GRAVITY = 650;
   public static final double BOOSTED_ACCELERATION = 991.666;
-  public static final double ACCELERATION = 600; // Approximate: Acceleration at 1.0 throttle.
+  // TODO: Change back to 600.
+  public static final double ACCELERATION = 500; // Approximate: Acceleration at 1.0 throttle.
   public static final double COASTING_ACCELERATION = -525;
   public static final double BREAKING_ACCELERATION = -3500;
 
@@ -45,28 +46,37 @@ public class Constants {
   public static final double BOOSTED_MAX_SPEED = 2300;
   public static final double MAX_SPEED = 1410;
 
-  // TODO: Convert speed to turn radius
-  /**
-   * def turn_radius(v):
-   *     if v == 0:
-   *         return 0
-   *     return 1.0 / curvature(v)
-   *
-   * # v is the magnitude of the velocity in the car's forward direction
-   * def curvature(v):
-   *     if 0.0 <= v < 500.0:
-   *         return 0.006900 - 5.84e-6 * v
-   *     elif 500.0 <= v < 1000.0:
-   *         return 0.005610 - 3.26e-6 * v
-   *     elif 1000.0 <= v < 1500.0:
-   *         return 0.004300 - 1.95e-6 * v
-   *     elif 1500.0 <= v < 1750.0:
-   *         return 0.003025 - 1.10e-6 * v
-   *     elif 1750.0 <= v < 2500.0:
-   *         return 0.001800 - 0.40e-6 * v
-   *     else:
-   *         return 0.0
-   */
+  public static double turnDepth(double velocity, double angle) {
+    return radius(velocity) * Math.sin(angle);
+  }
+
+  public static double turnWidth(double velocity, double angle) {
+    return radius(velocity) * Math.cos(angle);
+  }
+
+  public static double arcLength(double velocity, double angle) {
+    return Math.abs(radius(velocity) * angle);
+  }
+
+  private static double radius(double velocity) {
+    return velocity == 0 ? 0 : (1 / curvature(velocity));
+  }
+
+  private static double curvature(double velocity) {
+    if (0.0 <= velocity && velocity < 500.0) {
+      return 0.006900 - 5.84e-6 * velocity;
+    } else if (500.0 <= velocity && velocity < 1000.0) {
+      return 0.005610 - 3.26e-6 * velocity;
+    } else if (1000.0 <= velocity && velocity < 1500.0) {
+      return 0.004300 - 1.95e-6 * velocity;
+    } else if (1500.0 <= velocity && velocity < 1750.0) {
+      return 0.003025 - 1.10e-6 * velocity;
+    } else if (1750.0 <= velocity && velocity < 2500.0) {
+      return 0.001800 - 0.40e-6 * velocity;
+    } else {
+      return 0.0;
+    }
+  }
 
   /** The distance an object can normally move. */
   public static final double NORMAL_EXPECTED = 200;

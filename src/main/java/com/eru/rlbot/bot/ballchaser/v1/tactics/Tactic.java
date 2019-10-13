@@ -40,6 +40,7 @@ public class Tactic {
     DEMO,
     WALL_RIDE,
     DEFEND,
+    DRIBBLE,
 
     // These may be more maneuvers and not tactics.
     FRONT_FLIP,
@@ -47,7 +48,6 @@ public class Tactic {
     HALF_FLIP,
     STALL,
     FAST_AERIAL;
-
   }
 
   private boolean isMovingTarget() {
@@ -67,5 +67,9 @@ public class Tactic {
     }
 
     return target.position;
+  }
+
+  public String toString() {
+    return type.name();
   }
 }

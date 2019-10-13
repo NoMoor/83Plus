@@ -6,6 +6,7 @@ import static com.eru.rlbot.bot.common.Constants.MAX_SPEED;
 import com.eru.rlbot.bot.ballchaser.v1.tactics.Tactic;
 import com.eru.rlbot.bot.ballchaser.v1.tactics.TacticManager;
 import com.eru.rlbot.bot.common.BotRenderer;
+import com.eru.rlbot.bot.common.Constants;
 import com.eru.rlbot.bot.common.Goal;
 import com.eru.rlbot.common.input.CarData;
 import com.eru.rlbot.common.input.DataPacket;
@@ -17,16 +18,11 @@ import rlbot.cppinterop.RLBotDll;
 import rlbot.flat.BallPrediction;
 import rlbot.flat.PredictionSlice;
 
-import java.awt.*;
-
-
 /** Responsible for dribbling, shooting, and passing. */
 public class AttackStrategist implements Strategist {
 
   private final TacticManager tacticManager;
   private final BotRenderer botRenderer;
-
-  private Vector3 goalLocation;
 
   public AttackStrategist(Bot bot) {
     this.botRenderer = BotRenderer.forBot(bot);
@@ -58,7 +54,7 @@ public class AttackStrategist implements Strategist {
       }
 
       // Hit the ball to the center of the goal.
-      createPath(new Tactic(bestTarget, Tactic.Type.HIT_BALL), Goal.opponentGoal(1).center);
+      createPath(input.car, new Tactic(bestTarget, Tactic.Type.DRIBBLE), Goal.opponentGoal(1).center);
 
       return true;
     } catch (Exception e) {
@@ -68,22 +64,31 @@ public class AttackStrategist implements Strategist {
     return false;
   }
 
-  private void createPath(Tactic tactic, Vector3 targetLocation) {
-    goalLocation = targetLocation;
-
+  private void createPath(CarData carData, Tactic tactic, Vector3 targetLocation) {
     // Connect the goal and the tactic in a line.
     Vector3 ballToGoalVector = targetLocation.minus(tactic.target.position);
-
     // Get a 1 unit directional vector.
-    Vector2 approach = ballToGoalVector.normalized().flatten().scaled(1000);
-
-    Vector3 approachVector = tactic.target.position.flatten().minus(approach).asVector3();
+    Vector2 glideSlope = ballToGoalVector.normalized().flatten().scaled(1000); // TODO: This scaling should depend on the turn in angle.
+    Vector3 attackTarget = tactic.target.position.flatten().minus(glideSlope).asVector3(); // TODO: Draw this.
 
     // Run through the point on the approach.
-    Tactic approachTactic = new Tactic(approachVector, Tactic.Type.HIT_BALL);
+    Tactic approachTactic = new Tactic(attackTarget, Tactic.Type.HIT_BALL);
+
+    // TODO: Make an attack arc tactic to hit the attackTarget.
+    // Velocity at that point
+    // Calculate speed at that point.
+
+    // Vector from current car position to turn in spot.
+    Vector2 carToAttackTarget = carData.position.flatten().minus(attackTarget.flatten());
+    double angleToTurnIn = carToAttackTarget.correctionAngle(glideSlope);
+
+    double width = Constants.turnWidth(MAX_SPEED, angleToTurnIn);
+    double depth = Constants.turnDepth(MAX_SPEED, angleToTurnIn);
 
     tacticManager.setTactic(approachTactic);
     tacticManager.addTactic(tactic);
+
+    tacticManager.setEndGoal(targetLocation);
   }
 
   @Override
@@ -98,10 +103,6 @@ public class AttackStrategist implements Strategist {
 
   @Override
   public ControlsOutput execute(DataPacket input) {
-    if (goalLocation != null) {
-      botRenderer.renderConnection(tacticManager.getNextTarget(), goalLocation, Color.RED);
-    }
-
     ControlsOutput output = new ControlsOutput();
     tacticManager.execute(input, output);
     return output;
