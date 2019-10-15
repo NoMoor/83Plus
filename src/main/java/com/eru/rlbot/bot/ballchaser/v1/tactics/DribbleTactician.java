@@ -1,25 +1,29 @@
 package com.eru.rlbot.bot.ballchaser.v1.tactics;
 
 import com.eru.rlbot.bot.common.BotRenderer;
+import com.eru.rlbot.bot.common.CarNormalUtils;
+import com.eru.rlbot.common.input.BallData;
 import com.eru.rlbot.common.input.CarData;
 import com.eru.rlbot.common.input.DataPacket;
 import com.eru.rlbot.common.output.ControlsOutput;
-import com.eru.rlbot.common.vector.Vector2;
 import rlbot.Bot;
 
 import java.awt.*;
 
+import static com.eru.rlbot.bot.common.Constants.*;
+
 public class DribbleTactician implements Tactician {
+
+  private static final float IDEAL_DRIBBLE_SPEED = 1000;
 
   private static final float PICK_UP_SPEED = 900f;
 
-  private static final float BALANCE_POINT = 30f;
-  private static final float CAR_HEIGHT = 25f;
-  private static final float CAR_LENGTH = 100f;
-  private static final float BALL_DIAMETER = 100f;
-  private static final int MAINTAIN_SPEED = 900;
+  private static final float SPEED_UP_BALANCE_POINT = CAR_LENGTH / 2f;
+  private static final float STEADY_BALANCE_POINT = CAR_LENGTH / 5.4f;
+  private static final float BALL_DIAMETER = BALL_SIZE;
 
   private final BotRenderer renderer;
+  private boolean catchUp;
 
   DribbleTactician(Bot bot) {
     renderer = BotRenderer.forBot(bot);
@@ -27,103 +31,143 @@ public class DribbleTactician implements Tactician {
 
   @Override
   public void execute(ControlsOutput output, DataPacket input, Tactic nextTactic) {
+    BallData relativeBallData = CarNormalUtils.noseNormalLocation(input);
+
     if (ballIsOnCar(input)) {
-      balanceCar(input, output);
+      balanceCar(input, relativeBallData, output);
     } else if (ballIsOnGround(input)) {
       pickUp(input, output);
-      turnToBall(input, output, 2.5);
+      turnToBall(relativeBallData, output);
     } else {
-      catchBall(input, output);
-      turnToBall(input, output, 2.5);
+      catchBall(input, relativeBallData, output);
+      turnToBall(relativeBallData, output);
     }
   }
 
-  private void balanceCar(DataPacket input, ControlsOutput output) {
-    double ballSpeed = input.ball.velocity.flatten().magnitude();
-    double carSpeed = input.car.velocity.flatten().magnitude();
-
-    double carPos = input.car.position.y;
-    double ballPos = input.ball.position.y;
-
-    // Get the ball back on the hood
-    if (ballPos > carPos + BALANCE_POINT) {
-      renderer.addText("---- Catch Up ----", Color.PINK);
-      output.withThrottle(1.0);
-      turnToBall(input, output, 1);
-    } else if (ballPos < carPos) {
-      renderer.addText("Balance....", Color.PINK);
+  private void balanceCar(DataPacket input, BallData relativeBallData, ControlsOutput output) {
+    if (catchUp ||
+      (relativeBallData.position.y > STEADY_BALANCE_POINT * 3
+           && getThrottleAccel(input.car.velocity.flatten().magnitude()) > relativeBallData.velocity.y)) {
+      catchUp = relativeBallData.position.y < STEADY_BALANCE_POINT * 3;
+      renderer.addText("Catch Up!!!!!", Color.RED);
+      output.withThrottle(1.0F);
+      output.withBoost();
+      turnToBall(relativeBallData, output);
+    } else if (relativeBallData.position.y < -STEADY_BALANCE_POINT * 3.5) { // TODO: Make this speed dependent
+      renderer.addText("Break!!!", Color.RED);
       // coast
-      output.withThrottle(0);
-      turnToBall(input, output, 1);
+      output.withThrottle(-1);
+      turnToBall(relativeBallData, output);
     } else {
-      renderer.addText("Coast here!!!!!", Color.PINK);
-      output.withThrottle((ballSpeed - carSpeed) / (BALANCE_POINT / 2));
-      turnToBall(input, output, 1);
+      output.withThrottle(getBalanceThrottle(relativeBallData, input.car));
+      turnToBall(relativeBallData, output);
     }
   }
 
-  private void turnToBall(DataPacket input, ControlsOutput output, double threshold) {
-    Vector2 ballPosition = input.ball.position.flatten();
-    CarData myCar = input.car;
-    Vector2 carPosition = myCar.position.flatten();
-    Vector2 carDirection = myCar.orientation.noseVector.flatten();
+  private float getBalanceThrottle(BallData relativeBallData, CarData carData) {
+    double nosewardVelocity = relativeBallData.velocity.y;
+    double carVelocity = carData.velocity.flatten().magnitude();
+    double immediateThrottle = getThrottleAccel(carVelocity);
 
-    // Subtract the two positions to get a vector pointing from the car to the ball.
-    Vector2 carToBall = ballPosition.minus(carPosition);
+    // Ball is coming toward the car. Break. TODO: In the future, figure out how fast we want to go here.
+    if (Math.abs(nosewardVelocity) < 20
+        && IDEAL_DRIBBLE_SPEED - 50 < carVelocity
+        && carVelocity < IDEAL_DRIBBLE_SPEED + 50) {
+      renderer.addText("Perfect speed", Color.GREEN);
+      return .02f;
+    }
 
-    // How far does the car need to rotate before it's pointing exactly at the ball?
-    double steerCorrectionRadians = carDirection.correctionAngle(carToBall);
+    if (nosewardVelocity < -100) {
+      renderer.addText("Break!!!!!", Color.RED);
+      return -1f;
+    } else if (nosewardVelocity < -60) {
+      renderer.addText("Coast: Slow", Color.ORANGE);
+      return 0f;
+    } else if (carVelocity + nosewardVelocity > IDEAL_DRIBBLE_SPEED) {
+      renderer.addText("Coast: Slow Ball down", Color.GREEN);
+      return relativeBallData.position.y > -IDEAL_DRIBBLE_SPEED ? 1f : 0.02f;
+    } if (carVelocity + nosewardVelocity < IDEAL_DRIBBLE_SPEED
+          && nosewardVelocity <= immediateThrottle / 2.5
+          && relativeBallData.position.y < SPEED_UP_BALANCE_POINT) {
+      renderer.addText("Coast: Let Slip", Color.GREEN);
+      return nosewardVelocity < 30 ? 0 : 0.02f; // If the ball isn't going fast, drop throttle and let slow down.
+    } else if (nosewardVelocity > 0) {
+      if (nosewardVelocity > immediateThrottle) {
+        renderer.addText("Slow up...", Color.RED);
+        return 1f;
+      } else if (nosewardVelocity < (immediateThrottle / 2)) {
+        renderer.addText("Coast: Let Slip2", Color.GREEN);
+        return (carVelocity < IDEAL_DRIBBLE_SPEED) ? 0.3f : 0.5f;
+      } else if (nosewardVelocity > (immediateThrottle / 2)) {
+        renderer.addText("Coast: Slow Catch", Color.ORANGE);
+        return .5f;
+      }
+    }
 
+    renderer.addText("Coast:", Color.GREEN);
+    return 0.02f;
+  }
 
-    // Update Relative to distance to the ball.
-    if (Math.abs(steerCorrectionRadians) > threshold) {
-      output.withSteer(-steerCorrectionRadians / (threshold * 2));
-      renderer.addText(String.format("Turn %f", steerCorrectionRadians), Color.green);
+  private double getThrottleAccel(double carVelocity) {
+    if (carVelocity < 1400) {
+      return 1600 - carVelocity;
+    } else if (carVelocity < 1410) {
+      return (carVelocity - 1400) * 20;
+    } else if (carVelocity >= 1410 && carVelocity < 2300){
+      // Cannot throttle faster.
+      return 0;
+    }
+    throw new IllegalArgumentException("What happened?!");
+  }
+
+  private void turnToBall(BallData relativeBallData, ControlsOutput output) {
+    if (CAR_WIDTH / 2 < Math.abs(relativeBallData.position.x)) {
+      float turn = (relativeBallData.position.x / (CAR_WIDTH / 2));
+      renderer.addText(String.format("Turn %s %f", turn < 0 ? "LEFT" : "RIGHT", turn), Color.PINK);
+      output.withSteer(turn);
     }
   }
 
   // Called when ball is in the air.
-  private void catchBall(DataPacket input, ControlsOutput output) {
+  private void catchBall(DataPacket input, BallData relativeBallData, ControlsOutput output) {
     double ballSpeed = input.ball.velocity.flatten().magnitude();
     double carSpeed = input.car.velocity.flatten().magnitude();
 
-    double carPos = input.car.position.y;
-    double ballPos = input.ball.position.y;
+    double distanceToCatchPoint = relativeBallData.position.y - SPEED_UP_BALANCE_POINT;
 
-    double ticksToBall = Math.abs(ballPos / carPos) - (carSpeed - ballSpeed);
+    // How long to get to x/y position of the ball?
+    double ticksToBall = distanceToCatchPoint
+        / -relativeBallData.velocity.y; // Negate the velocity since moving toward the ball is a relative negative velocity.
 
-    double ballHeight = input.ball.position.z;
-    double ballDownVelocity = input.ball.velocity.z;
+    double ballHeightAboveCar = relativeBallData.position.z - (CAR_HEIGHT + BALL_DIAMETER);
+    double ballDownVelocity = relativeBallData.velocity.z;
 
-    double carHeight = CAR_HEIGHT + BALL_DIAMETER; // car + ball diameter
-    double ticksToCar = (ballHeight - carHeight) / ballDownVelocity;
-    // when will the ball hit the ground?
+    // How long for the ball to land on the car?
+    double ticksToCar = timeToLand(ballHeightAboveCar, ballDownVelocity);
 
-    // How fast is the ball going?
-
-    // The ball is getting away or the ball will hit the ground before we get there.
-    if (ballSpeed > carSpeed || ticksToBall > ticksToCar) {
+    if (ticksToBall < 0) {
+      // We are going to overrun the ball.
+      renderer.addText("Slow Down!", Color.RED);
+      output.withThrottle(distanceToCatchPoint > 0 ? 1f : 0f);
+    } else if (ballSpeed > carSpeed || ticksToBall > ticksToCar) {
+      // The ball is getting away or the ball will hit the ground before we get there.
       renderer.addText("Behind", Color.YELLOW);
       output.withThrottle(1.0f);
 
     // Good place to catch the ball. Match speed
     } else if (carSpeed >= ballSpeed && ticksToBall < ticksToCar){
       renderer.addText("Feather", Color.YELLOW);
-      double relativeBallSpeed = carSpeed - ballSpeed;
-      double relativePosition = ballPos - (carPos + (BALANCE_POINT * 1.5));
 
       // Throttle to maintain speed
-      double speedRelativeThrottle = carSpeed / MAINTAIN_SPEED;
-
-      double throttleToMatchBall = ((relativePosition - relativeBallSpeed) / relativeBallSpeed) * speedRelativeThrottle;
-
-      output.withThrottle(speedRelativeThrottle + throttleToMatchBall);
+      output.withThrottle(.02);
 
     } else {
       renderer.addText("None", Color.BLACK);
       output.withThrottle(0.5f);
     }
     // Direction
+    renderer.addText(String.format("TTC: %f", ticksToCar), Color.white);
+    renderer.addText(String.format("TTB: %f", ticksToBall), Color.white);
   }
 
   private boolean ballIsOnGround(DataPacket input) {
@@ -151,5 +195,16 @@ public class DribbleTactician implements Tactician {
     if (input.ball.position.y > input.car.position.y && input.car.velocity.flatten().magnitude() < PICK_UP_SPEED) {
       output.withThrottle(1.0f);
     }
+  }
+
+  private double timeToLand(double height, double verticalSpeed) {
+    double firstTerm = verticalSpeed / GRAVITY;
+    double secondTerm = Math.sqrt((verticalSpeed * verticalSpeed) + (2 * GRAVITY * height)) / GRAVITY;
+
+    return Math.max(firstTerm + secondTerm, firstTerm - secondTerm);
+  }
+
+  private double timeToCatch(double distance, double acceleration) {
+    return Math.sqrt((2 * acceleration * distance)) / acceleration;
   }
 }

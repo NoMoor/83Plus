@@ -20,4 +20,10 @@ public class BallData {
         this.velocity = new Vector3(ball.physics().velocity());
         this.spin = new Vector3(ball.physics().angularVelocity());
     }
+
+    public BallData(Vector3 position, Vector3 velocity) {
+        this.position = position;
+        this.velocity = velocity;
+        this.spin = null;
+    }
 }
