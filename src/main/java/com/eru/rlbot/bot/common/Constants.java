@@ -29,7 +29,7 @@ public class Constants {
   // Acceleration
   public static final double GRAVITY = 650;
   public static final double BOOSTED_ACCELERATION = 991.666;
-  // TODO: Change back to 600.
+  // TODO: Use the formula below.
   public static final double ACCELERATION = 500; // Approximate: Acceleration at 1.0 throttle.
   public static final double COASTING_ACCELERATION = -525;
   public static final double BREAKING_ACCELERATION = -3500;
@@ -63,6 +63,18 @@ public class Constants {
 
   private static double radius(double velocity) {
     return velocity == 0 ? 0 : (1 / curvature(velocity));
+  }
+
+  public static float acceleration(double carVelocity) {
+    if (carVelocity < 1400) {
+      return (float) (1600 - carVelocity);
+    } else if (carVelocity < 1410) {
+      return (float) ((carVelocity - 1400) * 20);
+    } else if (carVelocity >= 1410 && carVelocity < 2300){
+      // Cannot throttle faster.
+      return 0;
+    }
+    throw new IllegalArgumentException("What happened?!");
   }
 
   private static double curvature(double velocity) {

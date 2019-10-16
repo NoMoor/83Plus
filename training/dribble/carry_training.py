@@ -19,14 +19,14 @@ class StationaryBall(TrainingExercise):
     def make_game_state(self, rng: SeededRandomNumberGenerator) -> GameState:
         return GameState(
             ball=BallState(physics=Physics(
-                location=Vector3(0, -4000, 120),
+                location=Vector3(0, -3000, 120),
                 velocity=Vector3(0, 0, 0),
                 angular_velocity=Vector3(0, 0, 0))),
             cars={
                 0: CarState(
                     physics=Physics(
-                        location=Vector3(0, -5000, 0),
-                        rotation=Rotator(0, pi / 2, 0),
+                        location=Vector3(-1000, -5000, 0),
+                        rotation=Rotator(0, (pi / 4), 0),
                         velocity=Vector3(0, 0, 0),
                         angular_velocity=Vector3(0, 0, 0)),
                     jumped=False,

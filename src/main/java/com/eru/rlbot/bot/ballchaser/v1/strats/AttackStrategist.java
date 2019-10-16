@@ -64,6 +64,7 @@ public class AttackStrategist implements Strategist {
     return false;
   }
 
+  // TODO: Move this to another place.
   private void createPath(CarData carData, Tactic tactic, Vector3 targetLocation) {
     // Connect the goal and the tactic in a line.
     Vector3 ballToGoalVector = targetLocation.minus(tactic.target.position);
@@ -72,7 +73,7 @@ public class AttackStrategist implements Strategist {
     Vector3 attackTarget = tactic.target.position.flatten().minus(glideSlope).asVector3(); // TODO: Draw this.
 
     // Run through the point on the approach.
-    Tactic approachTactic = new Tactic(attackTarget, Tactic.Type.HIT_BALL);
+//    Tactic approachTactic = new Tactic(attackTarget, Tactic.Type.HIT_BALL);
 
     // TODO: Make an attack arc tactic to hit the attackTarget.
     // Velocity at that point
@@ -85,7 +86,7 @@ public class AttackStrategist implements Strategist {
     double width = Constants.turnWidth(MAX_SPEED, angleToTurnIn);
     double depth = Constants.turnDepth(MAX_SPEED, angleToTurnIn);
 
-    tacticManager.setTactic(approachTactic);
+//    tacticManager.setTactic(approachTactic);
     tacticManager.addTactic(tactic);
 
     tacticManager.setEndGoal(targetLocation);

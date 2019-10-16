@@ -8,16 +8,18 @@ public class CarNormalUtils {
 
   // Context: https://stackoverflow.com/questions/14607640/rotating-a-vector-in-3d-space
   public static BallData noseNormalLocation(DataPacket input) {
-    return new BallData(
+    BallData localData = new BallData(
         translateRelative(input.car.position, input.ball.position, input.car.orientation.noseVector),
         translateRelative(input.car.velocity, input.ball.velocity, input.car.orientation.noseVector));
+
+    return localData;
   }
 
   private static Vector3 translateRelative(Vector3 source, Vector3 target, Vector3 referenceOrientation) {
     Vector3 relativeVector = target.minus(source);
 
     // Translate the vector relative to the reference orientation.
-    double translationAngle = referenceOrientation.angle(noseNorth(source));
+    double translationAngle = -referenceOrientation.angle(noseNorth(source));
     double relativeX = (Math.cos(translationAngle) * relativeVector.x) - (Math.sin(translationAngle) * relativeVector.y);
     double relativeY = (Math.sin(translationAngle) * relativeVector.x) + (Math.cos(translationAngle) * relativeVector.y);
     double relativeZ = relativeVector.z;
