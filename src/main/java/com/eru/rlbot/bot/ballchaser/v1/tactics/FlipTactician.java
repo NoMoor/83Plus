@@ -1,5 +1,6 @@
 package com.eru.rlbot.bot.ballchaser.v1.tactics;
 
+import com.eru.rlbot.bot.common.Angles;
 import com.eru.rlbot.common.input.DataPacket;
 import com.eru.rlbot.common.jump.JumpManager;
 import com.eru.rlbot.common.output.ControlsOutput;
@@ -26,13 +27,7 @@ public class FlipTactician implements Tactician {
 
   @Override
   public void execute(ControlsOutput output, DataPacket input, Tactic nextTactic) {
-    Vector2 carDirection = input.car.orientation.noseVector.flatten();
-
-    // Subtract the two positions to get a vector pointing from the car to the ball.
-    Vector3 carToTarget = targetPosition.minus(input.car.position);
-
-    // How far does the car need to rotate before it's pointing exactly at the ball?
-    double flatCorrectionAngle = -1 * carDirection.correctionAngle(carToTarget.flatten());
+    double flatCorrectionAngle = Angles.flatCorrectionDirection(input.car, targetPosition);
 
     // Do a front flip.
     // TODO(ahatfield): Add something about making sure the ball is far enough away.

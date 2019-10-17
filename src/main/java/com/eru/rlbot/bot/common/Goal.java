@@ -6,14 +6,15 @@ import static com.eru.rlbot.bot.common.Constants.HALF_LENGTH;
 
 public class Goal {
 
+  private static final int WIDTH = 1785; // 892.755 * 2
+  private static final int HEIGHT = 643; // Technically 642.775
+
   private static final Vector3 ORANGE_CENTER = new Vector3(0, HALF_LENGTH, 0);
   private static final Vector3 BLUE_CENTER = new Vector3(0, -1 * HALF_LENGTH, 0);
+  private static final Vector3 HALF_GOAL = new Vector3(WIDTH / 2f, 0, 0);
 
   private static final Goal BLUE_GOAL = new Goal(BLUE_CENTER);
   private static final Goal ORANGE_GOAL = new Goal(ORANGE_CENTER);
-
-  private static final int WIDTH = 1785; // 892.755 * 2
-  private static final int HEIGHT = 643; // Technically 642.775
 
   public static Goal ownGoal(int team) {
     return team == 1 ? ORANGE_GOAL : BLUE_GOAL;
@@ -23,10 +24,14 @@ public class Goal {
     return team == 1 ? ORANGE_GOAL : BLUE_GOAL;
   }
 
-  // TODO: Add left post, right post, cross-bar
+  // TODO: Add cross-bar
   public final Vector3 center;
+  public final Vector3 left;
+  public final Vector3 right;
 
   private Goal(Vector3 center) {
     this.center = center;
+    this.left = center.y < 0 ? center.plus(HALF_GOAL) : center.minus(HALF_GOAL);
+    this.right = center.y > 0 ? center.plus(HALF_GOAL) : center.minus(HALF_GOAL);
   }
 }

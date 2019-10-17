@@ -53,10 +53,9 @@ public class BallChaserV1 implements Bot {
         SpeedManager.trackSuperSonic(input);
         stategyManager.updateStrategy(input);
 
-        botRenderer.renderAcceleration(input.car);
-
         ControlsOutput output = stategyManager.executeStrategy(input);
 
+        botRenderer.renderAcceleration(input.car);
         botRenderer.renderOutput(output);
 
         return output;

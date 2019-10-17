@@ -55,7 +55,7 @@ public class RollingTactician implements Tactician {
       flatCorrectionAngle = -1 * carDirection.correctionAngle(carToTarget.flatten());
     }
 
-    botRenderer.addText(String.format("Distance: %d", (int) input.ball.position.distance(input.car.position)), Color.green);
+    botRenderer.addText(Color.green, String.format("Distance: %d", (int) input.ball.position.distance(input.car.position)));
 
     output.withSteer((float) flatCorrectionAngle)
         .withSlide(Math.abs(flatCorrectionAngle) > 2)

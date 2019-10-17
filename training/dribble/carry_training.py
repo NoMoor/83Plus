@@ -16,6 +16,27 @@ class StationaryBall(TrainingExercise):
     grader: Grader = field(default_factory=lambda: GameTickPacketWrapperGrader(
         StrikerGrader(timeout_seconds=10.0, ally_team=0)))
 
+    # Facing away from ball
+    # def make_game_state(self, rng: SeededRandomNumberGenerator) -> GameState:
+    #     return GameState(
+    #         ball=BallState(physics=Physics(
+    #             location=Vector3(0, -3000, 120),
+    #             velocity=Vector3(0, 0, 0),
+    #             angular_velocity=Vector3(0, 0, 0))),
+    #         cars={
+    #             0: CarState(
+    #                 physics=Physics(
+    #                     location=Vector3(1000, -4000, 0),
+    #                     rotation=Rotator(0, -pi/4, 0),
+    #                     velocity=Vector3(0, 0, 0),
+    #                     angular_velocity=Vector3(0, 0, 0)),
+    #                 jumped=False,
+    #                 double_jumped=False,
+    #                 boost_amount=100)
+    #         },
+    #         boosts={1: BoostState(100)},
+    #     )
+
     def make_game_state(self, rng: SeededRandomNumberGenerator) -> GameState:
         return GameState(
             ball=BallState(physics=Physics(
@@ -25,8 +46,8 @@ class StationaryBall(TrainingExercise):
             cars={
                 0: CarState(
                     physics=Physics(
-                        location=Vector3(-1000, -5000, 0),
-                        rotation=Rotator(0, (pi / 4), 0),
+                        location=Vector3(1000, -4000, 0),
+                        rotation=Rotator(0, 3 * pi/4, 0),
                         velocity=Vector3(0, 0, 0),
                         angular_velocity=Vector3(0, 0, 0)),
                     jumped=False,

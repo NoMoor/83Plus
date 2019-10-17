@@ -32,7 +32,7 @@ public class BotRenderer {
 
     private Bot bot;
     private static final int TEXT_LIST_START_Y = 120;
-    private static final int TEXT_LIST_SPACING_Y = 20;
+    private static final int TEXT_LIST_SPACING_Y = 26;
 
     private BotRenderer(Bot bot) {
         this.bot = bot;
@@ -70,8 +70,8 @@ public class BotRenderer {
             // Delta V / Delta T
             int acceleration = (int) (deltaV / deltaT);
 
-            addText(String.format("Speed: %d", speed), Color.green);
-            addText(String.format("Accel: %d", acceleration), Color.PINK);
+            addText(Color.green, String.format("Speed: %d", speed));
+            addText(Color.PINK, String.format("Accel: %d", acceleration));
 
             previousVelocities.removeFirst();
             previousVelocityTimes.removeFirst();
@@ -127,13 +127,17 @@ public class BotRenderer {
     }
 
     public void renderOutput(ControlsOutput output) {
-        addText(String.format("Throttle %f", output.getThrottle()), Color.MAGENTA);
+        addText(Color.MAGENTA, String.format("Throttle %f", output.getThrottle()));
     }
 
-    private final List<RenderedString> renderList = new ArrayList<>();
+    private final LinkedList<RenderedString> renderList = new LinkedList<>();
 
-    public void addText(String text, Color color) {
-        renderList.add(new RenderedString(text, color));
+    public void addText(String text, Object... args) {
+        addText(Color.WHITE, text, args);
+    }
+
+    public void addText(Color color, String text, Object... args) {
+        renderList.addFirst(new RenderedString(String.format(text, args), color));
     }
 
     public void renderText() {
