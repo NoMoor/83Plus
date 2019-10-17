@@ -65,31 +65,41 @@ public class DribbleTactician implements Tactician {
   }
 
   private void driveToTarget(DataPacket input, BallData relativeBallData, ControlsOutput output) {
-
-//    double correctionLeftAngle = Angles.flatCorrectionDirection(input.car, target_left);
-//    double correctionRightAngle = Angles.flatCorrectionDirection(input.car, target_right);
     double correctionLeftAngle = Angles.flatCorrectionDirection(input.ball, target_left);
     double correctionRightAngle = Angles.flatCorrectionDirection(input.ball, target_right);
 
-    // TODO(10/16/19): Use the x-offset to stop turning earlier.
-    boolean isPointingAtTarget = (correctionLeftAngle < 0 && correctionRightAngle > 0);
+    double momentumAngle = getMomentum(relativeBallData);
+    boolean isPointingAtTarget = (correctionLeftAngle + momentumAngle) < 0
+        && (correctionRightAngle + momentumAngle) > 0;
 
-    if (!isPointingAtTarget && Math.abs(relativeBallData.velocity.x) < getBalancableX(input.car)) {
+    double correctionAngle = Angles.minAbs(correctionLeftAngle, correctionRightAngle);
+    // TODO: How to tell if we've turned past the target?
+
+      // Need to turn right.
+    boolean tooFarRight = correctionAngle > 0 && correctionLeftAngle + momentumAngle > correctionRightAngle;
+    boolean tooFarLeft = correctionAngle < 0 && correctionRightAngle + momentumAngle < correctionLeftAngle;
+
+    boolean needToTurnMore = !isPointingAtTarget && (!tooFarRight || !tooFarLeft);
+
+    // TODO: Debug why this is still turning a bit too far.
+    if (tooFarLeft) {
+      moveBallTo(OCTANE_BALANCE_POINT, input, relativeBallData, output);
+      output.withSteer(-0.5f); // Hard left.
+      renderer.addText("Hard Left");
+    } else if (tooFarRight) {
+      moveBallTo(OCTANE_BALANCE_POINT, input, relativeBallData, output);
+      output.withSteer(0.5f); // Hard right.
+      renderer.addText("Hard Right");
+    } else if (needToTurnMore && Math.abs(relativeBallData.velocity.x) < getBalancableX(input.car)) {
       // TODO: Figure out how much more throttle to give.
       moveBallTo(OCTANE_BALANCE_POINT, input, relativeBallData, output); // TODO: Make speed / distance dependent
 
-      double correctionAngle = Angles.minAbs(correctionLeftAngle, correctionRightAngle);
       // Ball is balanced. Initiate turn.
       double steeringInput = -correctionAngle * 3;
 
       // Turn opposite the correction angle to get the ball to move the other way.
       renderer.addText(Color.MAGENTA, String.format("Init toward goal... turn %f", steeringInput));
       output.withSteer(steeringInput);
-    } else if (Math.abs(relativeBallData.velocity.x) > 5) {
-      // Catch the ball
-//      renderer.addText("Debug me!");
-      balanceFrontBack(input, relativeBallData, output);
-      balanceLeftRight(input, relativeBallData, output);
     } else {
       balanceFrontBack(input, relativeBallData, output);
       balanceLeftRight(input, relativeBallData, output);
@@ -100,8 +110,34 @@ public class DribbleTactician implements Tactician {
     }
   }
 
+  private double getMomentum(BallData relativeBallData) {
+    boolean rightWard = relativeBallData.position.x > 0;
+    double tiltMagnitude = Math.abs(relativeBallData.position.x);
+
+    double value = 0d;
+
+    // Values in radians
+    if (tiltMagnitude < 10) {
+      value = tiltMagnitude * .001d;
+    } else if (tiltMagnitude < 30) {
+      value = tiltMagnitude * .005d;
+    } else if (tiltMagnitude < 50d) {
+      value = tiltMagnitude * .0075d;
+    } else {
+      value = tiltMagnitude * .01d;
+    }
+
+    if (!rightWard) {
+      value = -value;
+    }
+
+    renderer.addText("Correction Value: %f", value);
+
+    return value;
+  }
+
   private float getBalancableX(CarData car) {
-    return 30f;
+    return 50f;
   }
 
   private static String lor(double value) {
@@ -258,7 +294,7 @@ public class DribbleTactician implements Tactician {
 
     if (newOffset < previousOffset) {
       // Go straight?
-      // TODO: Figure out if this is going to overshoot the car and perhaps we should turn the opposite direction.
+      // TODO(10/17/19): Figure out if this is going to overshoot the car and perhaps we should turn the opposite direction.
       renderer.addText(Color.PINK, "Do NOT turn.");
     } else {
       float turn = relativeBallData.velocity.x / 50f; // Negative x is right.
