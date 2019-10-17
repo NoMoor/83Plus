@@ -92,7 +92,7 @@ public class StrategyManager {
     }
 
     if (resetTime != 0 && resetTime + RESET_DELAY > input.car.elapsedSeconds) {
-      botRenderer.addText(Color.red, "RESET: Wait...");
+      botRenderer.addDebugText(Color.red, "RESET: Wait...");
       return true;
     }
 

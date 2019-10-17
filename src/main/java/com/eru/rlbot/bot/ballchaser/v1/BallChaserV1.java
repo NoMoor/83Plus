@@ -53,12 +53,7 @@ public class BallChaserV1 implements Bot {
         SpeedManager.trackSuperSonic(input);
         stategyManager.updateStrategy(input);
 
-        ControlsOutput output = stategyManager.executeStrategy(input);
-
-        botRenderer.renderAcceleration(input.car);
-        botRenderer.renderOutput(output);
-
-        return output;
+        return stategyManager.executeStrategy(input);
     }
 
     /**
@@ -82,14 +77,13 @@ public class BallChaserV1 implements Bot {
 
         JumpManager.loadDataPacket(input);
 
-        botRenderer.draw(input);
         botChatter.talk(input);
 
         ControlsOutput output = processInput(input);
 
         JumpManager.processOutput(output, input);
 
-        botRenderer.renderText();
+        botRenderer.renderInfo(input, output);
 
         return output;
     }

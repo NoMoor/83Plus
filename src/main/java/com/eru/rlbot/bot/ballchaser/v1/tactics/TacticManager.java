@@ -99,10 +99,10 @@ public class TacticManager {
       renderer.drawLine3d(Color.red, previousTarget, endGoal);
     }
 
-//    botRenderer.addText(String.format("Tactician: %s", getTactician() == null ? "None" : getTactician().getClass().getSimpleName()), Color.CYAN);
-//    botRenderer.addText(String.format("Tactic: %s", getTactic() == null ? "None" : getTactic()), Color.CYAN);
+//    botRenderer.addDebugText(String.format("Tactician: %s", getTactician() == null ? "None" : getTactician().getClass().getSimpleName()), Color.CYAN);
+//    botRenderer.addDebugText(String.format("Tactic: %s", getTactic() == null ? "None" : getTactic()), Color.CYAN);
     // Update moment time (rel).
-    //botRenderer.addText(String.format("Tactic Time (rel): %s", renderTime(nextTactic().target.time - carData.elapsedSeconds)), Color.CYAN);
+    //botRenderer.addDebugText(String.format("Tactic Time (rel): %s", renderTime(nextTactic().target.time - carData.elapsedSeconds)), Color.CYAN);
   }
 
   private Tactic getTactic() {
