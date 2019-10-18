@@ -70,10 +70,12 @@ public class BallChaserV0 implements Bot {
         // The DataPacket might not include everything from GameTickPacket, so improve it if you need to!
         DataPacket dataPacket = new DataPacket(packet, playerIndex);
 
-        botRenderer.draw(dataPacket);
         botChatter.talk(dataPacket);
 
-        return processInput(dataPacket);
+        ControlsOutput output = processInput(dataPacket);
+        botRenderer.renderInfo(dataPacket, output);
+
+        return output;
     }
 
     @Override

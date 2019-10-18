@@ -14,7 +14,7 @@ from rlbottraining.training_exercise import Playlist
 class StationaryBall(TrainingExercise):
 
     grader: Grader = field(default_factory=lambda: GameTickPacketWrapperGrader(
-        StrikerGrader(timeout_seconds=10.0, ally_team=0)))
+        StrikerGrader(timeout_seconds=14.0, ally_team=0)))
 
     # Facing away from ball
     # def make_game_state(self, rng: SeededRandomNumberGenerator) -> GameState:
