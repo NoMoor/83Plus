@@ -21,7 +21,7 @@ public class Constants {
   public static final float COEFFICIENT_OF_RESITUTION = .6f; // it loses 40% of the component of its velocity that's toward the surface
 
   // Car
-  public static final float CAR_AT_REST = 16.5f; // Merc is 17.01
+  public static final float CAR_AT_REST = 16.99f; // Merc is 17.01
   public static final float CAR_HEIGHT = 36.16f;
   public static final float CAR_LENGTH = 118.01f;
   public static final float CAR_WIDTH = 84.2f;

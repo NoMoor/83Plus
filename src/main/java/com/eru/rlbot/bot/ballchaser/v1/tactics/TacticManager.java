@@ -39,6 +39,7 @@ public class TacticManager {
     TACTICIAN_MAP.put(Tactic.Type.HIT_BALL, new RollingTactician(bot));
     TACTICIAN_MAP.put(Tactic.Type.DEFEND, new BackupTactician());
     TACTICIAN_MAP.put(Tactic.Type.DRIBBLE, new DribbleTactician(bot));
+    TACTICIAN_MAP.put(Tactic.Type.KICKOFF, new KickoffTactician(bot));
   }
 
   // TODO: Probably don't want to call this.
@@ -64,17 +65,21 @@ public class TacticManager {
   }
 
   public void execute(DataPacket input, ControlsOutput output) {
-    // TODO: This should be done earlier in case we need to switch strats.
     if (nextTactic().isDone(input)) {
       tacticList.pop();
     }
 
-    Tactician tactician = getTactician();
-    if (tactician != null) {
-      tactician.execute(output, input, getTactic());
-    }
+    getTactician().execute(output, input, getTactic());
+
+    boolean result = true;
+
+    botRenderer.setTactic(getTactic());
 
     renderTactics(input.car);
+
+    if (result && !tacticList.isEmpty()) {
+      tacticList.removeFirst();
+    }
   }
 
   private void renderTactics(CarData carData) {

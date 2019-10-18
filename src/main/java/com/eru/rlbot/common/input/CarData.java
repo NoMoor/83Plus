@@ -17,6 +17,9 @@ public class CarData {
     /** The velocity of the car. */
     public final Vector3 velocity;
 
+    /** The result of calling velocity.flatten().magnitude(). */
+    public final double groundSpeed;
+
     /** The orientation of the car */
     public final CarOrientation orientation;
 
@@ -46,6 +49,9 @@ public class CarData {
     public CarData(rlbot.flat.PlayerInfo playerInfo, float elapsedSeconds) {
         this.position = new Vector3(playerInfo.physics().location());
         this.velocity = new Vector3(playerInfo.physics().velocity());
+
+        this.groundSpeed = velocity.flatten().magnitude();
+
         this.orientation = CarOrientation.fromFlatbuffer(playerInfo);
         this.boost = playerInfo.boost();
         this.isSupersonic = playerInfo.isSupersonic();

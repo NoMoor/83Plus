@@ -4,7 +4,6 @@ import com.eru.rlbot.bot.common.Angles;
 import com.eru.rlbot.common.input.DataPacket;
 import com.eru.rlbot.common.jump.JumpManager;
 import com.eru.rlbot.common.output.ControlsOutput;
-import com.eru.rlbot.common.vector.Vector2;
 import com.eru.rlbot.common.vector.Vector3;
 
 import static com.eru.rlbot.bot.common.Constants.BALL_SIZE;
@@ -39,9 +38,9 @@ public class FlipTactician implements Tactician {
       // TODO(ahatfield): This 750 should change based on the height I was at when I jumped.
       boolean canSingleJumpTo = heightDifference > input.car.velocity.z && heightDifference < 750;
 
-      if ((input.car.hasWheelContact || !JumpManager.hasMaxJumpHight()) && canSingleJumpTo) {
+      if ((input.car.hasWheelContact || !JumpManager.hasMaxJumpHeight()) && canSingleJumpTo) {
         output.withJump();
-      } else if (JumpManager.canDodge()) {
+      } else if (JumpManager.canFlip()) {
         output.withJump()
             .withPitch(-1);
       }

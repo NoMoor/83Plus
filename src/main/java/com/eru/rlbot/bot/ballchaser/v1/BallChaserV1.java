@@ -81,10 +81,9 @@ public class BallChaserV1 implements Bot {
 
         ControlsOutput output = processInput(input);
 
-        JumpManager.processOutput(output, input);
-
         botRenderer.renderInfo(input, output);
 
+        JumpManager.processOutput(output, input);
         return output;
     }
 

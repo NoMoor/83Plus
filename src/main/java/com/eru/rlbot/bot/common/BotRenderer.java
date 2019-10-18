@@ -1,5 +1,8 @@
 package com.eru.rlbot.bot.common;
 
+import com.eru.rlbot.bot.ballchaser.v1.strats.Strategist;
+import com.eru.rlbot.bot.ballchaser.v1.tactics.Tactic;
+import com.eru.rlbot.bot.ballchaser.v1.tactics.Tactician;
 import com.eru.rlbot.common.input.BallData;
 import com.eru.rlbot.common.output.ControlsOutput;
 import com.eru.rlbot.common.vector.Vector2;
@@ -16,6 +19,7 @@ import com.eru.rlbot.common.input.DataPacket;
 import com.eru.rlbot.common.vector.Vector3;
 
 import java.awt.*;
+import java.io.DataInput;
 import java.io.IOException;
 import java.util.*;
 
@@ -71,12 +75,14 @@ public class BotRenderer {
     }
 
     public void renderInfo(DataPacket input, ControlsOutput output) {
+        renderControl();
         renderRefreshRate(input);
         renderBallPrediction(input);
 
         renderAcceleration(input);
         renderOutput(output);
         renderText();
+        checkAlert(input);
     }
 
     private void renderRefreshRate(DataPacket input) {
@@ -87,8 +93,7 @@ public class BotRenderer {
 
         int fps = (int) (ticks / (input.car.elapsedSeconds - initialTime));
 
-        // TODO: Render this somewhere else.
-        addDebugText(String.format("FPS: %d", fps), Color.PINK);
+        renderText(1825, 20, 1,"%d FPS", fps);
     }
 
     private void renderText() {
@@ -103,21 +108,6 @@ public class BotRenderer {
     }
 
     private final LinkedList<RenderedString> renderList = new LinkedList<>();
-    private String debugInfo;
-
-    private static String lor(double value) {
-        return value > 0 ? "RIGHT" : "LEFT";
-    }
-
-    private void renderOutput(ControlsOutput output) {
-        // TODO: Add Steering info
-        addDebugText(Color.MAGENTA, String.format("Throttle %f", output.getThrottle()));
-    }
-
-    // TODO: Creates branch info to make sure our bot isn't pinging back and forth strategies too often
-    public void addBranchInfo() {
-
-    }
 
     public void addDebugText(String text, Object... args) {
         addDebugText(Color.WHITE, text, args);
@@ -125,7 +115,70 @@ public class BotRenderer {
 
     public void addDebugText(Color color, String text, Object... args) {
         renderList.addFirst(new RenderedString(String.format(text, args), color));
-        debugInfo = String.format(text, args);
+    }
+
+    private float alertTimeSeconds;
+    private String alertText;
+
+    public void addAlertText(String alertText) {
+        this.alertText = alertText;
+    }
+
+    private void checkAlert(DataPacket input) {
+        if (alertText != null && alertTimeSeconds == 0) {
+            alertTimeSeconds = input.car.elapsedSeconds;
+        } else if (input.car.elapsedSeconds - alertTimeSeconds > 1) {
+            alertTimeSeconds = 0;
+            alertText = null;
+        }
+
+        if (alertText != null) {
+            renderText(Color.RED, 800, 400, 3, alertText);
+        }
+    }
+
+    private static class RenderedString {
+        final String text;
+        final Color color;
+
+        RenderedString(String text, Color color) {
+            this.text = text;
+            this.color = color;
+        }
+    }
+
+    private Strategist strategist;
+    private Tactic tactic;
+    private String branch;
+
+    private void renderControl() {
+        renderText(0, 300,"%s", strategist == null ? "NONE" : strategist.getType());
+        renderText(250, 300,"%s", tactic == null ? "NONE" : tactic.type);
+        renderText(500, 300,"%s", branch);
+    }
+
+    public void setStrategy(Strategist strategist) {
+        this.strategist = strategist;
+    }
+
+    public void setTactic(Tactic tactic) {
+        this.tactic = tactic;
+    }
+
+    public void setBranchInfo(String branch) {
+        this.branch = branch;
+    }
+
+    private static String lor(double value) {
+        return value > 0 ? "RIGHT" : value == 0 ? "NONE" : "LEFT";
+    }
+
+    private void renderOutput(ControlsOutput output) {
+        renderText(250, 340, String.format("Throttle %.2f", output.getThrottle()));
+        renderText(250, 370, String.format("Turn %.2f %s" , output.getSteer(), lor(output.getSteer())));
+        renderText(250, 400, String.format("Boost %s" , output.holdBoost()));
+        renderText(250, 430, String.format("Drift %s" , output.holdHandbrake()));
+        renderText(250, 460, String.format("Jump %s" , output.holdJump()));
     }
 
     private void renderAcceleration(DataPacket input) {
@@ -140,8 +193,8 @@ public class BotRenderer {
             // Delta V / Delta T
             int acceleration = (int) (deltaV / deltaT);
 
-            addDebugText(Color.green, String.format("Speed: %d", speed));
-            addDebugText(Color.PINK, String.format("Accel: %d", acceleration));
+            renderText(0, 340, String.format("Vel: %d", speed));
+            renderText(0, 370, String.format("Acc: %d", acceleration));
 
             previousVelocities.removeFirst();
             previousVelocityTimes.removeFirst();
@@ -152,24 +205,31 @@ public class BotRenderer {
 
         BallData relativeBallData = CarNormalUtils.noseNormalLocation(input);
 
-        // TODO: Move these to be rendered a different way.
-        addDebugText("Z: %d", (int) relativeBallData.position.z);
-        addDebugText("Y: %d", (int) relativeBallData.position.y);
-        addDebugText("X: %d", (int) relativeBallData.position.x);
+        renderText(0, 400, "Z: %d", (int) relativeBallData.position.z);
+        renderText(0, 430, "Y: %d", (int) relativeBallData.position.y);
+        renderText(0, 460, "X: %d", (int) relativeBallData.position.x);
 
-        addDebugText("dZ: %d", (int) relativeBallData.velocity.z);
-        addDebugText("dY: %d", (int) relativeBallData.velocity.y);
-        addDebugText("dX: %d", (int) relativeBallData.velocity.x);
+        renderText(0, 490, "dZ: %d", (int) relativeBallData.velocity.z);
+        renderText(0, 520, "dY: %d", (int) relativeBallData.velocity.y);
+        renderText(0, 550, "dX: %d", (int) relativeBallData.velocity.x);
     }
 
-    private class RenderedString {
-        final String text;
-        final Color color;
+    // Methods for rendering text on screen.
+    private void renderText(Color color, int x, int y, int size, String text, Object... args) {
+        Renderer renderer = getRenderer();
+        renderer.drawString2d(String.format(text, args), color, new Point(x, y), size, size);
+    }
 
-        RenderedString(String text, Color color) {
-            this.text = text;
-            this.color = color;
-        }
+    private void renderText(int x, int y, int size, String text, Object... args) {
+        renderText(Color.WHITE, x, y, size, text, args);
+    }
+
+    private void renderText(Color color, int x, int y, String text, Object... args) {
+        renderText(Color.WHITE, x, y, 2, text, args);
+    }
+
+    private void renderText(int x, int y, String text, Object... args) {
+        renderText(Color.WHITE, x, y, text, args);
     }
 
     // Unused.

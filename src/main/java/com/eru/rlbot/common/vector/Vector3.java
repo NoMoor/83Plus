@@ -100,4 +100,13 @@ public class Vector3 extends rlbot.vector.Vector3 {
         double tz = x * v.y - y * v.x;
         return new Vector3(tx, ty, tz);
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o instanceof Vector3) {
+            Vector3 other = (Vector3) o;
+            return x == other.z && y == other.y && z == other.z;
+        }
+        return false;
+    }
 }

@@ -41,6 +41,7 @@ public class Tactic {
     WALL_RIDE,
     DEFEND,
     DRIBBLE,
+    KICKOFF,
 
     // These may be more maneuvers and not tactics.
     FRONT_FLIP,

@@ -3,6 +3,7 @@ package com.eru.rlbot.bot.ballchaser.v1.strats;
 import static com.eru.rlbot.bot.common.Constants.ACCELERATION;
 import static com.eru.rlbot.bot.common.Constants.MAX_SPEED;
 
+import com.eru.rlbot.bot.ballchaser.v1.tactics.KickoffTactician;
 import com.eru.rlbot.bot.ballchaser.v1.tactics.Tactic;
 import com.eru.rlbot.bot.ballchaser.v1.tactics.TacticManager;
 import com.eru.rlbot.bot.common.BotRenderer;
@@ -29,9 +30,17 @@ public class AttackStrategist implements Strategist {
     this.tacticManager = new TacticManager(bot);
   }
 
-  // TODO: This method should actually do path finding for the 'goal'.
   @Override
   public boolean assign(DataPacket input) {
+    if (KickoffTactician.isKickOff(input)) {
+      tacticManager.addTactic(new Tactic(input.ball.position, Tactic.Type.KICKOFF));
+      return true;
+    }
+
+    return findPath(input); // This probably shouldn't be doing path finding.
+  }
+
+  private boolean findPath(DataPacket input) {
     // TODO: This should probably just adjust the spot that the ball is so any boosts or w/e can stay.
     try {
       double maxScore = Double.MAX_VALUE;
@@ -54,7 +63,7 @@ public class AttackStrategist implements Strategist {
       }
 
       // Hit the ball to the center of the goal.
-      createPath(input.car, new Tactic(bestTarget, Tactic.Type.DRIBBLE), Goal.opponentGoal(1).center);
+      createPath(input.car, new Tactic(bestTarget, Tactic.Type.HIT_BALL), Goal.opponentGoal(1).center);
 
       return true;
     } catch (Exception e) {
@@ -104,6 +113,9 @@ public class AttackStrategist implements Strategist {
 
   @Override
   public ControlsOutput execute(DataPacket input) {
+    // TODO: Decide how / when to set new tactics.
+    assign(input);
+
     ControlsOutput output = new ControlsOutput();
     tacticManager.execute(input, output);
     return output;
