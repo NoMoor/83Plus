@@ -1,8 +1,8 @@
 package com.eru.rlbot.bot.ballchaser.v1.strats;
 
-import rlbot.Bot;
+import com.eru.rlbot.bot.EruBot;
 
-public class Strategy {
+class Strategy {
 
   enum Type {
     ATTACK,
@@ -27,7 +27,7 @@ public class Strategy {
 //    DRIBBLE
   }
 
-  static Strategist stratigistForBot(Strategy.Type type, Bot bot) {
+  static Strategist strategistForBot(Strategy.Type type, EruBot bot) {
     switch (type) {
       case ATTACK:
         return new AttackStrategist(bot);

@@ -1,5 +1,6 @@
 package com.eru.rlbot.bot.ballchaser.v1;
 
+import com.eru.rlbot.bot.EruBot;
 import com.eru.rlbot.bot.ballchaser.v1.strats.StrategyManager;
 import com.eru.rlbot.bot.common.BotChatter;
 import com.eru.rlbot.bot.common.BotRenderer;
@@ -10,38 +11,17 @@ import com.eru.rlbot.common.dropshot.DropshotTileManager;
 import com.eru.rlbot.common.input.DataPacket;
 import com.eru.rlbot.common.jump.JumpManager;
 import com.eru.rlbot.common.output.ControlsOutput;
-import rlbot.Bot;
 import rlbot.ControllerState;
 import rlbot.flat.GameTickPacket;
 
-import static com.eru.rlbot.bot.common.Goal.opponentGoal;
-import static com.eru.rlbot.bot.common.Goal.ownGoal;
+public class BallChaserV1 extends EruBot {
 
-public class BallChaserV1 implements Bot {
-
-    private final int playerIndex;
-    private final Goal opponentsGoal;
-    private final Goal ownGoal;
-
-    private final StrategyManager stategyManager;
-
-    // TODO(ahatfield): How do I translate this into a goal that I want to score in?
-    private int team;
-
-    private final BotRenderer botRenderer;
-    private final BotChatter botChatter;
+    private final StrategyManager strategyManager;
 
     public BallChaserV1(int playerIndex, int team) {
-        this.playerIndex = playerIndex;
-        this.team = team;
+        super(playerIndex, team);
 
-        this.botRenderer = BotRenderer.forBot(this);
-        this.botChatter = BotChatter.forBot(this);
-
-        stategyManager = new StrategyManager(this);
-
-        opponentsGoal = opponentGoal(team);
-        ownGoal = ownGoal(team);
+        strategyManager = new StrategyManager(this);
     }
 
     /**
@@ -49,11 +29,9 @@ public class BallChaserV1 implements Bot {
      * Modify it to make your bot smarter!
      */
     private ControlsOutput processInput(DataPacket input) {
-
         SpeedManager.trackSuperSonic(input);
-        stategyManager.updateStrategy(input);
 
-        return stategyManager.executeStrategy(input);
+        return strategyManager.executeStrategy(input);
     }
 
     /**

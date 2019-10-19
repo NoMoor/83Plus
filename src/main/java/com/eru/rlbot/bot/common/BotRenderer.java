@@ -173,12 +173,19 @@ public class BotRenderer {
         return value > 0 ? "RIGHT" : value == 0 ? "NONE" : "LEFT";
     }
 
+    private String ud(float value) {
+        return value > 0 ? "UP" : value == 0 ? "NONE" : "DOWN";
+    }
+
     private void renderOutput(ControlsOutput output) {
         renderText(250, 340, String.format("Throttle %.2f", output.getThrottle()));
         renderText(250, 370, String.format("Turn %.2f %s" , output.getSteer(), lor(output.getSteer())));
         renderText(250, 400, String.format("Boost %s" , output.holdBoost()));
         renderText(250, 430, String.format("Drift %s" , output.holdHandbrake()));
         renderText(250, 460, String.format("Jump %s" , output.holdJump()));
+        renderText(250, 490, String.format("Pitch %.2f %s" , output.getPitch(), ud(output.getPitch())));
+        renderText(250, 520, String.format("Yaw %.2f %s" , output.getYaw(), lor(output.getYaw())));
+        renderText(250, 550, String.format("Roll %.2f %s" , output.getRoll(), lor(output.getRoll())));
     }
 
     private void renderAcceleration(DataPacket input) {

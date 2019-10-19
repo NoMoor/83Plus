@@ -26,7 +26,7 @@ public class Tactic {
     this.type = type;
   }
 
-  public boolean isDone(DataPacket input) {
+  boolean isDone(DataPacket input) {
     if (input.car.position.distance(target.position) < MIN_DISTANCE) {
       return true;
     }
@@ -44,6 +44,7 @@ public class Tactic {
     KICKOFF,
 
     // These may be more maneuvers and not tactics.
+    WAVE_DASH,
     FRONT_FLIP,
     DOUBLE_JUMP,
     HALF_FLIP,

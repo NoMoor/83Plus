@@ -27,13 +27,13 @@ class KickOff(TrainingExercise):
             cars={
                 0: CarState(
                     physics=Physics(
-                        location=Vector3(self.car_start_x, self.car_start_y, 0),
+                        location=Vector3(self.car_start_x, self.car_start_y, 16.5),
                         rotation=Rotator(0, self.car_yaw, 0),
                         velocity=Vector3(0, 0, 0),
                         angular_velocity=Vector3(0, 0, 0)),
                     boost_amount=33)
             },
-            boosts={1: BoostState(100)},
+            boosts={7: BoostState(100), 13: BoostState(100)},
         )
 
 def make_default_playlist() -> Playlist:

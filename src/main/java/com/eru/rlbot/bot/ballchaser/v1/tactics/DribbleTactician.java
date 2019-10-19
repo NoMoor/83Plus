@@ -1,12 +1,12 @@
 package com.eru.rlbot.bot.ballchaser.v1.tactics;
 
+import com.eru.rlbot.bot.EruBot;
 import com.eru.rlbot.bot.common.*;
 import com.eru.rlbot.common.input.BallData;
 import com.eru.rlbot.common.input.CarData;
 import com.eru.rlbot.common.input.DataPacket;
 import com.eru.rlbot.common.output.ControlsOutput;
 import com.eru.rlbot.common.vector.Vector3;
-import rlbot.Bot;
 
 import java.awt.*;
 
@@ -27,10 +27,14 @@ public class DribbleTactician implements Tactician {
   private static final Vector3 target_right = Goal.opponentGoal(1).right;
   private static final Vector3 ownGoal = Goal.opponentGoal(0).center;
 
-  private final BotRenderer renderer;
+  private final EruBot bot;
 
-  DribbleTactician(Bot bot) {
-    renderer = BotRenderer.forBot(bot);
+  DribbleTactician(EruBot bot) {
+    this.bot = bot;
+  }
+
+  public static boolean canDribble(DataPacket input) {
+    return input.ball.position.z > input.car.position.distance(input.ball.position);
   }
 
   @Override
@@ -70,13 +74,13 @@ public class DribbleTactician implements Tactician {
     if (tooFarLeft) {
       moveBallTo(OCTANE_BALANCE_POINT, input, relativeBallData, output);
       output.withSteer(-0.5f); // Hard left.
-      renderer.addDebugText("Hard Left");
+      bot.botRenderer.addDebugText("Hard Left");
     } else if (tooFarRight) {
       moveBallTo(OCTANE_BALANCE_POINT, input, relativeBallData, output);
       output.withSteer(0.5f); // Hard right.
-      renderer.addDebugText("Hard Right");
+      bot.botRenderer.addDebugText("Hard Right");
     } else if (needToTurnMore && canTurnMore) {
-      renderer.addDebugText("Dribble start turn");
+      bot.botRenderer.addDebugText("Dribble start turn");
 
       // TODO: Figure out how much more throttle to give.
       moveBallTo(OCTANE_BALANCE_POINT, input, relativeBallData, output); // TODO: Make speed / distance dependent
@@ -87,7 +91,7 @@ public class DribbleTactician implements Tactician {
       // Turn opposite the correction angle to get the ball to move the other way.
       output.withSteer(steeringInput);
     } else {
-      renderer.addDebugText(isPointingAtTarget ? "GOOOOOAAAAL" : "Stop dribble fall.");
+      bot.botRenderer.addDebugText(isPointingAtTarget ? "GOOOOOAAAAL" : "Stop dribble fall.");
 
       balanceFrontBack(input, relativeBallData, output);
       balanceLeftRight(input, relativeBallData, output);
@@ -115,7 +119,7 @@ public class DribbleTactician implements Tactician {
       value = -value;
     }
 
-    renderer.addDebugText("Correction Value: %f", value);
+    bot.botRenderer.addDebugText("Correction Value: %f", value);
 
     return value;
   }
@@ -129,13 +133,13 @@ public class DribbleTactician implements Tactician {
       // Ball is behind you but catching up. Make slight x adjustment if needed
       if (Math.abs(relativeBallData.velocity.x) > 10) { // #Arbitrary threshold
         double steerAngle = -relativeBallData.velocity.x / 400;
-        renderer.addDebugText("Catch turn");
+        bot.botRenderer.addDebugText("Catch turn");
         output.withSteer(steerAngle);
       }
     } else {
       double correctionAngle = Angles.flatCorrectionDirection(input.car, input.ball.position);
 
-      renderer.addDebugText("Catch 2 Turn");
+      bot.botRenderer.addDebugText("Catch 2 Turn");
       output.withSteer(correctionAngle);
     }
   }
@@ -145,13 +149,13 @@ public class DribbleTactician implements Tactician {
 
     if (Math.abs(correctionAngle) > 2.5f) {
       // Prefer turning toward your own goal.
-      renderer.addDebugText("Ground Turn to Goal");
+      bot.botRenderer.addDebugText("Ground Turn to Goal");
       double goalCorrectionAngle = Angles.flatCorrectionDirection(input.car, ownGoal);
 
       // If the goal and the ball are both far turns, turn toward the goal.
       output.withSteer(Math.abs(goalCorrectionAngle) > 1 ? goalCorrectionAngle : correctionAngle);
     } else if (Math.abs(correctionAngle) > .05) {
-      renderer.addDebugText("Ground Turn to ball");
+      bot.botRenderer.addDebugText("Ground Turn to ball");
       output.withSteer(correctionAngle);
     }
   }
@@ -161,11 +165,11 @@ public class DribbleTactician implements Tactician {
     if (isDribblingTooFast(input) && false) {
       slowDown(input, relativeBallData, output);
     } else if (isDribblingTooSlow(input) && false) {
-      renderer.addDebugText(Color.ORANGE, "Speed up!");
+      bot.botRenderer.addDebugText(Color.ORANGE, "Speed up!");
       speedUp(input, relativeBallData, output);
     } else {
       // Balance
-//      renderer.addDebugText(Color.green, "Balance!");
+//      bot.botRenderer.addDebugText(Color.green, "Balance!");
       moveBallTo(OCTANE_BALANCE_POINT, input, relativeBallData, output);
     }
   }
@@ -181,10 +185,10 @@ public class DribbleTactician implements Tactician {
   private void speedUp(DataPacket input, BallData relativeBallData, ControlsOutput output) {
     double speedDeficit = IDEAL_DRIBBLE_SPEED - input.ball.velocity.flatten().magnitude();
     if (speedDeficit < 200) {
-      renderer.addDebugText(Color.orange, "Speed up small");
+      bot.botRenderer.addDebugText(Color.orange, "Speed up small");
       moveBallTo(10f, input, relativeBallData, output);
     } else {
-      renderer.addDebugText(Color.red, "Speed up big");
+      bot.botRenderer.addDebugText(Color.red, "Speed up big");
       moveBallTo(25f, input, relativeBallData, output);
     }
   }
@@ -192,10 +196,10 @@ public class DribbleTactician implements Tactician {
   private void slowDown(DataPacket input, BallData relativeBallData, ControlsOutput output) {
     double speedSurplus = input.ball.velocity.flatten().magnitude() - IDEAL_DRIBBLE_SPEED;
     if (speedSurplus < 200) {
-      renderer.addDebugText(Color.orange, "Slow small");
+      bot.botRenderer.addDebugText(Color.orange, "Slow small");
       moveBallTo(-25f, input, relativeBallData, output);
     } else {
-      renderer.addDebugText(Color.red, "Slow big");
+      bot.botRenderer.addDebugText(Color.red, "Slow big");
       moveBallTo(-40f, input, relativeBallData, output);
     }
   }
@@ -215,13 +219,13 @@ public class DribbleTactician implements Tactician {
       if (relativeBallVelocity > 0) {
         // The ball is moving forward. Check how quickly.
         if (diffLocation > relativeBallVelocity) {
-          renderer.addDebugText(Color.CYAN, "Wait on it...");
+          bot.botRenderer.addDebugText(Color.CYAN, "Wait on it...");
           // The ball will get there eventually… Either break, coast, or low throttle
           output.withThrottle(0.0);
         } else {
           // The ball will get to the new location soon. Speed up to catch it.
 
-          renderer.addDebugText("Overshoot", Color.CYAN);
+          bot.botRenderer.addDebugText("Overshoot", Color.CYAN);
           // How much will we overshoot in one second.
           double overShoot = relativeBallVelocity - diffLocation;
           // Determine how much acceleration we need.
@@ -243,9 +247,9 @@ public class DribbleTactician implements Tactician {
         // The ball is moving forward.
         if (relativeBallVelocity > momentOfAcceleration) {
           output.withBoost();
-          renderer.addDebugText(Color.RED, "Falling ball: BOOST");
+          bot.botRenderer.addDebugText(Color.RED, "Falling ball: BOOST");
         } else {
-          renderer.addDebugText("Move ball back: gas");
+          bot.botRenderer.addDebugText("Move ball back: gas");
           float vDiff = relativeBallVelocity - momentOfAcceleration;
           output.withThrottle(vDiff / diffLocation); // Both negative = positive throttle.
         }
@@ -256,7 +260,7 @@ public class DribbleTactician implements Tactician {
           output.withThrottle(-1f); // Break.
         } else if ((ticks > .1f && momentOfAcceleration < 200f) || ticks > 3f) {
           output.withBoost();
-          renderer.addDebugText(Color.PINK, "Impatient: BOOST");
+          bot.botRenderer.addDebugText(Color.PINK, "Impatient: BOOST");
         } else if (ticks > 1.5f) {
           output.withThrottle(0.4f);
         } else if (ticks > 1f) {
@@ -264,7 +268,7 @@ public class DribbleTactician implements Tactician {
         } else {
           output.withThrottle(0f);
         }
-        renderer.addDebugText(Color.CYAN, String.format("Move ball back: ticks %f", ticks));
+        bot.botRenderer.addDebugText(Color.CYAN, String.format("Move ball back: ticks %f", ticks));
       }
     }
   }
@@ -276,10 +280,10 @@ public class DribbleTactician implements Tactician {
     if (newOffset < previousOffset) {
       // Go straight?
       // TODO(10/17/19): Figure out if this is going to overshoot the car and perhaps we should turn the opposite direction.
-      renderer.addDebugText("Balance LR: Do NOT turn.");
+      bot.botRenderer.addDebugText("Balance LR: Do NOT turn.");
     } else {
       float turn = relativeBallData.velocity.x / 50f; // Negative x is right.
-      renderer.addDebugText("Balance LF: Sharp turn");
+      bot.botRenderer.addDebugText("Balance LF: Sharp turn");
       output.withSteer(turn);
     }
   }
@@ -304,36 +308,36 @@ public class DribbleTactician implements Tactician {
 
     if (ticksToBall < 0) {
       // We are going to overrun the ball.
-      renderer.addDebugText(Color.RED, "Slow Down!");
+      bot.botRenderer.addDebugText(Color.RED, "Slow Down!");
       output.withThrottle(distanceToCatchPoint > 0 ? 1f : 0f);
     } else if (ballSpeed > carSpeed || ticksToBall > ticksToCar) {
       // The ball is getting away or the ball will hit the ground before we get there.
-      renderer.addDebugText(Color.YELLOW, "Behind");
+      bot.botRenderer.addDebugText(Color.YELLOW, "Behind");
       output.withThrottle(1.0f);
 
     // Good place to catch the ball. Match speed
     } else if (carSpeed >= ballSpeed && ticksToBall < ticksToCar){
-      renderer.addDebugText(Color.YELLOW, "Feather");
+      bot.botRenderer.addDebugText(Color.YELLOW, "Feather");
 
       // Throttle to maintain speed
       output.withThrottle(.02);
 
     } else {
-      renderer.addDebugText(Color.BLACK, "Default catch");
+      bot.botRenderer.addDebugText(Color.BLACK, "Default catch");
       output.withThrottle(0.5f);
     }
     // Direction
-//    renderer.addDebugText(String.format("TTC: %f", ticksToCar), Color.white);
-//    renderer.addDebugText(String.format("TTB: %f", ticksToBall), Color.white);
+//    bot.botRenderer.addDebugText(String.format("TTC: %f", ticksToCar), Color.white);
+//    bot.botRenderer.addDebugText(String.format("TTB: %f", ticksToBall), Color.white);
   }
 
   private boolean ballIsOnGround(DataPacket input) {
     boolean initialPosition = input.ball.velocity.z == 0 && input.ball.position.z < 150;
     boolean onGround = input.ball.position.z <= BALL_SIZE;
 //    if (onGround || initialPosition) {
-//      renderer.addDebugText("Ball on Ground", Color.RED);
+//      bot.botRenderer.addDebugText("Ball on Ground", Color.RED);
 //    } else {
-//      renderer.addDebugText("Ball in Air", Color.GREEN);
+//      bot.botRenderer.addDebugText("Ball in Air", Color.GREEN);
 //    }
     return onGround || initialPosition;
   }
@@ -345,9 +349,9 @@ public class DribbleTactician implements Tactician {
     boolean striking = Math.abs(relativeBallData.velocity.z) > 300;
 
 //    if (heightOnCar && locationOnCar) {
-//      renderer.addDebugText("Ball on Car", Color.GREEN);
+//      bot.botRenderer.addDebugText("Ball on Car", Color.GREEN);
 //    } else {
-//      renderer.addDebugText("Ball not on Car", Color.RED);
+//      bot.botRenderer.addDebugText("Ball not on Car", Color.RED);
 //    }
     return heightOnCar && locationOnCar && !striking;
   }

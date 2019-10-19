@@ -1,15 +1,13 @@
 package com.eru.rlbot.bot.ballchaser.v1.strats;
 
+import com.eru.rlbot.bot.EruBot;
 import com.eru.rlbot.bot.ballchaser.v1.tactics.Tactic;
-import com.eru.rlbot.bot.common.BotRenderer;
 import com.eru.rlbot.common.boost.BoostPad;
 import com.eru.rlbot.common.input.DataPacket;
 import com.eru.rlbot.common.output.ControlsOutput;
 import com.eru.rlbot.common.vector.Vector2;
 import com.eru.rlbot.common.vector.Vector3;
-import rlbot.Bot;
 
-import java.awt.*;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
@@ -23,42 +21,68 @@ public class StrategyManager {
 
   private static final Tactic LEFT_WALL_TACTIC = new Tactic(LEFT_SIDE_WALL, Tactic.Type.HIT_BALL);
   private static final Tactic RIGHT_WALL_TACTIC = new Tactic(RIGHT_SIDE_WALL, Tactic.Type.HIT_BALL);
+  private static final float STRATEGY_UPDATE_INTERVAL = .5F;
 
   private static boolean grabBoostStrat = false;
   private static boolean wallRideStrat = false;
   private static boolean hitBallStrat = true;
-  private final BotRenderer botRenderer;
 
   // DO NOT MODIFY
   private Map<Strategy.Type, Strategist> strategists = new HashMap<>();
 
   private Strategist active;
 
-  private Bot bot;
+  private EruBot bot;
 
   private Vector3 lastBallPosition;
   private Vector3 lastCarPosition;
   private float resetTime;
+  private float lastStrategyUpdateTime;
 
-  public StrategyManager(Bot bot) {
+  public StrategyManager(EruBot bot) {
     this.bot = bot;
-    this.botRenderer = BotRenderer.forBot(bot);
     for(Strategy.Type type : Strategy.Type.values()) {
-      strategists.put(type, Strategy.stratigistForBot(type, bot));
+      strategists.put(type, Strategy.strategistForBot(type, bot));
     }
+    active = strategists.get(Strategy.Type.ATTACK);
   }
 
-  // TODO this only periodically.
-  public void updateStrategy(DataPacket input) {
-    if (checkPause(input)) {
-      return;
+  public ControlsOutput executeStrategy(DataPacket input) {
+    if (lastStrategyUpdateTime == 0 || input.car.elapsedSeconds - lastStrategyUpdateTime > STRATEGY_UPDATE_INTERVAL) {
+      lastStrategyUpdateTime = input.car.elapsedSeconds;
+      updateStrategy(input);
     }
 
-    if (active == null || active.getType() != Strategy.Type.ATTACK) {
-      active = strategists.get(Strategy.Type.ATTACK);
-      if (!active.assign(input)) {
-        active = null;
+    ControlsOutput output = active.execute(input);
+
+    bot.botRenderer.setStrategy(active);
+
+    updateCarAndBallTracking(input);
+    return output;
+  }
+
+  /** Called every x ticks to get the best strategy. */
+  private void updateStrategy(DataPacket input) {
+    if (checkReset(input)) {
+//      return; // TODO: Is this needed?
+    }
+
+    Strategist newStrategist;
+    if (DefendStategist.shouldDefend(input)) {
+      newStrategist = strategists.get(Strategy.Type.DEFEND);
+    } else if (AttackStrategist.shouldAttack(input)) {
+      newStrategist = strategists.get(Strategy.Type.ATTACK);
+    } else {
+      newStrategist = strategists.get(Strategy.Type.SUPPORT);
+    }
+
+    if (newStrategist != active) {
+      if (active != null) {
+        active.abort();
       }
+
+      active = newStrategist;
+      active.assign(input);
     }
 
     // TODO: Find a place for this code.
@@ -84,15 +108,17 @@ public class StrategyManager {
 //    }
   }
 
-  private boolean checkPause(DataPacket input) {
-    if (active != null && ballHasJumped(input) && carHasJumped(input)) {
+  private boolean checkReset(DataPacket input) {
+    boolean ballJumped = ballHasJumped(input);
+    boolean carJumped = carHasJumped(input);
+    if (active != null && (ballJumped || carJumped)) {
       active.abort();
       active = null;
       resetTime = input.car.elapsedSeconds;
     }
 
+    // Use a reset delay for unit tests to make sure the car isn't shaking.
     if (resetTime != 0 && resetTime + RESET_DELAY > input.car.elapsedSeconds) {
-      botRenderer.addAlertText("RESET: Wait...");
       return true;
     }
 
@@ -134,20 +160,5 @@ public class StrategyManager {
                                      - flatPosition.distance(b.getLocation().flatten())) / 2000;
       return angleValue + distanceValue;
     };
-  }
-
-  public ControlsOutput executeStrategy(DataPacket input) {
-    ControlsOutput output;
-    if (active == null) {
-      // Park this frame.
-      output = new ControlsOutput();
-    } else {
-      output = active.execute(input);
-    }
-
-    botRenderer.setStrategy(active);
-
-    updateCarAndBallTracking(input);
-    return output;
   }
 }

@@ -1,12 +1,11 @@
 package com.eru.rlbot.bot.ballchaser.v1.tactics;
 
+import com.eru.rlbot.bot.EruBot;
 import com.eru.rlbot.bot.common.BotRenderer;
-import com.eru.rlbot.bot.common.Goal;
 import com.eru.rlbot.common.input.CarData;
 import com.eru.rlbot.common.input.DataPacket;
 import com.eru.rlbot.common.output.ControlsOutput;
 import com.eru.rlbot.common.vector.Vector3;
-import rlbot.Bot;
 import rlbot.manager.BotLoopRenderer;
 import rlbot.render.Renderer;
 
@@ -17,22 +16,26 @@ import java.util.Map;
 
 public class TacticManager {
 
+  private final Tactic defendTactic;
+  private final Tactic dribbleTactic;
+  private final Tactic defaultTactic;
+
   private final BotRenderer botRenderer;
   private LinkedList<Tactic> tacticList = new LinkedList<>();
-  private Map<Tactic.Type, Tactician> TACTICIAN_MAP = new HashMap<>();
+  private final Map<Tactic.Type, Tactician> TACTICIAN_MAP = new HashMap<>();
 
-  private static Tactic DEFEND_TACTIC = new Tactic(Goal.ownGoal(0).center, Tactic.Type.DEFEND);
-  private static Tactic DRIBBLE_TACTIC = new Tactic(Goal.ownGoal(0).center, Tactic.Type.DRIBBLE);
-  private static Tactic DEFAULT_TACTIC = DRIBBLE_TACTIC;
-
-  private final Bot bot;
+  private final EruBot bot;
 
   // Mostly here to draw nice lines.
   private Vector3 endGoal;
 
-  public TacticManager(Bot bot) {
+  public TacticManager(EruBot bot) {
     this.bot = bot;
     this.botRenderer = BotRenderer.forBot(bot);
+
+    defendTactic = new Tactic(bot.ownGoal.center, Tactic.Type.DEFEND);
+    dribbleTactic = new Tactic(bot.opponentsGoal.center, Tactic.Type.DRIBBLE);
+    defaultTactic = dribbleTactic;
 
     TACTICIAN_MAP.put(Tactic.Type.FRONT_FLIP, new FlipTactician());
     TACTICIAN_MAP.put(Tactic.Type.WALL_RIDE, new SideWallTactician());
@@ -40,6 +43,7 @@ public class TacticManager {
     TACTICIAN_MAP.put(Tactic.Type.DEFEND, new BackupTactician());
     TACTICIAN_MAP.put(Tactic.Type.DRIBBLE, new DribbleTactician(bot));
     TACTICIAN_MAP.put(Tactic.Type.KICKOFF, new KickoffTactician(bot));
+    TACTICIAN_MAP.put(Tactic.Type.WAVE_DASH, new WaveDashTactician(bot));
   }
 
   // TODO: Probably don't want to call this.
@@ -52,7 +56,7 @@ public class TacticManager {
   }
 
   private Tactic nextTactic() {
-    return tacticList.isEmpty() ? DEFAULT_TACTIC : tacticList.get(0);
+    return tacticList.isEmpty() ? defaultTactic : tacticList.get(0);
   }
 
   public void addTactic(Tactic tactic) {
@@ -111,7 +115,7 @@ public class TacticManager {
   }
 
   private Tactic getTactic() {
-    return tacticList.isEmpty() ? DEFAULT_TACTIC : tacticList.get(0);
+    return tacticList.isEmpty() ? defaultTactic : tacticList.get(0);
   }
 
   private Tactician getTactician() {

@@ -1,6 +1,9 @@
 package com.eru.rlbot.bot.ballchaser.v1.tactics;
 
+import com.eru.rlbot.bot.EruBot;
+import com.eru.rlbot.bot.common.Angles;
 import com.eru.rlbot.bot.common.BotRenderer;
+import com.eru.rlbot.bot.common.Goal;
 import com.eru.rlbot.common.input.DataPacket;
 import com.eru.rlbot.common.output.ControlsOutput;
 import com.eru.rlbot.common.vector.Vector2;
@@ -11,13 +14,14 @@ import java.awt.*;
 
 import static com.eru.rlbot.bot.common.Constants.HALF_LENGTH;
 
-
 public class RollingTactician implements Tactician {
 
-  private final BotRenderer botRenderer;
+  private final EruBot bot;
 
-  RollingTactician(Bot bot) {
-    this.botRenderer = BotRenderer.forBot(bot);
+  private boolean amBoosting;
+
+  RollingTactician(EruBot bot) {
+    this.bot = bot;
   }
 
   @Override
@@ -35,30 +39,61 @@ public class RollingTactician implements Tactician {
             && Math.abs(input.car.position.x) > 3000 // Near the wall
             && input.car.position.z < 20) { // On the ground
 
-      Vector2 targetVector = targetPosition.flatten();
-
-      // TODO(ahatfield): This only works for side walls.
-      // TODO(ahatfield): Fix this. The x coordinate is positive the other way.
-      // Project the height of the ball into the wall.
-      float xVector = targetPosition.x > 0 ? targetPosition.z : targetPosition.z * -1;
-      // If you are going down field, you need to rid up the wall sooner.
-      float yVector = HALF_LENGTH - Math.abs(targetPosition.x) * (input.car.velocity.y > 0 ? 1 : -1);
-
-      Vector2 projectedVector = new Vector2(xVector, yVector);
-      Vector2 wallAdjustedVector = targetVector.plus(projectedVector);
-      botRenderer.renderProjection(input.car, wallAdjustedVector);
-
-      // Determine angle with the wall.
-      flatCorrectionAngle = -1 * carDirection.correctionAngle(wallAdjustedVector);
+      flatCorrectionAngle = wallRideCorrectionAngle(input, nextTactic);
     } else {
       // How far does the car need to rotate before it's pointing exactly at the ball?
-      flatCorrectionAngle = -1 * carDirection.correctionAngle(carToTarget.flatten());
+      flatCorrectionAngle = Angles.flatCorrectionDirection(input.car, targetPosition);
     }
 
-    botRenderer.addDebugText(Color.green, String.format("Distance: %d", (int) input.ball.position.distance(input.car.position)));
-
     output.withSteer((float) flatCorrectionAngle)
-        .withSlide(Math.abs(flatCorrectionAngle) > 2)
+        .withSlide(Math.abs(flatCorrectionAngle) > 1)
         .withThrottle(1);
+
+    boostToShoot(input, output, flatCorrectionAngle);
+  }
+
+  private double wallRideCorrectionAngle(DataPacket input, Tactic nextTactic) {
+    bot.botRenderer.setBranchInfo("Wall Ride");
+
+    Vector2 carDirection = input.car.orientation.noseVector.flatten();
+    Vector3 targetPosition = nextTactic.target.position;
+    Vector3 carToTarget = targetPosition.minus(input.car.position);
+
+    Vector2 targetVector = targetPosition.flatten();
+
+    // TODO(ahatfield): This only works for side walls.
+    // TODO(ahatfield): Fix this. The x coordinate is positive the other way.
+    // Project the height of the ball into the wall.
+    float xVector = targetPosition.x > 0 ? targetPosition.z : targetPosition.z * -1;
+    // If you are going down field, you need to rid up the wall sooner.
+    float yVector = HALF_LENGTH - Math.abs(targetPosition.x) * (input.car.velocity.y > 0 ? 1 : -1);
+
+    Vector2 projectedVector = new Vector2(xVector, yVector);
+    Vector2 wallAdjustedVector = targetVector.plus(projectedVector);
+
+    bot.botRenderer.renderProjection(input.car, wallAdjustedVector);
+
+    // Determine angle with the wall.
+    return Angles.flatCorrectionAngle(
+        input.car.position.flatten(),
+        input.car.orientation.noseVector.flatten(),
+        wallAdjustedVector);
+  }
+
+  private void boostToShoot(DataPacket input, ControlsOutput output, double flatCorrectionAngle) {
+    if ((input.car.boost > 12 || amBoosting) && Math.abs(flatCorrectionAngle) < .2) {
+
+      double goalCorrectionAngle =
+          Angles.flatCorrectionAngle(input.car.position, input.car.orientation.noseVector, bot.opponentsGoal.center);
+
+      if (goalCorrectionAngle < .2) {
+        output.withBoost();
+        amBoosting = true;
+      } else {
+        amBoosting = false;
+      }
+    } else {
+      amBoosting = false;
+    }
   }
 }
