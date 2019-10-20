@@ -57,7 +57,7 @@ public class KickoffTactician implements Tactician {
   }
 
   @Override
-  public void execute(ControlsOutput output, DataPacket input, Tactic nextTactic) {
+  public void execute(DataPacket input, ControlsOutput output, Tactic nextTactic) {
     if (nextTactic != tactic) {
       tactic = nextTactic;
       setStartLocation(input.car);

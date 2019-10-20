@@ -5,7 +5,6 @@ import com.eru.rlbot.bot.ballchaser.v1.tactics.DribbleTactician;
 import com.eru.rlbot.bot.ballchaser.v1.tactics.KickoffTactician;
 import com.eru.rlbot.bot.ballchaser.v1.tactics.Tactic;
 import com.eru.rlbot.bot.ballchaser.v1.tactics.TacticManager;
-import com.eru.rlbot.bot.common.Goal;
 import com.eru.rlbot.common.input.DataPacket;
 import com.eru.rlbot.common.output.ControlsOutput;
 
@@ -26,7 +25,7 @@ public class AttackStrategist implements Strategist {
 
   @Override
   public boolean assign(DataPacket input) {
-    tacticManager.addTactic(new Tactic(Goal.opponentGoal(input.team).center, Tactic.Type.WAVE_DASH));
+    tacticManager.addTactic(new Tactic(input.ball.position, Tactic.Type.WAVE_DASH));
     if (true) return true;
 
     if (KickoffTactician.isKickOff(input)) {

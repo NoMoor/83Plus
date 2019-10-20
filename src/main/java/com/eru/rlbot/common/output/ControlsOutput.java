@@ -47,9 +47,17 @@ public class ControlsOutput implements ControllerState {
         return this;
     }
 
+    public ControlsOutput withPitch(double pitch) {
+        return withPitch((float) pitch);
+    }
+
     public ControlsOutput withYaw(float yaw) {
         this.yaw = clamp(yaw);
         return this;
+    }
+
+    public ControlsOutput withYaw(double yaw) {
+        return withYaw((float) yaw);
     }
 
     public ControlsOutput withRoll(float roll) {

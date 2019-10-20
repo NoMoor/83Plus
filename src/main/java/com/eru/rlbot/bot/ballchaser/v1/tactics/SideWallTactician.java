@@ -6,7 +6,7 @@ import com.eru.rlbot.common.output.ControlsOutput;
 public class SideWallTactician implements Tactician {
 
   @Override
-  public void execute(ControlsOutput output, DataPacket input, Tactic nextTactic) {
+  public void execute(DataPacket input, ControlsOutput output, Tactic nextTactic) {
 
   }
 }

@@ -2,15 +2,10 @@ package com.eru.rlbot.bot.ballchaser.v1.tactics;
 
 import com.eru.rlbot.bot.EruBot;
 import com.eru.rlbot.bot.common.Angles;
-import com.eru.rlbot.bot.common.BotRenderer;
-import com.eru.rlbot.bot.common.Goal;
 import com.eru.rlbot.common.input.DataPacket;
 import com.eru.rlbot.common.output.ControlsOutput;
 import com.eru.rlbot.common.vector.Vector2;
 import com.eru.rlbot.common.vector.Vector3;
-import rlbot.Bot;
-
-import java.awt.*;
 
 import static com.eru.rlbot.bot.common.Constants.HALF_LENGTH;
 
@@ -25,7 +20,7 @@ public class RollingTactician implements Tactician {
   }
 
   @Override
-  public void execute(ControlsOutput output, DataPacket input, Tactic nextTactic) {
+  public void execute(DataPacket input, ControlsOutput output, Tactic nextTactic) {
     Vector2 carDirection = input.car.orientation.noseVector.flatten();
     Vector3 targetPosition = nextTactic.target.position;
 

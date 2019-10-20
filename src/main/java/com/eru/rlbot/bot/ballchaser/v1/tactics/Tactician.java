@@ -5,5 +5,5 @@ import com.eru.rlbot.common.output.ControlsOutput;
 
 public interface Tactician {
 
-  void execute(ControlsOutput output, DataPacket input, Tactic nextTactic);
+  void execute(DataPacket input, ControlsOutput output, Tactic nextTactic);
 }

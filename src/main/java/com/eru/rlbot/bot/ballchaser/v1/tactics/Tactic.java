@@ -71,7 +71,24 @@ public class Tactic {
     return target.position;
   }
 
+  @Override
   public String toString() {
     return type.name();
+  }
+
+  @Override
+  public int hashCode() {
+    return -1;
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (o == this) return true;
+    if (o instanceof Tactic) {
+      Tactic t = (Tactic) o;
+      return this.type == t.type && this.target.equals(t.target);
+    }
+
+    return false;
   }
 }

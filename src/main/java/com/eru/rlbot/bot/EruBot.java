@@ -14,9 +14,8 @@ public abstract class EruBot implements Bot {
   public final Goal ownGoal;
   public final int team;
   public final BotRenderer botRenderer;
-
-  private final int playerIndex;
-  private final BotChatter botChatter;
+  protected final int playerIndex;
+  protected final BotChatter botChatter;
 
   public EruBot(int playerIndex, int team) {
     this.playerIndex = playerIndex;

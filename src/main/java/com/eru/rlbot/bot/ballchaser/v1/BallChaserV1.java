@@ -2,9 +2,6 @@ package com.eru.rlbot.bot.ballchaser.v1;
 
 import com.eru.rlbot.bot.EruBot;
 import com.eru.rlbot.bot.ballchaser.v1.strats.StrategyManager;
-import com.eru.rlbot.bot.common.BotChatter;
-import com.eru.rlbot.bot.common.BotRenderer;
-import com.eru.rlbot.bot.common.Goal;
 import com.eru.rlbot.common.boost.BoostManager;
 import com.eru.rlbot.common.boost.SpeedManager;
 import com.eru.rlbot.common.dropshot.DropshotTileManager;

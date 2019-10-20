@@ -60,7 +60,9 @@ public class TacticManager {
   }
 
   public void addTactic(Tactic tactic) {
-    tacticList.add(tactic);
+    if (!tactic.equals(getLastTactic())) { // TODO: Do something better here.
+      tacticList.add(tactic);
+    }
   }
 
   public void setTactic(Tactic tactic) {
@@ -69,20 +71,14 @@ public class TacticManager {
   }
 
   public void execute(DataPacket input, ControlsOutput output) {
-    if (nextTactic().isDone(input)) {
-      tacticList.pop();
-    }
-
-    getTactician().execute(output, input, getTactic());
-
-    boolean result = true;
+    getTactician().execute(input, output, getTactic());
 
     botRenderer.setTactic(getTactic());
 
     renderTactics(input.car);
 
-    if (result && !tacticList.isEmpty()) {
-      tacticList.removeFirst();
+    if (nextTactic().isDone(input)) {
+      tacticList.pop();
     }
   }
 
@@ -115,7 +111,11 @@ public class TacticManager {
   }
 
   private Tactic getTactic() {
-    return tacticList.isEmpty() ? defaultTactic : tacticList.get(0);
+    return tacticList.isEmpty() ? defaultTactic : tacticList.getFirst();
+  }
+
+  private Tactic getLastTactic() {
+    return tacticList.isEmpty() ? defaultTactic : tacticList.getLast();
   }
 
   private Tactician getTactician() {

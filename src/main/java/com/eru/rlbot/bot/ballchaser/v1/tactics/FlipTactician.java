@@ -25,7 +25,7 @@ public class FlipTactician implements Tactician {
   }
 
   @Override
-  public void execute(ControlsOutput output, DataPacket input, Tactic nextTactic) {
+  public void execute(DataPacket input, ControlsOutput output, Tactic nextTactic) {
     double flatCorrectionAngle = Angles.flatCorrectionDirection(input.car, targetPosition);
 
     // Do a front flip.

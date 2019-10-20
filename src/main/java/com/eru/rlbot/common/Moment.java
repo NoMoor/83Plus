@@ -7,7 +7,7 @@ public class Moment {
 
   public final Vector3 velocity;
   public final Vector3 position;
-  public float time;
+  public final float time;
 
   public Moment(Vector3 position) {
     this(position, new Vector3(), 300);
@@ -23,5 +23,18 @@ public class Moment {
     this.position = new Vector3(location);
     this.velocity = new Vector3(velocity);
     this.time = time;
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (o == this) return true;
+    if (o instanceof Moment) {
+      Moment m = (Moment) o;
+      return m.position.equals(this.position)
+          && m.velocity.equals(this.velocity)
+          && m.time == this.time;
+    }
+
+    return false;
   }
 }

@@ -6,7 +6,7 @@ import com.eru.rlbot.common.output.ControlsOutput;
 public class RecoveryTactician implements Tactician {
 
   @Override
-  public void execute(ControlsOutput output, DataPacket input, Tactic nextTactic) {
+  public void execute(DataPacket input, ControlsOutput output, Tactic nextTactic) {
     // TODO(ahatfield): Add a threshold for how far you are from the ground.
     // The car is falling.
     if (!input.car.hasWheelContact && input.car.velocity.z < 0) {
