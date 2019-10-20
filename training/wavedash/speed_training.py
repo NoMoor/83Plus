@@ -13,7 +13,7 @@ from rlbottraining.training_exercise import Playlist
 @dataclass
 class FarAwayBall(TrainingExercise):
     grader: Grader = field(default_factory=lambda: GameTickPacketWrapperGrader(
-        StrikerGrader(timeout_seconds=5.0, ally_team=0)))
+        StrikerGrader(timeout_seconds=7.0, ally_team=0)))
     car_start_x: float = 1000
     car_start_y: float = -4608
     boost: float = 33

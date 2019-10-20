@@ -75,6 +75,8 @@ public class BotRenderer {
     }
 
     public void renderInfo(DataPacket input, ControlsOutput output) {
+        if (true) return;
+
         renderControl();
         renderRefreshRate(input);
         renderBallPrediction(input);

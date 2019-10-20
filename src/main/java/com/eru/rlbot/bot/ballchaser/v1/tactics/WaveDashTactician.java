@@ -39,11 +39,11 @@ public class WaveDashTactician implements Tactician {
       }
     }
 
+    bot.botRenderer.setBranchInfo(currentStage.name());
+
     boolean stageComplete = doCurrentStage(input, output);
     // Hold slide if we are traveling at all sideways.
     output.withSlide(input.car.groundSpeed > 800 && travelOffset(input) > .05);
-
-    bot.botRenderer.setBranchInfo(currentStage.name());
 
     if (stageComplete) {
       currentStage = Stage.values()[(currentStage.ordinal() + 1) % Stage.values().length];
@@ -57,6 +57,7 @@ public class WaveDashTactician implements Tactician {
       case JUMP:
         return jump(input, output);
       case TILT:
+//        return tilt2(input, output);
         return tilt(input, output);
       case DODGE:
         return dodge(input, output);
@@ -70,7 +71,7 @@ public class WaveDashTactician implements Tactician {
   private boolean slide(DataPacket input, ControlsOutput output) {
     output.withSlide();
 
-    if (input.car.hasWheelContact && slideTicks > 0) {
+    if (input.car.hasWheelContact && slideTicks > 1) {
       slideTicks = 0;
       return true;
     }
@@ -88,7 +89,7 @@ public class WaveDashTactician implements Tactician {
     if (input.car.position.z < 30) {
       // Dodge
       output.withJump()
-          .withPitch(-1)
+          .withPitch(-.8)
           .withYaw(-1)
           .withSlide();
       return true;
@@ -97,10 +98,62 @@ public class WaveDashTactician implements Tactician {
     return false;
   }
 
-  private static final double IDEAL_YAW = .50f;
-  private static final double IDEAL_ROLL = .35f;
+  private static final float IDEAL_PITCH = .1f;
+  private static final float IDEAL_ROLL = -.35f;
+  private static final float IDEAL_YAW = .6f;
+  private static final float IDEAL_YAW2 = .5f;
 
   private int tiltTicks = 0;
+
+  private float pitchInput = 0;
+  private float rollInput = 0;
+  private float yawInput = 0;
+
+//  private boolean tilt2(DataPacket input, ControlsOutput output) {
+//    if (tiltTicks > 3 && input.car.hasWheelContact) { // Wait a few ticks to make sure we catch the jump.
+//      // This should not happen.
+//      tiltTicks = 0;
+//      return true;
+//    }
+//
+//    if (tiltTicks < 2) {
+//      pitchInput = 0;
+//      rollInput = 0;
+//      yawInput = 0;
+//    } else if (tiltTicks == 2) {
+//      // Check face relative to direction of travel....
+//      Vector3 noseVector = input.car.orientation.noseVector;
+//      Vector3 normalVelocity = currentTactic.target.position;
+//      double travelOffset = noseVector.flatten().correctionAngle(normalVelocity.flatten());
+//
+//      pitchInput = (IDEAL_PITCH - noseVector.z); // Negative input is down.
+//      rollInput = (input.car.orientation.rightVector.z - IDEAL_ROLL) / 2; // Negative is left.
+//      yawInput = (float) (IDEAL_YAW2 - travelOffset) * 2; // Convert radians to vector value.
+//
+//      // Normalize the values keeping the sign.
+//      float maxValue = Math.max(Math.abs(pitchInput), Math.max(Math.abs(rollInput), Math.abs(yawInput))) * 2;
+//      pitchInput /= maxValue;
+//      rollInput /= maxValue;
+//      yawInput /= maxValue;
+//    } else {
+//      output
+//          .withRoll(rollInput)
+//          .withPitch(pitchInput)
+//          .withYaw(yawInput);
+//    }
+//
+//    boolean hasYaw = Math.abs(travelToTargetOffset(input) - IDEAL_YAW2) < (IDEAL_YAW2 / 5);
+//    boolean hasPitch = Math.abs(input.car.orientation.noseVector.z - IDEAL_PITCH) < (IDEAL_PITCH / 5);
+//    boolean hasRoll = Math.abs(input.car.orientation.rightVector.z - IDEAL_ROLL) < (IDEAL_ROLL / 5);
+//
+//    tiltTicks++;
+//    if (hasRoll && hasYaw && hasPitch) { // Get them all at the same time.
+//      tiltTicks = 0;
+//      return true;
+//    }
+//    return false;
+//  }
+
   private boolean tilt(DataPacket input, ControlsOutput output) {
     if (tiltTicks > 4 && input.car.hasWheelContact) { // Wait a few ticks to make sure we catch the jump.
       // This should not happen.
@@ -110,31 +163,46 @@ public class WaveDashTactician implements Tactician {
 
     // Check face relative to direction of travel....
     Vector3 noseVector = input.car.orientation.noseVector;
-    Vector3 normalVelocity = input.car.velocity.normalized();
-    double travelOffset = noseVector.flatten().correctionAngle(normalVelocity.flatten());
+    Vector3 normalTarget = currentTactic.target.position.minus(input.car.position); // Draw a vector between our positions.
+    double travelOffset = noseVector.flatten().correctionAngle(normalTarget.flatten());
+
+    bot.botRenderer.setBranchInfo(String.format("%#2f", travelOffset));
 
     boolean hasYaw = false;
-    if (travelOffset < .15) {
-      if (IDEAL_YAW - travelOffset > .3) {
-        output.withYaw(1.0f);
-      } else {
+    if (travelOffset < IDEAL_YAW - .10) {
+      if (IDEAL_YAW - travelOffset > .6) {
+        output.withYaw(.1f);
+      } else if (IDEAL_YAW - travelOffset > .2) {
         output.withYaw(.4f);
-      }
-    } else if (travelOffset > .9) {
-      if (travelOffset - IDEAL_YAW > .3) {
-        output.withYaw(-1.0f);
       } else {
+        output.withYaw(.2f);
+      }
+    } else if (travelOffset > IDEAL_YAW + .10) {
+      if (travelOffset - IDEAL_YAW > .6) {
+        output.withYaw(-.1f);
+      } else if (travelOffset - IDEAL_YAW > .2) {
         output.withYaw(-.4f);
+      } else {
+        output.withYaw(-.2f);
       }
     } else {
       hasYaw = true;
     }
 
+    double rollZ = input.car.orientation.rightVector.z;
     boolean hasRoll = false;
-    if (input.car.orientation.rightVector.z > -.2) { // TODO: Adjust these based on how much you want to go.
-      output.withRoll(.4f);
-    } else if (input.car.orientation.rightVector.z < -.5) {
-      output.withRoll(-.4f);
+    if (rollZ > IDEAL_ROLL + .05) { // TODO: Adjust these based on how much you want to go.
+      if (rollZ - IDEAL_ROLL > .4) {
+        output.withRoll(.7f);
+      } else {
+        output.withRoll(.3f);
+      }
+    } else if (rollZ < IDEAL_ROLL - .05) {
+      if (IDEAL_ROLL - rollZ > .4) {
+        output.withRoll(-.7f);
+      } else {
+        output.withRoll(-.3f);
+      }
     } else {
       hasRoll = true;
     }
@@ -143,13 +211,13 @@ public class WaveDashTactician implements Tactician {
     if (noseVector.z < .05) {
       output.withPitch(.4f);
     } else if (noseVector.z > .15) {
-      output.withPitch(-.2f);
+      output.withPitch(-.4f);
     } else {
       hasPitch = true;
     }
 
     tiltTicks++;
-    if (hasRoll && hasYaw && hasPitch) {
+    if (hasRoll || hasPitch) {
       tiltTicks = 0;
       return true;
     }
@@ -161,10 +229,6 @@ public class WaveDashTactician implements Tactician {
     if (hasJumpedTicks == 0) {
       output.withJump();
     } else {
-      if (hasJumpedTicks > 4) { // Incase we somehow get stuck here. Don't wait forever.
-        hasJumpedTicks = 0;
-      }
-
       // Wait until we are in the air for sure.
       if (!input.car.hasWheelContact) {
         hasJumpedTicks = 0;
@@ -173,7 +237,15 @@ public class WaveDashTactician implements Tactician {
     }
 
     hasJumpedTicks++;
+    if (hasJumpedTicks > 2) { // Incase we somehow get stuck here. Don't wait forever.
+      hasJumpedTicks = 0;
+    }
+
     return false;
+  }
+
+  private double travelToTargetOffset(DataPacket input) {
+    return input.car.orientation.noseVector.flatten().correctionAngle(currentTactic.getTarget().flatten());
   }
 
   private double travelOffset(DataPacket input) {
@@ -182,6 +254,7 @@ public class WaveDashTactician implements Tactician {
 
   private boolean preJump(DataPacket input, ControlsOutput output) {
     output.withThrottle(1.0f);
-    return input.car.groundSpeed > 800;
+    output.withSteer(Angles.flatCorrectionDirection(input.car, currentTactic.target.position) + .23);
+    return input.car.groundSpeed > 1200;
   }
 }
