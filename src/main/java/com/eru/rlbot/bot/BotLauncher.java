@@ -19,6 +19,7 @@ public class BotLauncher {
     public static void main(String[] args) {
 
         BotManager botManager = new BotManager();
+        botManager.setRefreshRate(120);
         PythonInterface pythonInterface = new SamplePythonInterface(botManager);
         Integer port = PortReader.readPortFromFile("port.cfg");
         PythonServer pythonServer = new PythonServer(pythonInterface, port);
