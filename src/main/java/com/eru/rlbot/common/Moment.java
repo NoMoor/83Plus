@@ -10,7 +10,7 @@ public class Moment {
   public final float time;
 
   public Moment(Vector3 position) {
-    this(position, new Vector3(), 300);
+    this(position, Vector3.zero(), 300);
   }
 
   public Moment(Vector3 position, Vector3 velocity, float time) {
@@ -20,8 +20,8 @@ public class Moment {
   }
 
   public Moment(rlbot.flat.Vector3 location, rlbot.flat.Vector3 velocity, float time) {
-    this.position = new Vector3(location);
-    this.velocity = new Vector3(velocity);
+    this.position = Vector3.of(location);
+    this.velocity = Vector3.of(velocity);
     this.time = time;
   }
 

@@ -82,7 +82,7 @@ public class PathFinder {
 
 
   private static double createBallScore(DataPacket input, PredictionSlice predictionSlice) {
-    Vector3 location = new Vector3(predictionSlice.physics().location());
+    Vector3 location = Vector3.of(predictionSlice.physics().location());
 
     double timeToPosition = timeToPosition(input.car, location);
 

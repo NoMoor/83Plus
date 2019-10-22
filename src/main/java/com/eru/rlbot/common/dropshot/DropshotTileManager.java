@@ -39,7 +39,7 @@ public class DropshotTileManager {
 
             for (int i = 0; i < fieldInfo.goalsLength(); i++) {
                 rlbot.flat.GoalInfo goalInfo = fieldInfo.goals(i);
-                Vector3 location = new Vector3(goalInfo.location());
+                Vector3 location = Vector3.of(goalInfo.location());
                 DropshotTile tile = new DropshotTile(location);
                 tiles.add(new DropshotTile(location));
 

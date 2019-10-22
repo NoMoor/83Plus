@@ -1,6 +1,7 @@
 package com.eru.rlbot.common.input;
 
 
+import com.eru.rlbot.bot.common.Matrix3;
 import com.eru.rlbot.common.vector.Vector3;
 import rlbot.flat.PlayerInfo;
 
@@ -10,7 +11,7 @@ import rlbot.flat.PlayerInfo;
  * This class is here for your convenience, it is NOT part of the framework. You can change it as much
  * as you want, or delete it.
  */
-public class CarOrientation {
+public class CarOrientation extends Matrix3 {
 
     /** The direction that the front of the car is facing */
     public final Vector3 noseVector;
@@ -22,7 +23,7 @@ public class CarOrientation {
     public final Vector3 rightVector;
 
     public CarOrientation(Vector3 noseVector, Vector3 roofVector) {
-
+        super(noseVector, roofVector, noseVector.crossProduct(roofVector));
         this.noseVector = noseVector;
         this.roofVector = roofVector;
         this.rightVector = noseVector.crossProduct(roofVector);
@@ -30,9 +31,9 @@ public class CarOrientation {
 
     public static CarOrientation fromFlatbuffer(PlayerInfo playerInfo) {
         return convert(
-                playerInfo.physics().rotation().pitch(),
-                playerInfo.physics().rotation().yaw(),
-                playerInfo.physics().rotation().roll());
+            playerInfo.physics().rotation().pitch(),
+            playerInfo.physics().rotation().yaw(),
+            playerInfo.physics().rotation().roll());
     }
 
     /**
@@ -48,6 +49,6 @@ public class CarOrientation {
         double roofY = Math.cos(yaw) * Math.sin(roll) - Math.cos(roll) * Math.sin(pitch) * Math.sin(yaw);
         double roofZ = Math.cos(roll) * Math.cos(pitch);
 
-        return new CarOrientation(new Vector3(noseX, noseY, noseZ), new Vector3(roofX, roofY, roofZ));
+        return new CarOrientation(Vector3.of(noseX, noseY, noseZ), Vector3.of(roofX, roofY, roofZ));
     }
 }

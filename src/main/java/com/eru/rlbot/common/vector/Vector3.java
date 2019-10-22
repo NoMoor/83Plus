@@ -1,5 +1,6 @@
 package com.eru.rlbot.common.vector;
 
+import com.eru.rlbot.bot.common.Matrix3;
 import com.google.flatbuffers.FlatBufferBuilder;
 
 /**
@@ -10,32 +11,47 @@ import com.google.flatbuffers.FlatBufferBuilder;
  */
 public class Vector3 extends rlbot.vector.Vector3 {
 
-    public Vector3(double x, double y, double z) {
+    /** Creates the null vector. */
+    public static Vector3 zero() {
+        return of(0d, 0d, 0d);
+    }
+
+    /** Creates a vector from the flat rlbot framework. */
+    public static Vector3 of(rlbot.flat.Vector3 vec) {
+        return new Vector3(vec);
+    }
+
+    /** Creates a vector from the given x, y, z values. */
+    public static Vector3 of(double x, double y, double z) {
+        return new Vector3(x, y, z);
+    }
+
+    private Vector3(double x, double y, double z) {
         super((float) x, (float) y, (float) z);
     }
 
-    public Vector3() {
-        this(0, 0, 0);
-    }
-
-    public Vector3(rlbot.flat.Vector3 vec) {
+    private Vector3(rlbot.flat.Vector3 vec) {
         // Invert the X value so that the axes make more sense.
         this(-vec.x(), vec.y(), vec.z());
     }
 
+    /** Translates a vector to the framework flat vector format. */
     public int toFlatbuffer(FlatBufferBuilder builder) {
         // Invert the X value again so that rlbot sees the format it expects.
         return rlbot.flat.Vector3.createVector3(builder, -x, y, z);
     }
 
+    /** Adds the two vectors together. */
     public Vector3 plus(Vector3 other) {
         return new Vector3(x + other.x, y + other.y, z + other.z);
     }
 
+    /** Subtracts the two vectors from one another. */
     public Vector3 minus(Vector3 other) {
         return new Vector3(x - other.x, y - other.y, z - other.z);
     }
 
+    /** Scales the vector by the given value. */
     public Vector3 scaled(double scale) {
         return new Vector3(x * scale, y * scale, z * scale);
     }
@@ -51,6 +67,7 @@ public class Vector3 extends rlbot.vector.Vector3 {
         return scaled(scaleRequired);
     }
 
+    /** Returns the distance between the two vector locations. */
     public double distance(Vector3 other) {
         double xDiff = x - other.x;
         double yDiff = y - other.y;
@@ -58,14 +75,16 @@ public class Vector3 extends rlbot.vector.Vector3 {
         return Math.sqrt(xDiff * xDiff + yDiff * yDiff + zDiff * zDiff);
     }
 
+    /** Returns magnitude of the vector. */
     public double magnitude() {
         return Math.sqrt(magnitudeSquared());
     }
 
-    public double magnitudeSquared() {
+    private double magnitudeSquared() {
         return x * x + y * y + z * z;
     }
 
+    /** Returns the vector normalized to magnitude 1. */
     public Vector3 normalized() {
 
         if (isZero()) {
@@ -74,14 +93,25 @@ public class Vector3 extends rlbot.vector.Vector3 {
         return this.scaled(1 / magnitude());
     }
 
-    public double dotProduct(Vector3 other) {
+    /** Returns the dot-product of this vector with the given vector. */
+    public double dot(Vector3 other) {
         return x * other.x + y * other.y + z * other.z;
     }
 
+    /** Returns the dot-product of this vector with the given matrix. */
+    public Vector3 dot(Matrix3 mat) {
+        return Vector3.of(
+            this.dot(Vector3.of(mat.row(0).x, mat.row(1).x, mat.row(2).x)),
+            this.dot(Vector3.of(mat.row(0).y, mat.row(1).y, mat.row(2).y)),
+            this.dot(Vector3.of(mat.row(0).z, mat.row(1).z, mat.row(2).z)));
+    }
+
+    /** Returns true if this vector is the zero vector. */
     public boolean isZero() {
         return x == 0 && y == 0 && z == 0;
     }
 
+    /** Returns a 2-d vector, dropping this z axis. */
     public Vector2 flatten() {
         return new Vector2(x, y);
     }
@@ -90,10 +120,11 @@ public class Vector3 extends rlbot.vector.Vector3 {
     public double angle(Vector3 v) {
         double mag2 = magnitudeSquared();
         double vmag2 = v.magnitudeSquared();
-        double dot = dotProduct(v);
+        double dot = dot(v);
         return Math.acos(dot / Math.sqrt(mag2 * vmag2));
     }
 
+    /** Returns the cross product of this and the given vector. */
     public Vector3 crossProduct(Vector3 v) {
         double tx = y * v.z - z * v.y;
         double ty = z * v.x - x * v.z;
@@ -109,5 +140,19 @@ public class Vector3 extends rlbot.vector.Vector3 {
             return x == v.x && y == v.y && z == v.z;
         }
         return false;
+    }
+
+    /** Returns the i-th element of this vector. */
+    public float get(int i) {
+        switch (i) {
+            case 0:
+                return x;
+            case 1:
+                return y;
+            case 2:
+                return z;
+            default:
+                throw new IllegalStateException(String.format("No index for this matrix at %d", i));
+        }
     }
 }

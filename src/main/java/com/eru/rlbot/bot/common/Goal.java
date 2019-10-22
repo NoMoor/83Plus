@@ -9,9 +9,9 @@ public class Goal {
   private static final int WIDTH = 1785; // 892.755 * 2
   private static final int HEIGHT = 643; // Technically 642.775
 
-  private static final Vector3 ORANGE_CENTER = new Vector3(0, HALF_LENGTH, 0);
-  private static final Vector3 BLUE_CENTER = new Vector3(0, -1 * HALF_LENGTH, 0);
-  private static final Vector3 HALF_GOAL = new Vector3(WIDTH / 2f, 0, 0);
+  private static final Vector3 ORANGE_CENTER = Vector3.of(0, HALF_LENGTH, 0);
+  private static final Vector3 BLUE_CENTER = Vector3.of(0, -1 * HALF_LENGTH, 0);
+  private static final Vector3 HALF_GOAL = Vector3.of(WIDTH / 2f, 0, 0);
 
   private static final Goal BLUE_GOAL = new Goal(BLUE_CENTER);
   private static final Goal ORANGE_GOAL = new Goal(ORANGE_CENTER);

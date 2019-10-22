@@ -106,6 +106,6 @@ public class Vector2 {
     }
 
     public Vector3 asVector3() {
-        return new Vector3(x, y, 0);
+        return Vector3.of(x, y, 0);
     }
 }

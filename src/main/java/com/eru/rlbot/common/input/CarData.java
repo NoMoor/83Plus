@@ -47,8 +47,8 @@ public class CarData {
     public final float elapsedSeconds;
 
     public CarData(rlbot.flat.PlayerInfo playerInfo, float elapsedSeconds) {
-        this.position = new Vector3(playerInfo.physics().location());
-        this.velocity = new Vector3(playerInfo.physics().velocity());
+        this.position = Vector3.of(playerInfo.physics().location());
+        this.velocity = Vector3.of(playerInfo.physics().velocity());
 
         this.groundSpeed = velocity.flatten().magnitude();
 

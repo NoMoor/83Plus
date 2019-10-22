@@ -1,6 +1,5 @@
 package com.eru.rlbot.common.input;
 
-
 import com.eru.rlbot.common.vector.Vector3;
 import rlbot.flat.BallInfo;
 
@@ -11,19 +10,20 @@ import rlbot.flat.BallInfo;
  * as you want, or delete it.
  */
 public class BallData {
+
     public final Vector3 position;
     public final Vector3 velocity;
     public final Vector3 spin;
 
     public BallData(final BallInfo ball) {
-        this.position = new Vector3(ball.physics().location());
-        this.velocity = new Vector3(ball.physics().velocity());
-        this.spin = new Vector3(ball.physics().angularVelocity());
+        this.position = Vector3.of(ball.physics().location());
+        this.velocity = Vector3.of(ball.physics().velocity());
+        this.spin = Vector3.of(ball.physics().angularVelocity());
     }
 
     public BallData(Vector3 position, Vector3 velocity) {
         this.position = position;
         this.velocity = velocity;
-        this.spin = null;
+        this.spin = null; // TODO: Add spin.
     }
 }

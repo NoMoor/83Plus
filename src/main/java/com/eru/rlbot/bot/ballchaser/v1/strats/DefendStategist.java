@@ -37,7 +37,7 @@ public class DefendStategist implements Strategist {
       Physics ballPysics = ballPrediction.slices(i).physics();
 
       double distanceToGoal =
-          new Vector3(ballPysics.location()).distance(Goal.ownGoal(input.car.team).center);
+          Vector3.of(ballPysics.location()).distance(Goal.ownGoal(input.car.team).center);
 
       boolean ballMovingTowardsGoal = input.car.team == 0
           ? ballPysics.velocity().y() < 0

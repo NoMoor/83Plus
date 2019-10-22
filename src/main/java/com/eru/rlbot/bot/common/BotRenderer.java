@@ -26,7 +26,9 @@ import java.util.*;
 /** Renders extra information for the bot such as car path, ball path, etc. */
 public class BotRenderer {
 
-    private static final int SMOOTHING_INTERVAL = 20;
+    private static final boolean SKIP_RENDERING = false;
+
+    private static final int SMOOTHING_INTERVAL = 5;
     private static Map<Bot, BotRenderer> BOTS = new HashMap<>();
 
     private Float initialTime = null;
@@ -51,7 +53,7 @@ public class BotRenderer {
         Renderer renderer = getRenderer();
 
         // Draw a line from the car to the ball
-        renderer.drawLine3d(Color.CYAN, carData.position, new Vector3(projectedVector.x, projectedVector.y, 0));
+        renderer.drawLine3d(Color.CYAN, carData.position, Vector3.of(projectedVector.x, projectedVector.y, 0));
     }
 
     private void renderBallPrediction(DataPacket input) {
@@ -62,7 +64,7 @@ public class BotRenderer {
 
             Vector3 previousSpot = input.ball.position;
             for (int i = 0 ; i < ballPrediction.slicesLength(); i++) {
-                Vector3 location = new Vector3(ballPrediction.slices(i).physics().location());
+                Vector3 location = Vector3.of(ballPrediction.slices(i).physics().location());
 
                 renderer.drawLine3d(Color.CYAN, previousSpot, location);
                 previousSpot = location;
@@ -75,7 +77,7 @@ public class BotRenderer {
     }
 
     public void renderInfo(DataPacket input, ControlsOutput output) {
-        if (true) return;
+        if (SKIP_RENDERING) return;
 
         renderControl();
         renderRefreshRate(input);
@@ -88,14 +90,15 @@ public class BotRenderer {
     }
 
     private void renderRefreshRate(DataPacket input) {
-        if (initialTime == null) {
+        if (initialTime == null || input.car.elapsedSeconds - initialTime > 5) {
             initialTime = input.car.elapsedSeconds;
+            ticks = 0;
         }
         ticks++;
 
-        int fps = (int) (ticks / (input.car.elapsedSeconds - initialTime));
+        double fps = (ticks / (input.car.elapsedSeconds - initialTime));
 
-        renderText(1825, 20, 1,"%d FPS", fps);
+        renderText(0, 20, 1,"%.2f FPS", fps);
     }
 
     private void renderText() {
