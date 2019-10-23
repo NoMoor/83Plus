@@ -13,7 +13,7 @@ public final class Angles {
   }
 
   public static double flatCorrectionDirection(CarData carData, Vector3 targetPoint) {
-    return -flatCorrectionAngle(carData.position, carData.orientation.noseVector, targetPoint);
+    return -flatCorrectionAngle(carData.position, carData.orientation.getNoseVector(), targetPoint);
   }
 
   public static double correctionDirection(Vector2 sourcePoint, Vector2 sourceOrientation, Vector2 targetPoint) {

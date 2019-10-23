@@ -34,7 +34,7 @@ public class BallChaserV0 implements Bot {
         Vector2 ballPosition = input.ball.position.flatten();
         CarData myCar = input.car;
         Vector2 carPosition = myCar.position.flatten();
-        Vector2 carDirection = myCar.orientation.noseVector.flatten();
+        Vector2 carDirection = myCar.orientation.getNoseVector().flatten();
 
         // Subtract the two positions to get a vector pointing from the car to the ball.
         Vector2 carToBall = ballPosition.minus(carPosition);

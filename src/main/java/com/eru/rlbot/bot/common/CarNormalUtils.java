@@ -12,8 +12,8 @@ public class CarNormalUtils {
   // Context: https://stackoverflow.com/questions/14607640/rotating-a-vector-in-3d-space
   public static BallData noseNormalLocation(DataPacket input) {
     return new BallData(
-        translateRelative(input.car.position, input.ball.position, input.car.orientation.noseVector),
-        translateRelative(input.car.velocity, input.ball.velocity, input.car.orientation.noseVector));
+        translateRelative(input.car.position, input.ball.position, input.car.orientation.getNoseVector()),
+        translateRelative(input.car.velocity, input.ball.velocity, input.car.orientation.getNoseVector()));
   }
 
   private static Vector3 translateRelative(Vector3 source, Vector3 target, Vector3 referenceOrientation) {

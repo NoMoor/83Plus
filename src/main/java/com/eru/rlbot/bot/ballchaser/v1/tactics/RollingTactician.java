@@ -21,7 +21,7 @@ public class RollingTactician implements Tactician {
 
   @Override
   public void execute(DataPacket input, ControlsOutput output, Tactic nextTactic) {
-    Vector2 carDirection = input.car.orientation.noseVector.flatten();
+    Vector2 carDirection = input.car.orientation.getNoseVector().flatten();
     Vector3 targetPosition = nextTactic.target.position;
 
     // Subtract the two positions to get a vector pointing from the car to the ball.
@@ -50,7 +50,7 @@ public class RollingTactician implements Tactician {
   private double wallRideCorrectionAngle(DataPacket input, Tactic nextTactic) {
     bot.botRenderer.setBranchInfo("Wall Ride");
 
-    Vector2 carDirection = input.car.orientation.noseVector.flatten();
+    Vector2 carDirection = input.car.orientation.getNoseVector().flatten();
     Vector3 targetPosition = nextTactic.target.position;
     Vector3 carToTarget = targetPosition.minus(input.car.position);
 
@@ -71,7 +71,7 @@ public class RollingTactician implements Tactician {
     // Determine angle with the wall.
     return Angles.flatCorrectionAngle(
         input.car.position.flatten(),
-        input.car.orientation.noseVector.flatten(),
+        input.car.orientation.getNoseVector().flatten(),
         wallAdjustedVector);
   }
 
@@ -79,7 +79,7 @@ public class RollingTactician implements Tactician {
     if ((input.car.boost > 12 || amBoosting) && Math.abs(flatCorrectionAngle) < .2) {
 
       double goalCorrectionAngle =
-          Angles.flatCorrectionAngle(input.car.position, input.car.orientation.noseVector, bot.opponentsGoal.center);
+          Angles.flatCorrectionAngle(input.car.position, input.car.orientation.getNoseVector(), bot.opponentsGoal.center);
 
       if (goalCorrectionAngle < .2) {
         output.withBoost();

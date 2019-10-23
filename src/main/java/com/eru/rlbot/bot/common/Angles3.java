@@ -31,7 +31,7 @@ public class Angles3 {
     Vector3 omega = target.transpose().dot(car.angularVelocity);
 
     // Theta = orientation
-    Matrix3 theta = target.transpose().dot(car.orientation);
+    Matrix3 theta = target.transpose().dot(car.orientation.getMatrix());
     Vector3 omega_local = omega.dot(theta);
 
     Vector3 phi = rotation_to_axis(theta);

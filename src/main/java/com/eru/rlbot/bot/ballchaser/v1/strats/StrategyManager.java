@@ -148,7 +148,7 @@ public class StrategyManager {
   }
 
   private static Comparator<? super BoostPad> selectBoost(DataPacket input) {
-    Vector2 noseVector = input.car.orientation.noseVector.flatten();
+    Vector2 noseVector = input.car.orientation.getNoseVector().flatten();
     Vector2 flatPosition = input.car.position.flatten();
 
     return (a, b) -> {

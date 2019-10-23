@@ -12,12 +12,12 @@ public class RecoveryTactician implements Tactician {
     if (!input.car.hasWheelContact && input.car.velocity.z < 0) {
 
       double yawCorrection =
-          input.car.velocity.flatten().correctionAngle(input.car.orientation.noseVector.flatten());
+          input.car.velocity.flatten().correctionAngle(input.car.orientation.getNoseVector().flatten());
 
       // If nose vector is down, pitch up
       output
-          .withPitch(-1 * input.car.orientation.noseVector.z) // TODO(ahatfield): Adjust this based on correction needed.
-          .withRoll(input.car.orientation.rightVector.z) // If the door is pointing down, roll left.
+          .withPitch(-1 * input.car.orientation.getNoseVector().z) // TODO(ahatfield): Adjust this based on correction needed.
+          .withRoll(input.car.orientation.getRightVector().z) // If the door is pointing down, roll left.
           .withYaw((float) yawCorrection);
     }
   }

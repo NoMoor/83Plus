@@ -129,8 +129,8 @@ public class WaveDashTactician implements Tactician {
     output.withYaw(yawInput / maxValue);
 
     boolean hasYaw = Math.abs(travelToTargetOffset(input) - IDEAL_YAW2) < (IDEAL_YAW2 / 5);
-    boolean hasPitch = Math.abs(input.car.orientation.noseVector.z - IDEAL_PITCH) < (IDEAL_PITCH / 5);
-    boolean hasRoll = Math.abs(input.car.orientation.rightVector.z - IDEAL_ROLL) < (IDEAL_ROLL / 5);
+    boolean hasPitch = Math.abs(input.car.orientation.getNoseVector().z - IDEAL_PITCH) < (IDEAL_PITCH / 5);
+    boolean hasRoll = Math.abs(input.car.orientation.getRightVector().z - IDEAL_ROLL) < (IDEAL_ROLL / 5);
 
     tiltTicks++;
     if (hasRoll && hasYaw && hasPitch) { // Get them all at the same time.
@@ -148,7 +148,7 @@ public class WaveDashTactician implements Tactician {
     }
 
     // Check face relative to direction of travel....
-    Vector3 noseVector = input.car.orientation.noseVector;
+    Vector3 noseVector = input.car.orientation.getNoseVector();
     Vector3 normalTarget = currentTactic.target.position.minus(input.car.position); // Draw a vector between our positions.
     double travelOffset = noseVector.flatten().correctionAngle(normalTarget.flatten());
 
@@ -175,7 +175,7 @@ public class WaveDashTactician implements Tactician {
       hasYaw = true;
     }
 
-    double rollZ = input.car.orientation.rightVector.z;
+    double rollZ = input.car.orientation.getRightVector().z;
     boolean hasRoll = false;
     if (rollZ > IDEAL_ROLL + .05) { // TODO: Adjust these based on how much you want to go.
       if (rollZ - IDEAL_ROLL > .4) {
@@ -231,11 +231,11 @@ public class WaveDashTactician implements Tactician {
   }
 
   private double travelToTargetOffset(DataPacket input) {
-    return input.car.orientation.noseVector.flatten().correctionAngle(currentTactic.getTarget().flatten());
+    return input.car.orientation.getNoseVector().flatten().correctionAngle(currentTactic.getTarget().flatten());
   }
 
   private double travelOffset(DataPacket input) {
-    return input.car.orientation.noseVector.flatten().correctionAngle(input.car.velocity.normalized().flatten());
+    return input.car.orientation.getNoseVector().flatten().correctionAngle(input.car.velocity.normalized().flatten());
   }
 
   private boolean preJump(DataPacket input, ControlsOutput output) {

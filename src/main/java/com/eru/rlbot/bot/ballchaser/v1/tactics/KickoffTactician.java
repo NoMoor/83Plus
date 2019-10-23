@@ -129,11 +129,11 @@ public class KickoffTactician implements Tactician {
               .withYaw(relativeData.position.x);
 //              .withSteer(-relativeData.position.x);
         }
-        if (Math.abs(input.car.orientation.rightVector.z) > .05) {
-          output.withRoll(input.car.orientation.rightVector.z);
+        if (Math.abs(input.car.orientation.getRightVector().z) > .05) {
+          output.withRoll(input.car.orientation.getRightVector().z);
         }
-        if (input.car.orientation.noseVector.z > .01) {
-          output.withPitch(-10 * input.car.orientation.noseVector.z);
+        if (input.car.orientation.getNoseVector().z > .01) {
+          output.withPitch(-10 * input.car.orientation.getNoseVector().z);
         }
       } else if (relativeData.position.y > secondJump) {
         // Land cleanly
@@ -173,7 +173,7 @@ public class KickoffTactician implements Tactician {
       }
     } else {
       if (!input.car.hasWheelContact) {
-        if (input.car.orientation.noseVector.z > .1) { // Nose vector is normalized
+        if (input.car.orientation.getNoseVector().z > .1) { // Nose vector is normalized
           output.withPitch(NOSE_DOWN);
         }
       } else if (input.car.groundSpeed < 200) {
@@ -186,8 +186,8 @@ public class KickoffTactician implements Tactician {
       }
 
       if (Math.abs(output.getSteer()) < 1
-          && input.car.orientation.noseVector.z > -.03
-          && input.car.orientation.noseVector.z < .1
+          && input.car.orientation.getNoseVector().z > -.03
+          && input.car.orientation.getNoseVector().z < .1
           && relativeData.position.y > 0) {
         output.withBoost();
       }
