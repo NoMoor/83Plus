@@ -57,13 +57,13 @@ public class Vector3 extends rlbot.vector.Vector3 {
     }
 
     /**
-     * If magnitude is negative, we will return a vector facing the opposite direction.
+     * If norm is negative, we will return a vector facing the opposite direction.
      */
     public Vector3 scaledToMagnitude(double magnitude) {
         if (isZero()) {
             throw new IllegalStateException("Cannot scale up a vector with length zero!");
         }
-        double scaleRequired = magnitude / magnitude();
+        double scaleRequired = magnitude / norm();
         return scaled(scaleRequired);
     }
 
@@ -75,22 +75,18 @@ public class Vector3 extends rlbot.vector.Vector3 {
         return Math.sqrt(xDiff * xDiff + yDiff * yDiff + zDiff * zDiff);
     }
 
-    /** Returns magnitude of the vector. */
-    public double magnitude() {
-        return Math.sqrt(magnitudeSquared());
+    /** Returns norm of the vector. */
+    public double norm() {
+        return Math.sqrt(this.dot(this));
     }
 
-    private double magnitudeSquared() {
-        return x * x + y * y + z * z;
-    }
-
-    /** Returns the vector normalized to magnitude 1. */
+    /** Returns the vector normalized to norm 1. */
     public Vector3 normalized() {
 
         if (isZero()) {
             throw new IllegalStateException("Cannot normalize a vector with length zero!");
         }
-        return this.scaled(1 / magnitude());
+        return this.scaled(1 / norm());
     }
 
     /** Returns the dot-product of this vector with the given vector. */
@@ -118,14 +114,14 @@ public class Vector3 extends rlbot.vector.Vector3 {
 
     /** Angle in radians? */
     public double angle(Vector3 v) {
-        double mag2 = magnitudeSquared();
-        double vmag2 = v.magnitudeSquared();
+        double mag2 = norm();
+        double vmag2 = v.norm();
         double dot = dot(v);
         return Math.acos(dot / Math.sqrt(mag2 * vmag2));
     }
 
     /** Returns the cross product of this and the given vector. */
-    public Vector3 crossProduct(Vector3 v) {
+    public Vector3 cross(Vector3 v) {
         double tx = y * v.z - z * v.y;
         double ty = z * v.x - x * v.z;
         double tz = x * v.y - y * v.x;
@@ -154,5 +150,20 @@ public class Vector3 extends rlbot.vector.Vector3 {
             default:
                 throw new IllegalStateException(String.format("No index for this matrix at %d", i));
         }
+    }
+
+    /** Returns a new vector with value added to the x component. */
+    public Vector3 addX(float value) {
+        return new Vector3(this.x + value, y, z);
+    }
+
+    /** Returns a new vector with value added to the y component. */
+    public Vector3 addY(float value) {
+        return new Vector3(this.x, this.y + value, z);
+    }
+
+    /** Returns a new vector with value added to the z component. */
+    public Vector3 addZ(float value) {
+        return new Vector3(this.x, y, this.z + value);
     }
 }

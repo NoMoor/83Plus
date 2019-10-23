@@ -30,7 +30,7 @@ public class PathFinder {
         return new ArrayList<>();
       }
 
-      // TODO(ahatfield): This is kinda cludged together.
+      // TODO: This is kinda cludged together.
       PredictionSlice bestTarget = ballPrediction.slices(ballPrediction.slicesLength() - 1);
       for (int i = 0 ; i < ballPrediction.slicesLength() ; i++) {
         PredictionSlice predictionSlice = ballPrediction.slices(i);
@@ -123,7 +123,7 @@ public class PathFinder {
     } else {
       // time to turn around + time to ball
       // TODO(ahatfield): Plus some distance to turn around.
-      return (carData.velocity.magnitude() / ACCELERATION)
+      return (carData.velocity.norm() / ACCELERATION)
           + distanceToPosition / (carData.velocity.flatten().magnitude() + (ACCELERATION / 2));
     }
   }

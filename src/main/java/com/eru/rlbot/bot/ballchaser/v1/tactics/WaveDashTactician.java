@@ -2,8 +2,9 @@ package com.eru.rlbot.bot.ballchaser.v1.tactics;
 
 import com.eru.rlbot.bot.EruBot;
 import com.eru.rlbot.bot.common.Angles;
+import com.eru.rlbot.bot.common.Angles3;
+import com.eru.rlbot.bot.common.Matrix3;
 import com.eru.rlbot.common.input.DataPacket;
-import com.eru.rlbot.common.jump.JumpManager;
 import com.eru.rlbot.common.output.ControlsOutput;
 import com.eru.rlbot.common.vector.Vector3;
 
@@ -57,8 +58,8 @@ public class WaveDashTactician implements Tactician {
       case JUMP:
         return jump(input, output);
       case TILT:
-//        return tilt2(input, output);
-        return tilt(input, output);
+        return tilt2(input, output);
+//        return tilt(input, output);
       case DODGE:
         return dodge(input, output);
       case SLIDE:
@@ -105,54 +106,39 @@ public class WaveDashTactician implements Tactician {
 
   private int tiltTicks = 0;
 
-  private float pitchInput = 0;
-  private float rollInput = 0;
-  private float yawInput = 0;
+  private boolean tilt2(DataPacket input, ControlsOutput output) {
+    if (tiltTicks > 10 && input.car.hasWheelContact) { // Wait a few ticks to make sure we catch the jump.
+      // This should not happen.
+      tiltTicks = 0;
+      return true;
+    }
 
-//  private boolean tilt2(DataPacket input, ControlsOutput output) {
-//    if (tiltTicks > 3 && input.car.hasWheelContact) { // Wait a few ticks to make sure we catch the jump.
-//      // This should not happen.
-//      tiltTicks = 0;
-//      return true;
-//    }
-//
-//    if (tiltTicks < 2) {
-//      pitchInput = 0;
-//      rollInput = 0;
-//      yawInput = 0;
-//    } else if (tiltTicks == 2) {
-//      // Check face relative to direction of travel....
-//      Vector3 noseVector = input.car.orientation.noseVector;
-//      Vector3 normalVelocity = currentTactic.target.position;
-//      double travelOffset = noseVector.flatten().correctionAngle(normalVelocity.flatten());
-//
-//      pitchInput = (IDEAL_PITCH - noseVector.z); // Negative input is down.
-//      rollInput = (input.car.orientation.rightVector.z - IDEAL_ROLL) / 2; // Negative is left.
-//      yawInput = (float) (IDEAL_YAW2 - travelOffset) * 2; // Convert radians to vector value.
-//
-//      // Normalize the values keeping the sign.
-//      float maxValue = Math.max(Math.abs(pitchInput), Math.max(Math.abs(rollInput), Math.abs(yawInput))) * 2;
-//      pitchInput /= maxValue;
-//      rollInput /= maxValue;
-//      yawInput /= maxValue;
-//    } else {
-//      output
-//          .withRoll(rollInput)
-//          .withPitch(pitchInput)
-//          .withYaw(yawInput);
-//    }
-//
-//    boolean hasYaw = Math.abs(travelToTargetOffset(input) - IDEAL_YAW2) < (IDEAL_YAW2 / 5);
-//    boolean hasPitch = Math.abs(input.car.orientation.noseVector.z - IDEAL_PITCH) < (IDEAL_PITCH / 5);
-//    boolean hasRoll = Math.abs(input.car.orientation.rightVector.z - IDEAL_ROLL) < (IDEAL_ROLL / 5);
-//
-//    tiltTicks++;
-//    if (hasRoll && hasYaw && hasPitch) { // Get them all at the same time.
-//      tiltTicks = 0;
-//      return true;
-//    }
-//    return false;
-//  }
+    Matrix3 target = Matrix3.of(Vector3.of(1, 0, 0), Vector3.of(0, -1, 0), Vector3.of(0, 0, 1));
+
+    Angles3.makeControlsFor(input.car, target, output);
+
+    // Max out controls.
+    float pitchInput = output.getPitch();
+    float yawInput = output.getYaw();
+    float rollInput = output.getRoll();
+
+    // Normalize the values keeping the sign.
+    float maxValue = Math.max(Math.abs(pitchInput), Math.max(Math.abs(rollInput), Math.abs(yawInput)));
+    output.withPitch(pitchInput / maxValue);
+    output.withRoll(rollInput / maxValue);
+    output.withYaw(yawInput / maxValue);
+
+    boolean hasYaw = Math.abs(travelToTargetOffset(input) - IDEAL_YAW2) < (IDEAL_YAW2 / 5);
+    boolean hasPitch = Math.abs(input.car.orientation.noseVector.z - IDEAL_PITCH) < (IDEAL_PITCH / 5);
+    boolean hasRoll = Math.abs(input.car.orientation.rightVector.z - IDEAL_ROLL) < (IDEAL_ROLL / 5);
+
+    tiltTicks++;
+    if (hasRoll && hasYaw && hasPitch) { // Get them all at the same time.
+      tiltTicks = 0;
+      return true;
+    }
+    return false;
+  }
 
   private boolean tilt(DataPacket input, ControlsOutput output) {
     if (tiltTicks > 4 && input.car.hasWheelContact) { // Wait a few ticks to make sure we catch the jump.

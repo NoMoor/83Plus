@@ -31,7 +31,7 @@ public class KickoffTactician implements Tactician {
   public static boolean isKickOff(DataPacket input) {
     return Math.abs(input.ball.position.x) < 1
         && Math.abs(input.ball.position.x) < 1
-        && input.ball.velocity.magnitude() < 10;
+        && input.ball.velocity.norm() < 10;
   }
 
   private enum StartLocation {

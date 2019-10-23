@@ -17,11 +17,14 @@ public class CarData {
     /** The velocity of the car. */
     public final Vector3 velocity;
 
-    /** The result of calling velocity.flatten().magnitude(). */
+    /** The result of calling velocity.flatten().norm(). */
     public final double groundSpeed;
 
     /** The orientation of the car */
     public final CarOrientation orientation;
+
+    /** The angular velocity of the car. */
+    public final Vector3 angularVelocity;
 
     /** Boost ranges from 0 to 100 */
     public final double boost;
@@ -49,6 +52,7 @@ public class CarData {
     public CarData(rlbot.flat.PlayerInfo playerInfo, float elapsedSeconds) {
         this.position = Vector3.of(playerInfo.physics().location());
         this.velocity = Vector3.of(playerInfo.physics().velocity());
+        this.angularVelocity = Vector3.of(playerInfo.physics().angularVelocity());
 
         this.groundSpeed = velocity.flatten().magnitude();
 
@@ -58,5 +62,39 @@ public class CarData {
         this.team = playerInfo.team();
         this.hasWheelContact = playerInfo.hasWheelContact();
         this.elapsedSeconds = elapsedSeconds;
+    }
+
+    private CarData(Builder builder) {
+        this.position = builder.position;
+        this.velocity = builder.velocity;
+
+        this.groundSpeed = velocity.flatten().magnitude();
+
+        this.orientation = builder.orientation;
+        this.angularVelocity = builder.angularVelocity;
+        this.boost = builder.boost;
+        this.isSupersonic = groundSpeed > 2200;
+        this.team = 1;
+        this.hasWheelContact = false;
+        this.elapsedSeconds = builder.time;
+    }
+
+    public static class Builder {
+        public float time;
+        public double boost;
+        public CarOrientation orientation;
+        public Vector3 velocity;
+        public Vector3 position;
+        public Vector3 angularVelocity;
+
+        private boolean builderCalled = false;
+        public CarData build() {
+            if (builderCalled) {
+                throw new IllegalStateException("Cannot call build again");
+            }
+
+            builderCalled = true;
+            return new CarData(this);
+        }
     }
 }

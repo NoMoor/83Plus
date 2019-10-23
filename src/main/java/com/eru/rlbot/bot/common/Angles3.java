@@ -1,8 +1,11 @@
 package com.eru.rlbot.bot.common;
 
-import com.eru.rlbot.common.input.DataPacket;
+import com.eru.rlbot.common.input.CarData;
 import com.eru.rlbot.common.output.ControlsOutput;
 import com.eru.rlbot.common.vector.Vector3;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /** Utilities for calculating rotations in 3d space. */
 // https://github.com/samuelpmish/RLUtilities/blob/master/src/mechanics/aerial_turn.cc
@@ -20,24 +23,27 @@ public class Angles3 {
   private static final Vector3 ANGULAR_DAMPING = Vector3.of(-50.0f, -30.0f, -20.0f).scaled(1/SCALE);
 
   // How far ahead to look.
-  private static final float HORIZON_TIME = .05f;
+  private static final float HORIZON_TIME = .016666f;
 
   /** Returns controls to optimally rotate toward the target orientation. */
-  public static ControlsOutput makeControlsFor(DataPacket input, Matrix3 target) {
-    Vector3 omega = target.transpose().dot(input.car.velocity);
-    Matrix3 theta = target.transpose().dot(input.car.orientation);
+  public static void makeControlsFor(CarData car, Matrix3 target, ControlsOutput controls) {
+    // Omega = Velocity
+    Vector3 omega = target.transpose().dot(car.angularVelocity);
+
+    // Theta = orientation
+    Matrix3 theta = target.transpose().dot(car.orientation);
     Vector3 omega_local = omega.dot(theta);
+
     Vector3 phi = rotation_to_axis(theta);
 
-    boolean finished = (phi.magnitude() < EPSILON_PHI) && (omega.magnitude() < EPSILON_OMEGA);
+    boolean finished = (phi.norm() < EPSILON_PHI) && (omega.norm() < EPSILON_OMEGA);
 
     if (finished) {
-      return new ControlsOutput();
-
+      return;
     }
 
-    Matrix3 Z0 = z(phi);
-//    Vector3 dphi_dt = Z0.dot(omega); // This doesn't seem to be used.
+    Matrix3 z0 = z(phi);
+//    Vector3 dphi_dt = Z0.dot(omega); // This doesn't seem to be used. ???
 
     float horizon_time = Math.max(0.03f, 4.0f * HORIZON_TIME);
 
@@ -50,43 +56,55 @@ public class Angles3 {
     // This helps to ensure monotonic convergence to the
     // desired orientation, when possible.
     int n_iter = 5;
-    float eps = 0.001f;
+    double eps = 0.001f;
     float offset = 0.00001f;
     for (int i = 0; i < n_iter; i++) {
-      Vector3 f0 = f(alpha, horizon_time, theta, omega, Z0, phi);
+      Vector3 f0 = f(alpha, horizon_time, theta, omega, z0, phi);
 
-      Vector3 df_j0 = f0
-          .minus(f(alpha.plus(Matrix3.IDENTITY.row(0).scaled(eps)), horizon_time, theta, omega, Z0, phi))
-          .scaled(eps);
-      df_j0 = Vector3.of(df_j0.x + offset, df_j0.y, df_j0.z);
+      // TODO: Choose an implementation.
+//      Vector3 df_j0 = f0
+//          .minus(f(alpha.plus(Matrix3.IDENTITY.row(0).scaled(eps)), horizon_time, theta, omega, z0, phi))
+//          .scaled(1 / eps);
+//      df_j0 = Vector3.of(df_j0.x + offset, df_j0.y, df_j0.z);
+//
+//      Vector3 df_j1 = f0
+//          .minus(f(alpha.plus(Matrix3.IDENTITY.row(1).scaled(eps)), horizon_time, theta, omega, z0, phi))
+//          .scaled(1 / eps);
+//      df_j1 = Vector3.of(df_j1.x, df_j1.y + offset, df_j1.z);
+//
+//      Vector3 df_j2 = f0
+//          .minus(f(alpha.plus(Matrix3.IDENTITY.row(2).scaled(eps)), horizon_time, theta, omega, z0, phi))
+//          .scaled(1 / eps);
+//      df_j2 = Vector3.of(df_j2.x, df_j2.y, df_j2.z + offset);
+//
+//      Matrix3 J = Matrix3.of(df_j0, df_j1, df_j2);
 
-      Vector3 df_j1 = f0
-          .minus(f(alpha.plus(Matrix3.IDENTITY.row(1).scaled(eps)), horizon_time, theta, omega, Z0, phi))
-          .scaled(eps);
-      df_j1 = Vector3.of(df_j1.x, df_j1.y + offset, df_j1.z);
+      List<Vector3> vector3List = new ArrayList<>(3);
+      for (int j = 0; j < 3; j++) {
 
-      Vector3 df_j2 = f0
-          .minus(f(alpha.plus(Matrix3.IDENTITY.row(2).scaled(eps)), horizon_time, theta, omega, Z0, phi))
-          .scaled(eps);
-      df_j2 = Vector3.of(df_j2.x, df_j2.y, df_j2.z + offset);
+        Vector3 epsIdentity = Matrix3.IDENTITY.row(j).scaled(eps);
 
-      Matrix3 J = Matrix3.of(df_j0, df_j1, df_j2).transpose();
+        Vector3 diff = f(alpha.plus(epsIdentity), horizon_time, theta, omega, z0, phi);
+
+        Vector3 v = f0.minus(diff).scaled(1 / eps);
+        v = (i == 0) ? v.addX(offset) : (i == 1) ? v.addY(offset) : v.addZ(offset);
+        vector3List.add(v);
+      }
+
+      Matrix3 J = Matrix3.of(vector3List.get(0), vector3List.get(1), vector3List.get(2)).transpose();
 
       Vector3 delta_alpha = J.inverse().dot(f0);
 
       alpha = alpha.plus(delta_alpha);
 
-      if (delta_alpha.magnitude() < 1.0f) break;
+      if (delta_alpha.norm() < 1.0f) break;
     }
 
     Vector3 rpy = find_controls_for(alpha, omega_local);
 
-    ControlsOutput controls = new ControlsOutput();
     controls.withRoll(rpy.x);
     controls.withPitch(rpy.y);
     controls.withYaw(rpy.z);
-
-    return controls;
   }
 
   // This matrix is used to relate the angular
@@ -100,7 +118,7 @@ public class Angles3 {
   //
   private static Matrix3 z(Vector3 q) {
 
-    double norm_q = q.magnitude(); // Is norm == magnitude?
+    double norm_q = q.norm();
 
     // for small enough values, use the taylor expansion
     if (norm_q < 0.2f) {
@@ -203,14 +221,14 @@ public class Angles3 {
 
     // Note: these controls are calculated differently,
     // since Rocket League never disables roll damping.
-    Vector3 alpha_values = Vector3.of(-T.x + D.x * w.x, D.x * w.x, T.x + D.x * w.x);
-    double x = solve_pwl(ideal_alpha.x, alpha_values);
+    Vector3 alphaValuesX = Vector3.of(-T.x + (D.x * w.x), (D.x * w.x), T.x + (D.x * w.x));
+    double x = solve_pwl(ideal_alpha.x, alphaValuesX);
 
-    alpha_values = Vector3.of(-T.y, D.y * w.y, T.y);
-    double y = solve_pwl(ideal_alpha.y, alpha_values);
+    Vector3 alphaValuesY = Vector3.of(-T.y, D.y * w.y, T.y);
+    double y = solve_pwl(ideal_alpha.y, alphaValuesY);
 
-    alpha_values = Vector3.of(-T.z, D.z * w.z, T.z);
-    double z = solve_pwl(ideal_alpha.z, alpha_values);
+    Vector3 alphaValuesZ = Vector3.of(-T.z, D.z * w.z, T.z);
+    double z = solve_pwl(ideal_alpha.z, alphaValuesZ);
 
     return Vector3.of(x, y, z);
   }

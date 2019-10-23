@@ -23,10 +23,10 @@ public class CarOrientation extends Matrix3 {
     public final Vector3 rightVector;
 
     public CarOrientation(Vector3 noseVector, Vector3 roofVector) {
-        super(noseVector, roofVector, noseVector.crossProduct(roofVector));
+        super(noseVector, noseVector.cross(roofVector), roofVector);
         this.noseVector = noseVector;
         this.roofVector = roofVector;
-        this.rightVector = noseVector.crossProduct(roofVector);
+        this.rightVector = noseVector.cross(roofVector);
     }
 
     public static CarOrientation fromFlatbuffer(PlayerInfo playerInfo) {
@@ -36,10 +36,8 @@ public class CarOrientation extends Matrix3 {
             playerInfo.physics().rotation().roll());
     }
 
-    /**
-     * All params are in radians.
-     */
-    private static CarOrientation convert(double pitch, double yaw, double roll) {
+    /** All params are in radians. */
+    public static CarOrientation convert(double pitch, double yaw, double roll) {
 
         double noseX = -1 * Math.cos(pitch) * Math.cos(yaw);
         double noseY = Math.cos(pitch) * Math.sin(yaw);
