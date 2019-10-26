@@ -1,36 +1,32 @@
 package com.eru.rlbot.bot.ballchaser.v1.tactics;
 
+import static com.eru.rlbot.bot.common.Constants.*;
+
 import com.eru.rlbot.bot.EruBot;
-import com.eru.rlbot.bot.common.*;
+import com.eru.rlbot.bot.common.Angles;
+import com.eru.rlbot.bot.common.CarNormalUtils;
+import com.eru.rlbot.bot.common.Constants;
+import com.eru.rlbot.bot.common.Goal;
 import com.eru.rlbot.common.input.BallData;
 import com.eru.rlbot.common.input.CarData;
 import com.eru.rlbot.common.input.DataPacket;
+import com.eru.rlbot.common.jump.JumpManager;
 import com.eru.rlbot.common.output.ControlsOutput;
 import com.eru.rlbot.common.vector.Vector3;
-
 import java.awt.*;
 
-import static com.eru.rlbot.bot.common.Constants.*;
-
-public class DribbleTactician implements Tactician {
-
-  private static final float OCTANE_BALANCE_POINT = -1.6351f;
+public class DribbleTactician extends Tactician {
 
   private static final float IDEAL_DRIBBLE_SPEED = 1200;
 
   private static final float PICK_UP_SPEED = 800f;
 
-  private static final float CATCH_BALL_POINT = OCTANE_BALANCE_POINT;
-  private static final float BALL_DIAMETER = BALL_SIZE;
-
   private static final Vector3 target_left = Goal.opponentGoal(1).left;
   private static final Vector3 target_right = Goal.opponentGoal(1).right;
   private static final Vector3 ownGoal = Goal.opponentGoal(0).center;
 
-  private final EruBot bot;
-
   DribbleTactician(EruBot bot) {
-    this.bot = bot;
+    super(bot);
   }
 
   public static boolean canDribble(DataPacket input) {
@@ -38,17 +34,83 @@ public class DribbleTactician implements Tactician {
   }
 
   @Override
-  public void execute(DataPacket input, ControlsOutput output, Tactic nextTactic) {
+  public boolean execute(DataPacket input, ControlsOutput output, Tactic nextTactic) {
     BallData relativeBallData = CarNormalUtils.noseNormalLocation(input);
+
+    if ((input.car.position.y > -1000 && Math.abs(relativeBallData.velocity.y) < 50) || flickLock) {
+      flick(input, relativeBallData, output);
+      return false;
+    }
 
     if (ballIsOnGround(input)) {
       chip(input, relativeBallData, output);
       angleToBall(input, output);
     } else if (ballIsOnCar(input, relativeBallData)) {
       driveToTarget(input, relativeBallData, output);
+    }
+
+    output.withSteer(0); // TODO: Don't turn left/right.
+    return false;
+  }
+
+  private boolean flickLock = false;
+  private int noBoostTicks = 0;
+
+  private void resetFlickLocks() {
+    flickLock = false;
+    noBoostTicks = 0;
+  }
+
+  private void flick(DataPacket input, BallData relativeBallData, ControlsOutput output) {
+
+    flickLock = true;
+    if (noBoostTicks++ < 20) {
+      output.withThrottle(1.0f); // Keep driving straight.
+      bot.botRenderer.setBranchInfo("Don't boost");
+    } else if (
+        input.car.position.z > 80
+            && input.car.velocity.z > -10
+//            && input.car.velocity.z < 200
+            && Math.abs(relativeBallData.position.x) < 10 //
+            && Math.abs(relativeBallData.velocity.z) < 60 //
+            && Math.abs(relativeBallData.velocity.y) < 100
+            && (relativeBallData.position.y < 100 && relativeBallData.position.y > 0)) {
+
+//      if (JumpManager.hasJumpReleasedInAir()) {
+//        bot.botRenderer.setBranchInfo("Release Jump1");
+//        output.withJump(false);
+//      } else {
+        bot.botRenderer.setBranchInfo("Flick");
+        // Flick
+        output
+            .withJump()
+            .withPitch(-1.0f);
+        resetFlickLocks();
+//      }
     } else {
-      catchBall(input, relativeBallData, output);
-      relativeAngleToBall(input, relativeBallData, output); // Set up the angle here too.
+      if (input.car.position.z > 150 && input.car.velocity.z < 400) {
+        bot.botRenderer.setBranchInfo("Release Jump");
+        output.withJump(false);
+      } else {
+        bot.botRenderer.setBranchInfo("Hold Jump");
+        output.withJump()
+            .withPitch(input.car.orientation.getNoseVector().z < -.1 ? .5 : 0);
+      }
+    }
+  }
+
+  private float getBalancePoint(DataPacket input) {
+    double speed = input.car.groundSpeed;
+
+    // This should probably be continuous
+    if (speed < 500) {
+      return OCTANE_BALANCE_POINT + 20;
+    } else if (speed < 1000) {
+      return OCTANE_BALANCE_POINT + 30;
+    } else if (speed < 1600) {
+      return OCTANE_BALANCE_POINT + 50;
+    } else {
+      return OCTANE_BALANCE_POINT + 65;
     }
   }
 
@@ -72,18 +134,18 @@ public class DribbleTactician implements Tactician {
 
     // TODO: Debug why this is still turning a bit too far.
     if (tooFarLeft) {
-      moveBallTo(OCTANE_BALANCE_POINT, input, relativeBallData, output);
+      moveBallTo(getBalancePoint(input), input, relativeBallData, output);
       output.withSteer(-0.5f); // Hard left.
       bot.botRenderer.addDebugText("Hard Left");
     } else if (tooFarRight) {
-      moveBallTo(OCTANE_BALANCE_POINT, input, relativeBallData, output);
+      moveBallTo(getBalancePoint(input), input, relativeBallData, output);
       output.withSteer(0.5f); // Hard right.
       bot.botRenderer.addDebugText("Hard Right");
     } else if (needToTurnMore && canTurnMore) {
       bot.botRenderer.addDebugText("Dribble start turn");
 
       // TODO: Figure out how much more throttle to give.
-      moveBallTo(OCTANE_BALANCE_POINT, input, relativeBallData, output); // TODO: Make speed / distance dependent
+      moveBallTo(getBalancePoint(input), input, relativeBallData, output); // TODO: Make speed / distance dependent
 
       // Ball is balanced. Initiate turn.
       double steeringInput = -correctionAngle * 3;
@@ -102,7 +164,7 @@ public class DribbleTactician implements Tactician {
     boolean rightWard = relativeBallData.position.x > 0;
     double tiltMagnitude = Math.abs(relativeBallData.position.x);
 
-    double value = 0d;
+    double value;
 
     // Values in radians
     if (tiltMagnitude < 10) {
@@ -126,22 +188,6 @@ public class DribbleTactician implements Tactician {
 
   private float getBalancableX(CarData car) {
     return 50f;
-  }
-
-  private void relativeAngleToBall(DataPacket input, BallData relativeBallData, ControlsOutput output) {
-    if (relativeBallData.position.y < 0 && relativeBallData.velocity.y > 0) {
-      // Ball is behind you but catching up. Make slight x adjustment if needed
-      if (Math.abs(relativeBallData.velocity.x) > 10) { // #Arbitrary threshold
-        double steerAngle = -relativeBallData.velocity.x / 400;
-        bot.botRenderer.addDebugText("Catch turn");
-        output.withSteer(steerAngle);
-      }
-    } else {
-      double correctionAngle = Angles.flatCorrectionDirection(input.car, input.ball.position);
-
-      bot.botRenderer.addDebugText("Catch 2 Turn");
-      output.withSteer(correctionAngle);
-    }
   }
 
   private void angleToBall(DataPacket input, ControlsOutput output) {
@@ -170,7 +216,7 @@ public class DribbleTactician implements Tactician {
     } else {
       // Balance
 //      bot.botRenderer.addDebugText(Color.green, "Balance!");
-      moveBallTo(OCTANE_BALANCE_POINT, input, relativeBallData, output);
+      moveBallTo(getBalancePoint(input), input, relativeBallData, output);
     }
   }
 
@@ -288,49 +334,6 @@ public class DribbleTactician implements Tactician {
     }
   }
 
-  // TODO: Move this to another class.
-  // Called when ball is in the air.
-  private void catchBall(DataPacket input, BallData relativeBallData, ControlsOutput output) {
-    double ballSpeed = input.ball.velocity.flatten().magnitude();
-    double carSpeed = input.car.velocity.flatten().magnitude();
-
-    double distanceToCatchPoint = relativeBallData.position.y - CATCH_BALL_POINT;
-
-    // How long to get to x/y position of the ball?
-    double ticksToBall = distanceToCatchPoint
-        / -relativeBallData.velocity.y; // Negate the velocity since moving toward the ball is a relative negative velocity.
-
-    double ballHeightAboveCar = relativeBallData.position.z - (CAR_HEIGHT + BALL_DIAMETER);
-    double ballDownVelocity = relativeBallData.velocity.z;
-
-    // How long for the ball to land on the car?
-    double ticksToCar = timeToLand(ballHeightAboveCar, ballDownVelocity);
-
-    if (ticksToBall < 0) {
-      // We are going to overrun the ball.
-      bot.botRenderer.addDebugText(Color.RED, "Slow Down!");
-      output.withThrottle(distanceToCatchPoint > 0 ? 1f : 0f);
-    } else if (ballSpeed > carSpeed || ticksToBall > ticksToCar) {
-      // The ball is getting away or the ball will hit the ground before we get there.
-      bot.botRenderer.addDebugText(Color.YELLOW, "Behind");
-      output.withThrottle(1.0f);
-
-    // Good place to catch the ball. Match speed
-    } else if (carSpeed >= ballSpeed && ticksToBall < ticksToCar){
-      bot.botRenderer.addDebugText(Color.YELLOW, "Feather");
-
-      // Throttle to maintain speed
-      output.withThrottle(.02);
-
-    } else {
-      bot.botRenderer.addDebugText(Color.BLACK, "Default catch");
-      output.withThrottle(0.5f);
-    }
-    // Direction
-//    bot.botRenderer.addDebugText(String.format("TTC: %f", ticksToCar), Color.white);
-//    bot.botRenderer.addDebugText(String.format("TTB: %f", ticksToBall), Color.white);
-  }
-
   private boolean ballIsOnGround(DataPacket input) {
     boolean initialPosition = input.ball.velocity.z == 0 && input.ball.position.z < 150;
     boolean onGround = input.ball.position.z <= BALL_SIZE;
@@ -363,16 +366,5 @@ public class DribbleTactician implements Tactician {
       // Need to turn around.
       output.withThrottle(1.0f);
     }
-  }
-
-  private double timeToLand(double height, double verticalSpeed) {
-    double firstTerm = verticalSpeed / GRAVITY;
-    double secondTerm = Math.sqrt((verticalSpeed * verticalSpeed) + (2 * GRAVITY * height)) / GRAVITY;
-
-    return Math.max(firstTerm + secondTerm, firstTerm - secondTerm);
-  }
-
-  private double timeToCatch(double distance, double acceleration) {
-    return Math.sqrt((2 * acceleration * distance)) / acceleration;
   }
 }

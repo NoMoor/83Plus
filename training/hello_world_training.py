@@ -13,9 +13,9 @@ def make_default_playlist():
     exercises = []
     # exercises += stone_exercises
     # exercises += bronze_exercises
-    # exercises += dribble_exercises
+    exercises += dribble_exercises
     # exercises += kickoff_exercises
-    exercises += wavedash_exercises
+    # exercises += wavedash_exercises
 
     for exercise in exercises:
         exercise.match_config.player_configs = [

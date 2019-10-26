@@ -21,8 +21,10 @@ public class JumpManager {
     if (!input.car.hasWheelContact && !jumpPressed) {
       // We've been bumped and we can flip whenever.
       canFlip = true;
+      jumpInAirReleased = true;
     } else if (input.car.hasWheelContact) {
       jumpTime = 0;
+      jumpInAirReleased = false;
     }
   }
 
@@ -37,11 +39,11 @@ public class JumpManager {
     if (!input.car.hasWheelContact && jumpPressed) {
       jumpTime = input.car.elapsedSeconds;
       canFlip = false;
+    } else if (!input.car.hasWheelContact && !jumpPressed) {
+      jumpInAirReleased = true;
     }
 
-    jumpInAirReleased = !input.car.hasWheelContact && !jumpPressed;
-
-    if (!input.car.hasWheelContact && jumpInAirReleased && output.holdJump()) {
+    if (!input.car.hasWheelContact && jumpInAirReleased && jumpPressed) {
       // Dodging now.
       canFlip = false;
     } else if (jumpTime > 0 && jumpInAirReleased) {
@@ -60,5 +62,9 @@ public class JumpManager {
 
   public static boolean canFlip() {
     return canFlip;
+  }
+
+  public static boolean hasJumpReleasedInAir() {
+    return jumpInAirReleased;
   }
 }

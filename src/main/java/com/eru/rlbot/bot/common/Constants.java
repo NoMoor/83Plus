@@ -26,6 +26,8 @@ public class Constants {
   public static final float CAR_LENGTH = 118.01f;
   public static final float CAR_WIDTH = 84.2f;
 
+  public static final float OCTANE_BALANCE_POINT = -1.6351f;
+
   // Acceleration
   public static final double GRAVITY = 650;
   public static final double BOOSTED_ACCELERATION = 991.666;

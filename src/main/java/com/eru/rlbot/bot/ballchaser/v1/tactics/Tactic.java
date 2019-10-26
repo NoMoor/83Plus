@@ -26,23 +26,16 @@ public class Tactic {
     this.type = type;
   }
 
-  boolean isDone(DataPacket input) {
-    // TODO: Make this more complicated.
-    if (input.car.position.distance(target.position) < MIN_DISTANCE) {
-      return true;
-    }
-
-    return false;
-  }
-
   public enum Type {
     GRAB_BOOST,
     HIT_BALL,
+    CATCH,
     DEMO,
     WALL_RIDE,
     DEFEND,
     DRIBBLE,
     KICKOFF,
+    PICK_UP,
 
     // These may be more maneuvers and not tactics.
     WAVE_DASH,

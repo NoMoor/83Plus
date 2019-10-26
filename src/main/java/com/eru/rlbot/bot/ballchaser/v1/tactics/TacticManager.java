@@ -6,8 +6,6 @@ import com.eru.rlbot.common.input.CarData;
 import com.eru.rlbot.common.input.DataPacket;
 import com.eru.rlbot.common.output.ControlsOutput;
 import com.eru.rlbot.common.vector.Vector3;
-import rlbot.manager.BotLoopRenderer;
-import rlbot.render.Renderer;
 
 import java.awt.*;
 import java.util.HashMap;
@@ -37,12 +35,14 @@ public class TacticManager {
     dribbleTactic = new Tactic(bot.opponentsGoal.center, Tactic.Type.DRIBBLE);
     defaultTactic = dribbleTactic;
 
-    TACTICIAN_MAP.put(Tactic.Type.FRONT_FLIP, new FlipTactician());
-    TACTICIAN_MAP.put(Tactic.Type.WALL_RIDE, new SideWallTactician());
-    TACTICIAN_MAP.put(Tactic.Type.HIT_BALL, new RollingTactician(bot));
-    TACTICIAN_MAP.put(Tactic.Type.DEFEND, new BackupTactician());
+    TACTICIAN_MAP.put(Tactic.Type.CATCH, new CatchTactician(bot));
+    TACTICIAN_MAP.put(Tactic.Type.DEFEND, new BackupTactician(bot));
     TACTICIAN_MAP.put(Tactic.Type.DRIBBLE, new DribbleTactician(bot));
+    TACTICIAN_MAP.put(Tactic.Type.FRONT_FLIP, new FlipTactician(bot));
+    TACTICIAN_MAP.put(Tactic.Type.HIT_BALL, new RollingTactician(bot));
     TACTICIAN_MAP.put(Tactic.Type.KICKOFF, new KickoffTactician(bot));
+    TACTICIAN_MAP.put(Tactic.Type.PICK_UP, new PickUpTactician(bot));
+    TACTICIAN_MAP.put(Tactic.Type.WALL_RIDE, new SideWallTactician(bot));
     TACTICIAN_MAP.put(Tactic.Type.WAVE_DASH, new WaveDashTactician(bot));
   }
 
@@ -71,13 +71,13 @@ public class TacticManager {
   }
 
   public void execute(DataPacket input, ControlsOutput output) {
-    getTactician().execute(input, output, getTactic());
+    boolean isDone = getTactician().execute(input, output, getTactic());
 
     botRenderer.setTactic(getTactic());
 
     renderTactics(input.car);
 
-    if (nextTactic().isDone(input)) {
+    if (isDone) {
       tacticList.pop();
     }
   }

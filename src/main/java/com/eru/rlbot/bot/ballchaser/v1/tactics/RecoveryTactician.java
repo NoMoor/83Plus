@@ -1,13 +1,18 @@
 package com.eru.rlbot.bot.ballchaser.v1.tactics;
 
+import com.eru.rlbot.bot.EruBot;
 import com.eru.rlbot.common.input.DataPacket;
 import com.eru.rlbot.common.output.ControlsOutput;
 
-public class RecoveryTactician implements Tactician {
+public class RecoveryTactician extends Tactician {
+
+  RecoveryTactician(EruBot bot) {
+    super(bot);
+  }
 
   @Override
-  public void execute(DataPacket input, ControlsOutput output, Tactic nextTactic) {
-    // TODO(ahatfield): Add a threshold for how far you are from the ground.
+  public boolean execute(DataPacket input, ControlsOutput output, Tactic nextTactic) {
+    // TODO(ahatfield): Update to use Angles3.
     // The car is falling.
     if (!input.car.hasWheelContact && input.car.velocity.z < 0) {
 
@@ -20,5 +25,7 @@ public class RecoveryTactician implements Tactician {
           .withRoll(input.car.orientation.getLeftVector().z) // If the door is pointing down, roll left.
           .withYaw((float) yawCorrection);
     }
+
+    return false;
   }
 }

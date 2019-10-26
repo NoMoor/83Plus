@@ -8,12 +8,22 @@ public class CarNormalUtils {
 
   private static final Vector3 NOSE_NORTH = Vector3.of(0, 1, 0);
 
+  private static DataPacket cacheKey;
+  private static BallData cacheValue;
+
   /** Returns the ball position / velocity relative to the car position. */
   // Context: https://stackoverflow.com/questions/14607640/rotating-a-vector-in-3d-space
   public static BallData noseNormalLocation(DataPacket input) {
-    return new BallData(
-        translateRelative(input.car.position, input.ball.position, input.car.orientation.getNoseVector()),
-        translateRelative(input.car.velocity, input.ball.velocity, input.car.orientation.getNoseVector()));
+    if (input == cacheKey) {
+      return cacheValue;
+    } else {
+      cacheKey = input;
+      cacheValue = new BallData(
+          translateRelative(input.car.position, input.ball.position, input.car.orientation.getNoseVector()),
+          translateRelative(input.car.velocity, input.ball.velocity, input.car.orientation.getNoseVector()));
+    }
+
+    return cacheValue;
   }
 
   private static Vector3 translateRelative(Vector3 source, Vector3 target, Vector3 referenceOrientation) {

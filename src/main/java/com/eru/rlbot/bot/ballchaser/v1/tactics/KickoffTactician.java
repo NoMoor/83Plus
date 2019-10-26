@@ -10,11 +10,10 @@ import com.eru.rlbot.common.input.DataPacket;
 import com.eru.rlbot.common.jump.JumpManager;
 import com.eru.rlbot.common.output.ControlsOutput;
 
-public class KickoffTactician implements Tactician {
+public class KickoffTactician extends Tactician {
 
   private static final float NOSE_DOWN = -1.0f;
 
-  private final EruBot bot;
   private boolean flipLock;
 
   private Tactic tactic;
@@ -25,7 +24,7 @@ public class KickoffTactician implements Tactician {
   private boolean hasFlipped; // Keeps track of the sequence
 
   KickoffTactician(EruBot bot) {
-    this.bot = bot;
+    super(bot);
   }
 
   public static boolean isKickOff(DataPacket input) {
@@ -57,7 +56,7 @@ public class KickoffTactician implements Tactician {
   }
 
   @Override
-  public void execute(DataPacket input, ControlsOutput output, Tactic nextTactic) {
+  public boolean execute(DataPacket input, ControlsOutput output, Tactic nextTactic) {
     if (nextTactic != tactic) {
       tactic = nextTactic;
       setStartLocation(input.car);
@@ -67,6 +66,7 @@ public class KickoffTactician implements Tactician {
     mustyKicks(output, input);
 
     // dumbKickoff(output, input);
+    return false;
   }
 
   private void mustyKicks(ControlsOutput output, DataPacket input) {

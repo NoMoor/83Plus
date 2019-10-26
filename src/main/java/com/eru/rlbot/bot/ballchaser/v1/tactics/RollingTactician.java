@@ -11,18 +11,16 @@ import com.eru.rlbot.common.vector.Vector3;
 
 import static com.eru.rlbot.bot.common.Constants.HALF_LENGTH;
 
-public class RollingTactician implements Tactician {
-
-  private final EruBot bot;
+public class RollingTactician extends Tactician {
 
   private boolean amBoosting;
 
   RollingTactician(EruBot bot) {
-    this.bot = bot;
+    super(bot);
   }
 
   @Override
-  public void execute(DataPacket input, ControlsOutput output, Tactic nextTactic) {
+  public boolean execute(DataPacket input, ControlsOutput output, Tactic nextTactic) {
     Vector2 carDirection = input.car.orientation.getNoseVector().flatten();
     Vector3 targetPosition = nextTactic.target.position;
 
@@ -51,6 +49,7 @@ public class RollingTactician implements Tactician {
         .withSlide(Math.abs(flatCorrectionAngle) > 1);
 
 //    boostToShoot(input, output, flatCorrectionAngle);
+    return false;
   }
 
   private double wallRideCorrectionAngle(DataPacket input, Tactic nextTactic) {

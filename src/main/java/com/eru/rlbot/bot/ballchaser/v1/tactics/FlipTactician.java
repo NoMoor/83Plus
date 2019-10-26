@@ -1,5 +1,6 @@
 package com.eru.rlbot.bot.ballchaser.v1.tactics;
 
+import com.eru.rlbot.bot.EruBot;
 import com.eru.rlbot.bot.common.Angles;
 import com.eru.rlbot.common.input.DataPacket;
 import com.eru.rlbot.common.jump.JumpManager;
@@ -9,9 +10,13 @@ import com.eru.rlbot.common.vector.Vector3;
 import static com.eru.rlbot.bot.common.Constants.BALL_SIZE;
 
 /** Handles flip tactics for front and diagonal flips. */
-public class FlipTactician implements Tactician {
+public class FlipTactician extends Tactician {
 
   private Vector3 targetPosition;
+
+  public FlipTactician(EruBot bot) {
+    super(bot);
+  }
 
   /** Helps the strategy unit reason about things. */
   public int shouldExecute(DataPacket input) {
@@ -25,7 +30,7 @@ public class FlipTactician implements Tactician {
   }
 
   @Override
-  public void execute(DataPacket input, ControlsOutput output, Tactic nextTactic) {
+  public boolean execute(DataPacket input, ControlsOutput output, Tactic nextTactic) {
     double flatCorrectionAngle = Angles.flatCorrectionDirection(input.car, targetPosition);
 
     // Do a front flip.
@@ -45,5 +50,7 @@ public class FlipTactician implements Tactician {
             .withPitch(-1);
       }
     }
+
+    return false;
   }
 }

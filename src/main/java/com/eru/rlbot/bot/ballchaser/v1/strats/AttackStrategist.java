@@ -1,10 +1,7 @@
 package com.eru.rlbot.bot.ballchaser.v1.strats;
 
 import com.eru.rlbot.bot.EruBot;
-import com.eru.rlbot.bot.ballchaser.v1.tactics.DribbleTactician;
-import com.eru.rlbot.bot.ballchaser.v1.tactics.KickoffTactician;
-import com.eru.rlbot.bot.ballchaser.v1.tactics.Tactic;
-import com.eru.rlbot.bot.ballchaser.v1.tactics.TacticManager;
+import com.eru.rlbot.bot.ballchaser.v1.tactics.*;
 import com.eru.rlbot.common.input.DataPacket;
 import com.eru.rlbot.common.output.ControlsOutput;
 
@@ -25,12 +22,16 @@ public class AttackStrategist implements Strategist {
 
   @Override
   public boolean assign(DataPacket input) {
-    tacticManager.setTactic(new Tactic(input.ball.position, Tactic.Type.WAVE_DASH));
-    if (true) return true;
 
-    if (KickoffTactician.isKickOff(input)) {
+    if (DribbleTactician.canDribble(input)) {
+      tacticManager.setTactic(new Tactic(input.ball.position, Tactic.Type.DRIBBLE));
+    } else if (KickoffTactician.isKickOff(input)) {
       tacticManager.setTactic(new Tactic(input.ball.position, Tactic.Type.KICKOFF));
-    } if (DribbleTactician.canDribble(input)) {
+    } else if (PickUpTactician.canPickUp(input)) {
+      tacticManager.setTactic(new Tactic(input.ball.position, Tactic.Type.PICK_UP));
+    } else if (CatchTactician.canCatch(input)) {
+      tacticManager.setTactic(new Tactic(input.ball.position, Tactic.Type.DRIBBLE));
+    } else if (DribbleTactician.canDribble(input)) {
       tacticManager.setTactic(new Tactic(input.ball.position, Tactic.Type.DRIBBLE));
     } else {
       tacticManager.setTactic(new Tactic(input.ball.position, Tactic.Type.HIT_BALL));

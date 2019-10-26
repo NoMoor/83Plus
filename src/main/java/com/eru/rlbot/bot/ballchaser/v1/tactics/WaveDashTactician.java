@@ -7,7 +7,7 @@ import com.eru.rlbot.common.input.CarOrientation;
 import com.eru.rlbot.common.input.DataPacket;
 import com.eru.rlbot.common.output.ControlsOutput;
 
-public class WaveDashTactician implements Tactician {
+public class WaveDashTactician extends Tactician {
 
   private Tactic currentTactic;
 
@@ -18,16 +18,14 @@ public class WaveDashTactician implements Tactician {
     SLIDE
   }
 
-  private final EruBot bot;
-
   private Stage currentStage = Stage.PRE_JUMP;
 
   WaveDashTactician(EruBot bot) {
-    this.bot = bot;
+    super(bot);
   }
 
   @Override
-  public void execute(DataPacket input, ControlsOutput output, Tactic nextTactic) {
+  public boolean execute(DataPacket input, ControlsOutput output, Tactic nextTactic) {
     if (!nextTactic.equals(currentTactic)) {
       currentTactic = nextTactic;
       if (input.car.hasWheelContact) {
@@ -40,14 +38,14 @@ public class WaveDashTactician implements Tactician {
     bot.botRenderer.setBranchInfo(currentStage.name());
 
     boolean stageComplete = doCurrentStage(input, output);
-//    // Hold slide if we are traveling at all sideways.
-//    output.withSlide(input.car.groundSpeed > 800 && travelOffset(input) > .05);
 
     if (stageComplete) {
       int nextOrdinal = currentStage.ordinal() + 1;
 
       currentStage = Stage.values()[nextOrdinal % Stage.values().length];
     }
+
+    return false;
   }
 
   private boolean doCurrentStage(DataPacket input, ControlsOutput output) {

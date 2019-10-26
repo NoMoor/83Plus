@@ -1,12 +1,17 @@
 package com.eru.rlbot.bot.ballchaser.v1.tactics;
 
+import com.eru.rlbot.bot.EruBot;
 import com.eru.rlbot.common.input.DataPacket;
 import com.eru.rlbot.common.output.ControlsOutput;
 import com.eru.rlbot.common.vector.Vector3;
 
-public class JumpTactician implements Tactician {
+public class JumpTactician extends Tactician {
 
   private Vector3 targetPosition;
+
+  JumpTactician(EruBot bot) {
+    super(bot);
+  }
 
   void setTarget(Vector3 targetPosition) {
     // TODO: Ensure this is called.
@@ -14,7 +19,7 @@ public class JumpTactician implements Tactician {
   }
 
   @Override
-  public void execute(DataPacket input, ControlsOutput output, Tactic nextTactic) {
+  public boolean execute(DataPacket input, ControlsOutput output, Tactic nextTactic) {
     if (input.car.position.distance(targetPosition) < 1000 && input.car.position.z > 1000) {
       output
           .withJump()
@@ -22,5 +27,7 @@ public class JumpTactician implements Tactician {
     } else if (input.car.boost > 50 && !input.car.hasWheelContact) {
       output.withBoost();
     }
+
+    return false;
   }
 }
