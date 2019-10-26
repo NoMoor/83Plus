@@ -9,15 +9,15 @@ import com.eru.rlbot.common.vector.Vector3;
 public final class Angles {
 
   public static double flatCorrectionDirection(BallData ballData, Vector3 targetPoint) {
-    return -flatCorrectionAngle(ballData.position, ballData.velocity, targetPoint);
+    return flatCorrectionAngle(ballData.position, ballData.velocity, targetPoint);
   }
 
   public static double flatCorrectionDirection(CarData carData, Vector3 targetPoint) {
-    return -flatCorrectionAngle(carData.position, carData.orientation.getNoseVector(), targetPoint);
+    return flatCorrectionAngle(carData.position, carData.orientation.getNoseVector(), targetPoint);
   }
 
   public static double correctionDirection(Vector2 sourcePoint, Vector2 sourceOrientation, Vector2 targetPoint) {
-    return -flatCorrectionAngle(sourcePoint, sourceOrientation, targetPoint);
+    return flatCorrectionAngle(sourcePoint, sourceOrientation, targetPoint);
   }
 
   public static double flatCorrectionAngle(Vector3 sourcePoint, Vector3 sourceOrientation, Vector3 targetPoint) {

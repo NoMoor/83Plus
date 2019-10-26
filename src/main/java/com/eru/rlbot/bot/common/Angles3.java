@@ -23,15 +23,15 @@ public class Angles3 {
   private static final Vector3 ANGULAR_DAMPING = Vector3.of(-50.0f, -30.0f, -20.0f).scaled(1/SCALE);
 
   // How far ahead to look.
-  private static final float HORIZON_TIME = .016666f;
+  private static final float HORIZON_TIME = .05f;
 
   /** Returns controls to optimally rotate toward the target orientation. */
-  public static void makeControlsFor(CarData car, Matrix3 target, ControlsOutput controls) {
+  public static boolean setControlsFor(CarData car, Matrix3 target, ControlsOutput controls) {
     // Omega = Velocity
     Vector3 omega = target.transpose().dot(car.angularVelocity);
 
     // Theta = orientation
-    Matrix3 theta = target.transpose().dot(car.orientation.getMatrix());
+    Matrix3 theta = target.transpose().dot(car.orientation.getOrientationMatrix());
     Vector3 omega_local = omega.dot(theta);
 
     Vector3 phi = rotation_to_axis(theta);
@@ -39,15 +39,15 @@ public class Angles3 {
     boolean finished = (phi.norm() < EPSILON_PHI) && (omega.norm() < EPSILON_OMEGA);
 
     if (finished) {
-      return;
+      return true;
     }
 
     Matrix3 z0 = z(phi);
-//    Vector3 dphi_dt = Z0.dot(omega); // This doesn't seem to be used. ???
+//    Vector3 dphi_dt = z0.dot(omega); // This doesn't seem to be used. ???
 
     float horizon_time = Math.max(0.03f, 4.0f * HORIZON_TIME);
 
-    Vector3 alpha = Vector3.zero(); // Where is this actually defined?
+    Vector3 alpha = Vector3.zero();
 
     // Apply a few Newton iterations to find
     // local angular accelerations that try not to overshoot
@@ -105,6 +105,8 @@ public class Angles3 {
     controls.withRoll(rpy.x);
     controls.withPitch(rpy.y);
     controls.withYaw(rpy.z);
+
+    return false;
   }
 
   // This matrix is used to relate the angular
@@ -160,7 +162,7 @@ public class Angles3 {
   }
 
   // This function provides a guideline for when
-  // control swiching should take place.
+  // control switching should take place.
   private static Vector3 g(Vector3 q, Vector3 dq_dt) {
     Vector3 T = ANGULAR_ACCELERATION;
     Vector3 D = ANGULAR_DAMPING;
@@ -179,7 +181,10 @@ public class Angles3 {
   private static Vector3 f(Vector3 alpha_local, float dt, Matrix3 theta, Vector3 omega, Matrix3 z0, Vector3 phi) {
     Vector3 alpha_world = theta.dot(alpha_local);
     Vector3 omega_pred = omega.plus(alpha_world.scaled(dt));
-    Vector3 phi_pred = phi.plus(z0.dot(omega.plus(alpha_world.scaled(0.5f * dt)))).scaled(dt);
+    Vector3 phi_pred = phi.plus(
+        z0.dot(
+            omega.plus(alpha_world.scaled(0.5f * dt)))
+            .scaled(dt));
     Vector3 dphi_dt_pred = z0.dot(omega_pred);
     return phi_pred.scaled(-1.0d).minus(g(phi_pred, dphi_dt_pred));
   }

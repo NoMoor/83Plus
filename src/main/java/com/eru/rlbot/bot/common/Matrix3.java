@@ -26,6 +26,18 @@ public class Matrix3 {
     this.c = c;
   }
 
+  @Override
+  public boolean equals(Object o) {
+    if (o == this) return true;
+    if (!(o instanceof Matrix3)) {
+      return false;
+    }
+
+    Matrix3 m = (Matrix3) o;
+
+    return a.equals(m.a) && b.equals(m.b) && c.equals(m.c);
+  }
+
   /** Returns the vector formed by all the values in a given row. */
   public Vector3 row(int i) {
     switch (i) {

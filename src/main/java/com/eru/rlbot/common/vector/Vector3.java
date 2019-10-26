@@ -31,14 +31,12 @@ public class Vector3 extends rlbot.vector.Vector3 {
     }
 
     private Vector3(rlbot.flat.Vector3 vec) {
-        // Invert the X value so that the axes make more sense.
-        this(-vec.x(), vec.y(), vec.z());
+        this(vec.x(), vec.y(), vec.z());
     }
 
     /** Translates a vector to the framework flat vector format. */
     public int toFlatbuffer(FlatBufferBuilder builder) {
-        // Invert the X value again so that rlbot sees the format it expects.
-        return rlbot.flat.Vector3.createVector3(builder, -x, y, z);
+        return rlbot.flat.Vector3.createVector3(builder, x, y, z);
     }
 
     /** Adds the two vectors together. */
