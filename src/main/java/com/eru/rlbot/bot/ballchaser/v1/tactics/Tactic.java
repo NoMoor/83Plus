@@ -8,7 +8,7 @@ import rlbot.flat.PredictionSlice;
 
 public class Tactic {
 
-  private static final double MIN_DISTANCE = 30;
+  private static final double MIN_DISTANCE = 80;
 
   // DO NOT CHANGE THIS.
   public Moment target;
@@ -27,6 +27,7 @@ public class Tactic {
   }
 
   boolean isDone(DataPacket input) {
+    // TODO: Make this more complicated.
     if (input.car.position.distance(target.position) < MIN_DISTANCE) {
       return true;
     }

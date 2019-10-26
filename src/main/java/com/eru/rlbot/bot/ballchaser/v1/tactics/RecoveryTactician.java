@@ -17,7 +17,7 @@ public class RecoveryTactician implements Tactician {
       // If nose vector is down, pitch up
       output
           .withPitch(-1 * input.car.orientation.getNoseVector().z) // TODO(ahatfield): Adjust this based on correction needed.
-          .withRoll(input.car.orientation.getRightVector().z) // If the door is pointing down, roll left.
+          .withRoll(input.car.orientation.getLeftVector().z) // If the door is pointing down, roll left.
           .withYaw((float) yawCorrection);
     }
   }

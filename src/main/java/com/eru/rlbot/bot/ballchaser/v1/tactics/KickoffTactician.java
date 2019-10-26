@@ -30,7 +30,7 @@ public class KickoffTactician implements Tactician {
 
   public static boolean isKickOff(DataPacket input) {
     return Math.abs(input.ball.position.x) < 1
-        && Math.abs(input.ball.position.x) < 1
+        && Math.abs(input.ball.position.y) < 1
         && input.ball.velocity.norm() < 10;
   }
 
@@ -129,8 +129,8 @@ public class KickoffTactician implements Tactician {
               .withYaw(relativeData.position.x);
 //              .withSteer(-relativeData.position.x);
         }
-        if (Math.abs(input.car.orientation.getRightVector().z) > .05) {
-          output.withRoll(input.car.orientation.getRightVector().z);
+        if (Math.abs(input.car.orientation.getLeftVector().z) > .05) {
+          output.withRoll(input.car.orientation.getLeftVector().z);
         }
         if (input.car.orientation.getNoseVector().z > .01) {
           output.withPitch(-10 * input.car.orientation.getNoseVector().z);

@@ -64,6 +64,7 @@ public class StrategyManager {
   /** Called every x ticks to get the best strategy. */
   private void updateStrategy(DataPacket input) {
     if (checkReset(input)) {
+
 //      return; // TODO: Is this needed?
     }
 

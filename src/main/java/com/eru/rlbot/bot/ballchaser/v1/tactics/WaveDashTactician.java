@@ -1,12 +1,11 @@
 package com.eru.rlbot.bot.ballchaser.v1.tactics;
 
 import com.eru.rlbot.bot.EruBot;
-import com.eru.rlbot.bot.common.Angles;
 import com.eru.rlbot.bot.common.Angles3;
 import com.eru.rlbot.bot.common.Matrix3;
+import com.eru.rlbot.common.input.CarOrientation;
 import com.eru.rlbot.common.input.DataPacket;
 import com.eru.rlbot.common.output.ControlsOutput;
-import com.eru.rlbot.common.vector.Vector3;
 
 public class WaveDashTactician implements Tactician {
 
@@ -15,8 +14,7 @@ public class WaveDashTactician implements Tactician {
   enum Stage {
     PRE_JUMP,
     JUMP,
-    TILT,
-    DODGE,
+    TILT_DODGE,
     SLIDE
   }
 
@@ -30,24 +28,25 @@ public class WaveDashTactician implements Tactician {
 
   @Override
   public void execute(DataPacket input, ControlsOutput output, Tactic nextTactic) {
-    if (nextTactic != currentTactic) {
-      bot.botRenderer.addAlertText("New Wavedash Tactic");
+    if (!nextTactic.equals(currentTactic)) {
       currentTactic = nextTactic;
       if (input.car.hasWheelContact) {
         currentStage = Stage.PRE_JUMP;
       } else {
-        currentStage = Stage.TILT;
+        currentStage = Stage.TILT_DODGE;
       }
     }
 
     bot.botRenderer.setBranchInfo(currentStage.name());
 
     boolean stageComplete = doCurrentStage(input, output);
-    // Hold slide if we are traveling at all sideways.
-    output.withSlide(input.car.groundSpeed > 800 && travelOffset(input) > .05);
+//    // Hold slide if we are traveling at all sideways.
+//    output.withSlide(input.car.groundSpeed > 800 && travelOffset(input) > .05);
 
     if (stageComplete) {
-      currentStage = Stage.values()[(currentStage.ordinal() + 1) % Stage.values().length];
+      int nextOrdinal = currentStage.ordinal() + 1;
+
+      currentStage = Stage.values()[nextOrdinal % Stage.values().length];
     }
   }
 
@@ -57,11 +56,8 @@ public class WaveDashTactician implements Tactician {
         return preJump(input, output);
       case JUMP:
         return jump(input, output);
-      case TILT:
-        return tilt2(input, output);
-//        return tilt(input, output);
-      case DODGE:
-        return dodge(input, output);
+      case TILT_DODGE:
+        return tiltDodge(input, output);
       case SLIDE:
         return slide(input, output);
     }
@@ -72,8 +68,12 @@ public class WaveDashTactician implements Tactician {
   private boolean slide(DataPacket input, ControlsOutput output) {
     output.withSlide();
 
-    if (input.car.hasWheelContact && slideTicks > 1) {
+    if (input.car.hasWheelContact && slideTicks > SLIDE_TICKS) {
       slideTicks = 0;
+      if (input.car.groundSpeed > 1000) {
+        output.withJump();
+        currentStage = Stage.JUMP;
+      }
       return true;
     }
 
@@ -81,145 +81,62 @@ public class WaveDashTactician implements Tactician {
     return false;
   }
 
-  private boolean dodge(DataPacket input, ControlsOutput output) {
-    if (input.car.hasWheelContact) {
+  private static final int SLIDE_TICKS = 10;
+
+  private static final float IDEAL_PITCH = -.05f;
+  private static final float IDEAL_ROLL = .55f;
+  private static final float IDEAL_YAW_OFFSET = .3f;
+
+  private static final float DODGE_PITCH = .1f;
+  private static final float DODGE_YAW = -1f;
+
+  private static final float DODGE_HEIGHT = 5;
+
+  private int tiltTicks = 0;
+
+  private boolean tiltDodge(DataPacket input, ControlsOutput output) {
+    if (tiltTicks > 10 && input.car.hasWheelContact) { // Wait a few ticks to make sure we catch the jump.
       // This should not happen.
+      tiltTicks = 0;
+      currentStage = Stage.SLIDE;
       return true;
     }
 
-    if (input.car.position.z < 30) {
+    float groundTicks = -(input.car.position.z + DODGE_HEIGHT) / input.car.velocity.z;
+
+    if (input.car.velocity.z < 0 && Math.abs(groundTicks) < .15) {
       // Dodge
       output.withJump()
-          .withPitch(-.8)
-          .withYaw(-1)
+          .withYaw(DODGE_YAW)
+          .withPitch(DODGE_PITCH)
           .withSlide();
       return true;
     }
 
-    return false;
-  }
+    Matrix3 target =
+        CarOrientation.convert(
+            IDEAL_PITCH,
+            (3.14 / 2) + IDEAL_YAW_OFFSET /* + travelToTargetOffset(input) */,
+            IDEAL_ROLL).getOrientationMatrix();
 
-  private static final float IDEAL_PITCH = .1f;
-  private static final float IDEAL_ROLL = -.35f;
-  private static final float IDEAL_YAW = .6f;
-  private static final float IDEAL_YAW2 = .5f;
-
-  private int tiltTicks = 0;
-
-  private boolean tilt2(DataPacket input, ControlsOutput output) {
-    if (tiltTicks > 10 && input.car.hasWheelContact) { // Wait a few ticks to make sure we catch the jump.
-      // This should not happen.
-      tiltTicks = 0;
-      return true;
-    }
-
-    Matrix3 target = Matrix3.of(Vector3.of(1, 0, 0), Vector3.of(0, -1, 0), Vector3.of(0, 0, 1));
-
-    Angles3.makeControlsFor(input.car, target, output);
-
-    // Max out controls.
-    float pitchInput = output.getPitch();
-    float yawInput = output.getYaw();
-    float rollInput = output.getRoll();
-
-    // Normalize the values keeping the sign.
-    float maxValue = Math.max(Math.abs(pitchInput), Math.max(Math.abs(rollInput), Math.abs(yawInput)));
-    output.withPitch(pitchInput / maxValue);
-    output.withRoll(rollInput / maxValue);
-    output.withYaw(yawInput / maxValue);
-
-    boolean hasYaw = Math.abs(travelToTargetOffset(input) - IDEAL_YAW2) < (IDEAL_YAW2 / 5);
-    boolean hasPitch = Math.abs(input.car.orientation.getNoseVector().z - IDEAL_PITCH) < (IDEAL_PITCH / 5);
-    boolean hasRoll = Math.abs(input.car.orientation.getRightVector().z - IDEAL_ROLL) < (IDEAL_ROLL / 5);
+    Angles3.setControlsFor(input.car, target, output);
 
     tiltTicks++;
-    if (hasRoll && hasYaw && hasPitch) { // Get them all at the same time.
-      tiltTicks = 0;
-      return true;
-    }
-    return false;
-  }
-
-  private boolean tilt(DataPacket input, ControlsOutput output) {
-    if (tiltTicks > 4 && input.car.hasWheelContact) { // Wait a few ticks to make sure we catch the jump.
-      // This should not happen.
-      tiltTicks = 0;
-      return true;
-    }
-
-    // Check face relative to direction of travel....
-    Vector3 noseVector = input.car.orientation.getNoseVector();
-    Vector3 normalTarget = currentTactic.target.position.minus(input.car.position); // Draw a vector between our positions.
-    double travelOffset = noseVector.flatten().correctionAngle(normalTarget.flatten());
-
-    bot.botRenderer.setBranchInfo(String.format("%#2f", travelOffset));
-
-    boolean hasYaw = false;
-    if (travelOffset < IDEAL_YAW - .10) {
-      if (IDEAL_YAW - travelOffset > .6) {
-        output.withYaw(.1f);
-      } else if (IDEAL_YAW - travelOffset > .2) {
-        output.withYaw(.4f);
-      } else {
-        output.withYaw(.2f);
-      }
-    } else if (travelOffset > IDEAL_YAW + .10) {
-      if (travelOffset - IDEAL_YAW > .6) {
-        output.withYaw(-.1f);
-      } else if (travelOffset - IDEAL_YAW > .2) {
-        output.withYaw(-.4f);
-      } else {
-        output.withYaw(-.2f);
-      }
-    } else {
-      hasYaw = true;
-    }
-
-    double rollZ = input.car.orientation.getRightVector().z;
-    boolean hasRoll = false;
-    if (rollZ > IDEAL_ROLL + .05) { // TODO: Adjust these based on how much you want to go.
-      if (rollZ - IDEAL_ROLL > .4) {
-        output.withRoll(.7f);
-      } else {
-        output.withRoll(.3f);
-      }
-    } else if (rollZ < IDEAL_ROLL - .05) {
-      if (IDEAL_ROLL - rollZ > .4) {
-        output.withRoll(-.7f);
-      } else {
-        output.withRoll(-.3f);
-      }
-    } else {
-      hasRoll = true;
-    }
-
-    boolean hasPitch = false;
-    if (noseVector.z < .05) {
-      output.withPitch(.4f);
-    } else if (noseVector.z > .15) {
-      output.withPitch(-.4f);
-    } else {
-      hasPitch = true;
-    }
-
-    tiltTicks++;
-    if (hasRoll || hasPitch) {
-      tiltTicks = 0;
-      return true;
-    }
     return false;
   }
 
   private int hasJumpedTicks;
   private boolean jump(DataPacket input, ControlsOutput output) {
     if (hasJumpedTicks == 0) {
-      output.withJump();
+      output.withJump()
+          .withSlide();
     } else {
       // Wait until we are in the air for sure.
       if (!input.car.hasWheelContact) {
         hasJumpedTicks = 0;
         return true;
       }
+      output.withSlide();
     }
 
     hasJumpedTicks++;
@@ -238,9 +155,20 @@ public class WaveDashTactician implements Tactician {
     return input.car.orientation.getNoseVector().flatten().correctionAngle(input.car.velocity.normalized().flatten());
   }
 
+  private int preJumpTicks = 0;
   private boolean preJump(DataPacket input, ControlsOutput output) {
+    if (!input.car.hasWheelContact) {
+      preJumpTicks = 0;
+      // We are already in the air.
+      return true;
+    }
     output.withThrottle(1.0f);
-    output.withSteer(Angles.flatCorrectionDirection(input.car, currentTactic.target.position) + .23);
-    return input.car.groundSpeed > 1200;
+
+    preJumpTicks++;
+    if (preJumpTicks > 0 && input.car.groundSpeed > 1200) {
+      preJumpTicks = 0;
+      return true;
+    }
+    return false;
   }
 }

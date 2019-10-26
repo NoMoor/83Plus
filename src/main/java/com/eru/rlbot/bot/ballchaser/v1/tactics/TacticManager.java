@@ -83,25 +83,23 @@ public class TacticManager {
   }
 
   private void renderTactics(CarData carData) {
-    Renderer renderer = BotLoopRenderer.forBotLoop(bot);
-
     Vector3 previousTarget = carData.position;
 
     if (!tacticList.isEmpty()) {
       for (int i = 0; i < tacticList.size(); i++) {
         Vector3 nextTarget = tacticList.get(i).target.position;
-        renderer.drawLine3d(i == 0 ? Color.green : Color.ORANGE, previousTarget, nextTarget);
+        bot.botRenderer.render3DLine(i == 0 ? Color.green : Color.ORANGE, previousTarget, nextTarget);
         previousTarget = nextTarget;
       }
     } else {
       Vector3 nextTarget = getNextTarget();
-      renderer.drawLine3d(Color.green, previousTarget, nextTarget);
+      bot.botRenderer.render3DLine(Color.green, previousTarget, nextTarget);
       previousTarget = nextTarget;
     }
 
     // Render end goal
     if (endGoal != null) {
-      renderer.drawLine3d(Color.red, previousTarget, endGoal);
+      bot.botRenderer.render3DLine(Color.red, previousTarget, endGoal);
     }
 
 //    botRenderer.addDebugText(String.format("Tactician: %s", getTactician() == null ? "None" : getTactician().getClass().getSimpleName()), Color.CYAN);

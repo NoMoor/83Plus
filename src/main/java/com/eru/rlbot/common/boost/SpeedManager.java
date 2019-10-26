@@ -4,8 +4,7 @@ import com.eru.rlbot.common.input.DataPacket;
 
 public class SpeedManager {
 
-  // TODO: Do we need this?
-  private static final double SUPER_SONIC_SPEED = 1000;
+  private static final double SUPER_SONIC_SPEED = 2200;
 
   private static float superSonicTime;
   private static float timeSuperSonic;
@@ -28,6 +27,6 @@ public class SpeedManager {
   }
 
   public static boolean isSuperSonic() {
-    return speed >= SUPER_SONIC_SPEED;
+    return superSonicTime != 0;
   }
 }

@@ -2,6 +2,8 @@ package com.eru.rlbot.bot.ballchaser.v1.tactics;
 
 import com.eru.rlbot.bot.EruBot;
 import com.eru.rlbot.bot.common.Angles;
+import com.eru.rlbot.bot.common.Angles3;
+import com.eru.rlbot.bot.common.Matrix3;
 import com.eru.rlbot.common.input.DataPacket;
 import com.eru.rlbot.common.output.ControlsOutput;
 import com.eru.rlbot.common.vector.Vector2;
@@ -37,14 +39,18 @@ public class RollingTactician implements Tactician {
       flatCorrectionAngle = wallRideCorrectionAngle(input, nextTactic);
     } else {
       // How far does the car need to rotate before it's pointing exactly at the ball?
+      bot.botRenderer.setBranchInfo("Flat correction angle.");
       flatCorrectionAngle = Angles.flatCorrectionDirection(input.car, targetPosition);
     }
 
-    output.withSteer((float) flatCorrectionAngle)
-        .withSlide(Math.abs(flatCorrectionAngle) > 1)
-        .withThrottle(1);
+    Angles3.setControlsFor(input.car, Matrix3.IDENTITY, output);
 
-    boostToShoot(input, output, flatCorrectionAngle);
+    output.withSteer((float) flatCorrectionAngle)
+        .withThrottle(1)
+        .withThrottle(0)
+        .withSlide(Math.abs(flatCorrectionAngle) > 1);
+
+//    boostToShoot(input, output, flatCorrectionAngle);
   }
 
   private double wallRideCorrectionAngle(DataPacket input, Tactic nextTactic) {

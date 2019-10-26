@@ -36,6 +36,9 @@ dependencies {
     compile group: 'org.ejml', name: 'ejml-ddense', version: '0.35'
     compile group: 'org.ejml', name: 'ejml-simple', version: '0.35'
 
+    testCompile 'junit:junit:4.12'
+    testImplementation 'org.hamcrest:hamcrest:2.2'
+
     // This is makes it easy to find the dll when running in intellij, where JVM args don't get passed from gradle.
     runtime files(dllDirectory)
 }

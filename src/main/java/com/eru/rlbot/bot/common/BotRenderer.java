@@ -263,7 +263,7 @@ public class BotRenderer {
         }
     }
 
-    public void render3DLine(Vector3 loc1, Vector3 loc2, Color color) {
+    public void render3DLine(Color color, Vector3 loc1, Vector3 loc2) {
         getRenderer().drawLine3d(color, loc1, loc2);
     }
 }

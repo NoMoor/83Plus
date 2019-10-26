@@ -25,15 +25,15 @@ public class AttackStrategist implements Strategist {
 
   @Override
   public boolean assign(DataPacket input) {
-    tacticManager.addTactic(new Tactic(input.ball.position, Tactic.Type.WAVE_DASH));
+    tacticManager.setTactic(new Tactic(input.ball.position, Tactic.Type.WAVE_DASH));
     if (true) return true;
 
     if (KickoffTactician.isKickOff(input)) {
-      tacticManager.addTactic(new Tactic(input.ball.position, Tactic.Type.KICKOFF));
+      tacticManager.setTactic(new Tactic(input.ball.position, Tactic.Type.KICKOFF));
     } if (DribbleTactician.canDribble(input)) {
-      tacticManager.addTactic(new Tactic(input.ball.position, Tactic.Type.DRIBBLE));
+      tacticManager.setTactic(new Tactic(input.ball.position, Tactic.Type.DRIBBLE));
     } else {
-      tacticManager.addTactic(new Tactic(input.ball.position, Tactic.Type.HIT_BALL));
+      tacticManager.setTactic(new Tactic(input.ball.position, Tactic.Type.HIT_BALL));
     }
 
     return true;
