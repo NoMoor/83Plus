@@ -1,6 +1,8 @@
 package com.eru.rlbot.bot.ballchaser.v1.tactics;
 
 import com.eru.rlbot.bot.EruBot;
+import com.eru.rlbot.bot.common.Angles;
+import com.eru.rlbot.bot.common.Goal;
 import com.eru.rlbot.bot.common.NormalUtils;
 import com.eru.rlbot.common.input.BallData;
 import com.eru.rlbot.common.input.DataPacket;
@@ -21,8 +23,11 @@ public class FlickTactician extends Tactician {
   private boolean mustyFlickLock;
   private int mustyFlickTicks;
 
-  private boolean mognusFlickLock;
+  private boolean mognusFlickLock = true;
   private int mognusFlickTicks;
+  private float rotationDirection;
+
+  private static boolean flickChooser = false;
 
   @Override
   public boolean isLocked() {
@@ -36,19 +41,38 @@ public class FlickTactician extends Tactician {
       tacticManager.setTacticComplete(tactic);
     }
 
-    if (true) {
+    bot.botRenderer.addDebugText("Flick Chooser %b", flickChooser);
+
+    BallData relativeBallData = NormalUtils.noseNormal(input);
+    if (!jumpLock && Math.abs(relativeBallData.position.x) > 15) {
+      output
+          .withSteer(relativeBallData.position.x / -25)
+          .withThrottle(1.0f);
+      return;
+    }
+
+    if (!mustyFlickLock && (mognusFlickLock || flickChooser)) {
+      // Do the other flick next time.
+      if (!mognusFlickLock) {
+        flickChooser = false;
+      }
       mognusFlickLock = true;
+      bot.botRenderer.addDebugText("Mognus Flick");
       mognusFlick(input, output);
-    } else if (input.car.position.x < 300) {
+    } else {
+      // Do the other flick next time.
+      if (!mustyFlickLock) {
+        flickChooser = true;
+      }
       mustyFlickLock = true;
+      bot.botRenderer.addDebugText("Musty Flick");
       mustyFlick(input, output);
     }
   }
 
   private void mognusFlick(DataPacket input, ControlsOutput output) {
-    bot.botRenderer.addAlertText("Mognus flick");
     BallData relativeBallData = NormalUtils.noseNormal(input);
-    if (jumpLock || (relativeBallData.position.y > 40 && relativeBallData.position.y < 50 && relativeBallData.velocity.y > 20)) {
+    if (jumpLock || (relativeBallData.position.y > 35 && relativeBallData.position.y < 45 && relativeBallData.velocity.y > 10)) {
       jumpLock = true;
 
       // Keep steady
@@ -57,9 +81,7 @@ public class FlickTactician extends Tactician {
         output.withBoost();
         bot.botRenderer.setBranchInfo("Don't boost %d", noBoostTicks);
       } else if (
-//          input.car.position.z > 80
-//              && input.car.velocity.z > -10 &&
-              (relativeBallData.position.y < -10 && relativeBallData.position.y > -100)
+          (relativeBallData.position.y < -10 && relativeBallData.position.y > -200)
               && (Math.abs(relativeBallData.position.x) < 30)
               && (relativeBallData.position.z > 50 && relativeBallData.position.z < 160)) {
 
@@ -75,7 +97,7 @@ public class FlickTactician extends Tactician {
       } else if (input.car.position.z > 150 && input.car.velocity.z < 200) {
           bot.botRenderer.setBranchInfo("Release Jump");
         output.withJump(false);
-        output.withYaw(-1);
+        output.withYaw(rotationDirection);
       } else {
         // Start the jump
         bot.botRenderer.setBranchInfo("Hold Jump");
@@ -85,17 +107,19 @@ public class FlickTactician extends Tactician {
 
         if (input.car.hasWheelContact) {
           // Calculate boost ticks.
-          boostTicks = Math.max((int) ((relativeBallData.velocity.y - 90)/ 10), 0);
+          boostTicks = Math.max((int) relativeBallData.velocity.y, 0);
+
+          // Spin the opposite direction of the way you'd need to turn so the flick hits the ball back toward the goal.
+          rotationDirection =
+              (float) Math.signum(-Angles.flatCorrectionDirection(input.ball, Goal.opponentGoal(bot.team).center));
         } else if (boostTicks > 0) {
-          if (Math.abs(relativeBallData.position.x) < .2f) {
-            boostTicks--;
-            output.withBoost();
-          }
+          boostTicks--;
+          output.withBoost();
 
           // Keep level while boosting.
           output.withPitch(input.car.orientation.getNoseVector().z < 0 ? 1.0 : 0);
         } else {
-          output.withYaw(-1); // Control the spin...
+          output.withYaw(rotationDirection); // Control the spin...
         }
       }
     } else if (relativeBallData.position.y > 50) {
@@ -105,7 +129,7 @@ public class FlickTactician extends Tactician {
           .withBoost();
     } else {
       // Let the ball fall off the front.
-      if (relativeBallData.velocity.y < 15) {
+      if (relativeBallData.velocity.y < 30) {
         bot.botRenderer.setBranchInfo("Coast %f", relativeBallData.velocity.y);
       } else {
         output.withThrottle(.02f);
