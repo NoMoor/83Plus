@@ -1,10 +1,11 @@
 package com.eru.rlbot.bot.ballchaser.v1.strats;
 
 import com.eru.rlbot.bot.EruBot;
+import com.eru.rlbot.bot.ballchaser.v1.tactics.RotateTactician;
+import com.eru.rlbot.bot.ballchaser.v1.tactics.Tactic;
 import com.eru.rlbot.bot.common.DllHelper;
 import com.eru.rlbot.bot.common.Goal;
 import com.eru.rlbot.common.input.DataPacket;
-import com.eru.rlbot.common.output.ControlsOutput;
 import com.eru.rlbot.common.vector.Vector3;
 import rlbot.flat.BallPrediction;
 import rlbot.flat.Physics;
@@ -12,12 +13,10 @@ import rlbot.flat.Physics;
 import java.util.Optional;
 
 /** Responsible for shadowing, blocking, shots, and clearing. */
-public class DefendStategist implements Strategist {
+public class DefendStrategist extends Strategist {
 
-  private EruBot bot;
-
-  DefendStategist(EruBot bot) {
-    this.bot = bot;
+  DefendStrategist(EruBot bot) {
+    super(bot);
   }
 
   static boolean shouldDefend(DataPacket input) {
@@ -43,7 +42,7 @@ public class DefendStategist implements Strategist {
           ? ballPysics.velocity().y() < 0
           : ballPysics.velocity().y() > 0;
 
-      if (distanceToGoal < 2000 && ballMovingTowardsGoal) {
+      if (distanceToGoal < 5000 && ballMovingTowardsGoal) {
         return true;
       }
 
@@ -55,25 +54,13 @@ public class DefendStategist implements Strategist {
 
   @Override
   public boolean assign(DataPacket input) {
-    return false;
-  }
-
-  @Override
-  public boolean isComplete(DataPacket input) {
-    return false;
-  }
-
-  @Override
-  public void abort() {
-
-  }
-
-  @Override
-  public ControlsOutput execute(DataPacket input) {
-    if (ballIsNearGoal(input)) {
-      bot.botRenderer.setBranchInfo("Ball is near goal!");
+    if (RotateTactician.shouldRotateBack(input)) {
+      tacticManager.setTactic(new Tactic(Goal.ownGoal(bot.team).center, Tactic.Type.ROTATE));
+    } else {
+      tacticManager.setTactic(new Tactic(Goal.ownGoal(bot.team).center, Tactic.Type.DEFEND));
     }
-    return new ControlsOutput().withThrottle(1.0f);
+
+    return true;
   }
 
   @Override

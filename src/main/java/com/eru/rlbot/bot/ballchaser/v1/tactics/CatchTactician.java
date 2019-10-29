@@ -4,7 +4,7 @@ import static com.eru.rlbot.bot.common.Constants.*;
 
 import com.eru.rlbot.bot.EruBot;
 import com.eru.rlbot.bot.common.Angles;
-import com.eru.rlbot.bot.common.CarNormalUtils;
+import com.eru.rlbot.bot.common.NormalUtils;
 import com.eru.rlbot.common.input.BallData;
 import com.eru.rlbot.common.input.DataPacket;
 import com.eru.rlbot.common.output.ControlsOutput;
@@ -15,24 +15,24 @@ public class CatchTactician extends Tactician {
   private static final float CATCH_BALL_POINT = OCTANE_BALANCE_POINT;
   private static final float BALL_DIAMETER = BALL_SIZE;
 
-  CatchTactician(EruBot bot) {
-    super(bot);
+  CatchTactician(EruBot bot, TacticManager tacticManager) {
+    super(bot, tacticManager);
   }
 
   public static boolean canCatch(DataPacket input) {
-    BallData relativeCarData = CarNormalUtils.noseNormalLocation(input);
+    BallData relativeCarData = NormalUtils.noseNormal(input);
 
     return (input.ball.position.z > 100 || input.ball.velocity.z > 100)
         && (ballDownTime(relativeCarData) > carToBallTime(relativeCarData));
   }
 
   @Override
-  public boolean execute(DataPacket input, ControlsOutput output, Tactic nextTactic) {
-    BallData relativeBallData = CarNormalUtils.noseNormalLocation(input);
+  public void execute(DataPacket input, ControlsOutput output, Tactic nextTactic) {
+    BallData relativeBallData = NormalUtils.noseNormal(input);
     catchBall(input, relativeBallData, output);
     relativeAngleToBall(input, relativeBallData, output); // Set up the angle here too.
 
-    return false;
+    // TODO: if the ball is on the car, hand off to the dribbler
   }
 
   private void relativeAngleToBall(DataPacket input, BallData relativeBallData, ControlsOutput output) {

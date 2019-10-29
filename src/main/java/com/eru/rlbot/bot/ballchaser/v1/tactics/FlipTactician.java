@@ -14,8 +14,8 @@ public class FlipTactician extends Tactician {
 
   private Vector3 targetPosition;
 
-  public FlipTactician(EruBot bot) {
-    super(bot);
+  public FlipTactician(EruBot bot, TacticManager tacticManager) {
+    super(bot, tacticManager);
   }
 
   /** Helps the strategy unit reason about things. */
@@ -30,7 +30,7 @@ public class FlipTactician extends Tactician {
   }
 
   @Override
-  public boolean execute(DataPacket input, ControlsOutput output, Tactic nextTactic) {
+  public void execute(DataPacket input, ControlsOutput output, Tactic nextTactic) {
     double flatCorrectionAngle = Angles.flatCorrectionDirection(input.car, targetPosition);
 
     // Do a front flip.
@@ -51,6 +51,5 @@ public class FlipTactician extends Tactician {
       }
     }
 
-    return false;
   }
 }

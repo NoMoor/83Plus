@@ -76,7 +76,7 @@ public class Constants {
       // Cannot throttle faster.
       return 0;
     }
-    throw new IllegalArgumentException("What happened?!");
+    throw new IllegalArgumentException(String.format("Unknown accelleration for car Velocity %f", carVelocity));
   }
 
   private static double curvature(double velocity) {

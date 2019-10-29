@@ -32,9 +32,9 @@ class Strategy {
       case ATTACK:
         return new AttackStrategist(bot);
       case DEFEND:
-        return new DefendStategist(bot);
+        return new DefendStrategist(bot);
       case SUPPORT:
-        return new SupportStategist(bot);
+        return new SupportStrategist(bot);
     }
 
     throw new IllegalArgumentException(String.format("Unknown strategy type %s", type));

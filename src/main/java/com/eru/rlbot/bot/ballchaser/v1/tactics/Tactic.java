@@ -27,23 +27,24 @@ public class Tactic {
   }
 
   public enum Type {
-    GRAB_BOOST,
-    HIT_BALL,
+    // These may be more maneuvers and not tactics.
     CATCH,
     DEMO,
-    WALL_RIDE,
     DEFEND,
+    DOUBLE_JUMP,
     DRIBBLE,
+    FAST_AERIAL,
+    FLICK,
+    FRONT_FLIP,
+    GRAB_BOOST,
+    HALF_FLIP,
+    HIT_BALL,
     KICKOFF,
     PICK_UP,
-
-    // These may be more maneuvers and not tactics.
-    WAVE_DASH,
-    FRONT_FLIP,
-    DOUBLE_JUMP,
-    HALF_FLIP,
+    ROTATE,
     STALL,
-    FAST_AERIAL;
+    WALL_RIDE,
+    WAVE_DASH;
   }
 
   private boolean isMovingTarget() {
@@ -57,11 +58,6 @@ public class Tactic {
   }
 
   public Vector3 getTarget() {
-    // TODO: Update to take the shot or pass or w/e
-    if (type == Type.HIT_BALL) {
-
-    }
-
     return target.position;
   }
 
@@ -72,7 +68,7 @@ public class Tactic {
 
   @Override
   public int hashCode() {
-    return -1;
+    return type.hashCode();
   }
 
   @Override

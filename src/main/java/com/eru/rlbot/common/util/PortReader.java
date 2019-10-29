@@ -15,14 +15,16 @@ import java.util.stream.Stream;
  * as you want, or delete it.
  */
 public class PortReader {
-    public static Integer readPortFromFile(String s) {
-        Path path = Paths.get(s);
+    public static Integer readPortFromFile(String portFile) {
+        Path path = Paths.get(portFile);
 
         try (Stream<String> lines = Files.lines(path)) {
             Optional<String> firstLine = lines.findFirst();
-            return firstLine.map(Integer::parseInt).orElseThrow(() -> new RuntimeException("Port config file was empty!"));
+            return firstLine.map(Integer::parseInt)
+                .orElseThrow(() -> new RuntimeException("Port config file was empty!"));
         } catch (final IOException e) {
-            throw new RuntimeException("Failed to read port file! Tried to find it at " + path.toAbsolutePath().toString());
+            throw new RuntimeException("Failed to read port file! Tried to find it at "
+                + path.toAbsolutePath().toString());
         }
     }
 }

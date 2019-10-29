@@ -2,7 +2,7 @@ package com.eru.rlbot.bot.ballchaser.v1.tactics;
 
 import com.eru.rlbot.bot.EruBot;
 import com.eru.rlbot.bot.common.Angles;
-import com.eru.rlbot.bot.common.CarNormalUtils;
+import com.eru.rlbot.bot.common.NormalUtils;
 import com.eru.rlbot.bot.common.Constants;
 import com.eru.rlbot.common.input.BallData;
 import com.eru.rlbot.common.input.CarData;
@@ -23,8 +23,8 @@ public class KickoffTactician extends Tactician {
 
   private boolean hasFlipped; // Keeps track of the sequence
 
-  KickoffTactician(EruBot bot) {
-    super(bot);
+  KickoffTactician(EruBot bot, TacticManager tacticManager) {
+    super(bot, tacticManager);
   }
 
   public static boolean isKickOff(DataPacket input) {
@@ -56,7 +56,7 @@ public class KickoffTactician extends Tactician {
   }
 
   @Override
-  public boolean execute(DataPacket input, ControlsOutput output, Tactic nextTactic) {
+  public void execute(DataPacket input, ControlsOutput output, Tactic nextTactic) {
     if (nextTactic != tactic) {
       tactic = nextTactic;
       setStartLocation(input.car);
@@ -65,12 +65,16 @@ public class KickoffTactician extends Tactician {
 
     mustyKicks(output, input);
 
+    if (NormalUtils.noseNormal(input).position.y < 0) {
+      // We've missed. Handoff to someone else.
+      tacticManager.delegateTactic(nextTactic, RollingTactician.class);
+    }
+
     // dumbKickoff(output, input);
-    return false;
   }
 
   private void mustyKicks(ControlsOutput output, DataPacket input) {
-    BallData relativeData = CarNormalUtils.noseNormalLocation(input);
+    BallData relativeData = NormalUtils.noseNormal(input);
 
     if (secondFlipLock) {
       if (input.car.hasWheelContact) {
@@ -156,7 +160,7 @@ public class KickoffTactician extends Tactician {
   // Do not modify...
 
   private void dumbKickoff(ControlsOutput output, DataPacket input) {
-    BallData relativeData = CarNormalUtils.noseNormalLocation(input);
+    BallData relativeData = NormalUtils.noseNormal(input);
 
     tryFlipLock(input, relativeData);
 

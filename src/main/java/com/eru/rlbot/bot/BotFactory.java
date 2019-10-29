@@ -9,11 +9,11 @@ import rlbot.pyinterop.DefaultPythonInterface;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class SamplePythonInterface extends DefaultPythonInterface {
+public class BotFactory extends DefaultPythonInterface {
 
   private static final String UNKNOWN_VERSION = "unknown";
 
-  public SamplePythonInterface(BotManager botManager) {
+  public BotFactory(BotManager botManager) {
     super(botManager);
   }
 
@@ -21,11 +21,11 @@ public class SamplePythonInterface extends DefaultPythonInterface {
     String version = getVersion(botType);
 
     switch (version) {
-      case "1":
-        return new BallChaserV1(index, team);
       case "0":
-      default:
         return new BallChaserV0(index);
+      case "1":
+      default:
+        return new BallChaserV1(index, team);
     }
   }
 

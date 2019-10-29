@@ -20,12 +20,12 @@ public class WaveDashTactician extends Tactician {
 
   private Stage currentStage = Stage.PRE_JUMP;
 
-  WaveDashTactician(EruBot bot) {
-    super(bot);
+  WaveDashTactician(EruBot bot, TacticManager tacticManager) {
+    super(bot, tacticManager);
   }
 
   @Override
-  public boolean execute(DataPacket input, ControlsOutput output, Tactic nextTactic) {
+  public void execute(DataPacket input, ControlsOutput output, Tactic nextTactic) {
     if (!nextTactic.equals(currentTactic)) {
       currentTactic = nextTactic;
       if (input.car.hasWheelContact) {
@@ -44,8 +44,6 @@ public class WaveDashTactician extends Tactician {
 
       currentStage = Stage.values()[nextOrdinal % Stage.values().length];
     }
-
-    return false;
   }
 
   private boolean doCurrentStage(DataPacket input, ControlsOutput output) {

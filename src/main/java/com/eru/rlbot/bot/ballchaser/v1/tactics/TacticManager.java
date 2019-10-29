@@ -2,17 +2,33 @@ package com.eru.rlbot.bot.ballchaser.v1.tactics;
 
 import com.eru.rlbot.bot.EruBot;
 import com.eru.rlbot.bot.common.BotRenderer;
+import com.eru.rlbot.bot.common.Pair;
 import com.eru.rlbot.common.input.CarData;
 import com.eru.rlbot.common.input.DataPacket;
 import com.eru.rlbot.common.output.ControlsOutput;
 import com.eru.rlbot.common.vector.Vector3;
 
 import java.awt.*;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.Map;
+import java.util.*;
 
 public class TacticManager {
+
+
+  private static final Map<Tactic.Type, Class<? extends Tactician>> DEFAULT_TACTICIAN_MAP = new HashMap<>();
+
+  static {
+    DEFAULT_TACTICIAN_MAP.put(Tactic.Type.CATCH, CatchTactician.class);
+    DEFAULT_TACTICIAN_MAP.put(Tactic.Type.DEFEND, BackupTactician.class);
+    DEFAULT_TACTICIAN_MAP.put(Tactic.Type.DRIBBLE, DribbleTactician.class);
+    DEFAULT_TACTICIAN_MAP.put(Tactic.Type.FRONT_FLIP, FlipTactician.class);
+    DEFAULT_TACTICIAN_MAP.put(Tactic.Type.FLICK, FlickTactician.class);
+    DEFAULT_TACTICIAN_MAP.put(Tactic.Type.HIT_BALL, RollingTactician.class);
+    DEFAULT_TACTICIAN_MAP.put(Tactic.Type.KICKOFF, KickoffTactician.class);
+    DEFAULT_TACTICIAN_MAP.put(Tactic.Type.PICK_UP, PickUpTactician.class);
+    DEFAULT_TACTICIAN_MAP.put(Tactic.Type.WALL_RIDE, SideWallTactician.class);
+    DEFAULT_TACTICIAN_MAP.put(Tactic.Type.WAVE_DASH, WaveDashTactician.class);
+    DEFAULT_TACTICIAN_MAP.put(Tactic.Type.ROTATE, RotateTactician.class);
+  }
 
   private final Tactic defendTactic;
   private final Tactic dribbleTactic;
@@ -20,12 +36,10 @@ public class TacticManager {
 
   private final BotRenderer botRenderer;
   private LinkedList<Tactic> tacticList = new LinkedList<>();
-  private final Map<Tactic.Type, Tactician> TACTICIAN_MAP = new HashMap<>();
 
   private final EruBot bot;
-
-  // Mostly here to draw nice lines.
-  private Vector3 endGoal;
+  private final Set<Tactic> completedTacticis = new HashSet<>();
+  private Pair<Tactic.Type, Tactician> controllingTactician;
 
   public TacticManager(EruBot bot) {
     this.bot = bot;
@@ -34,16 +48,6 @@ public class TacticManager {
     defendTactic = new Tactic(bot.ownGoal.center, Tactic.Type.DEFEND);
     dribbleTactic = new Tactic(bot.opponentsGoal.center, Tactic.Type.DRIBBLE);
     defaultTactic = dribbleTactic;
-
-    TACTICIAN_MAP.put(Tactic.Type.CATCH, new CatchTactician(bot));
-    TACTICIAN_MAP.put(Tactic.Type.DEFEND, new BackupTactician(bot));
-    TACTICIAN_MAP.put(Tactic.Type.DRIBBLE, new DribbleTactician(bot));
-    TACTICIAN_MAP.put(Tactic.Type.FRONT_FLIP, new FlipTactician(bot));
-    TACTICIAN_MAP.put(Tactic.Type.HIT_BALL, new RollingTactician(bot));
-    TACTICIAN_MAP.put(Tactic.Type.KICKOFF, new KickoffTactician(bot));
-    TACTICIAN_MAP.put(Tactic.Type.PICK_UP, new PickUpTactician(bot));
-    TACTICIAN_MAP.put(Tactic.Type.WALL_RIDE, new SideWallTactician(bot));
-    TACTICIAN_MAP.put(Tactic.Type.WAVE_DASH, new WaveDashTactician(bot));
   }
 
   // TODO: Probably don't want to call this.
@@ -71,13 +75,13 @@ public class TacticManager {
   }
 
   public void execute(DataPacket input, ControlsOutput output) {
-    boolean isDone = getTactician().execute(input, output, getTactic());
+    getTactician().execute(input, output, getTactic());
 
     botRenderer.setTactic(getTactic());
-
+    botRenderer.setTactician(getTactician());
     renderTactics(input.car);
 
-    if (isDone) {
+    if (completedTacticis.remove(getTactic()) && !tacticList.isEmpty()) {
       tacticList.pop();
     }
   }
@@ -94,19 +98,20 @@ public class TacticManager {
     } else {
       Vector3 nextTarget = getNextTarget();
       bot.botRenderer.render3DLine(Color.green, previousTarget, nextTarget);
-      previousTarget = nextTarget;
     }
-
-    // Render end goal
-    if (endGoal != null) {
-      bot.botRenderer.render3DLine(Color.red, previousTarget, endGoal);
-    }
-
-//    botRenderer.addDebugText(String.format("Tactician: %s", getTactician() == null ? "None" : getTactician().getClass().getSimpleName()), Color.CYAN);
-//    botRenderer.addDebugText(String.format("Tactic: %s", getTactic() == null ? "None" : getTactic()), Color.CYAN);
-    // Update moment time (rel).
-    //botRenderer.addDebugText(String.format("Tactic Time (rel): %s", renderTime(nextTactic().target.time - carData.elapsedSeconds)), Color.CYAN);
   }
+
+  public void setTacticComplete(Tactic tactic) {
+    this.completedTacticis.add(tactic);
+    this.controllingTactician = null;
+  }
+
+  public void changeTactic(Tactic tactic, Tactic.Type type) {
+    this.setTactic(new Tactic(tactic.target.position, type));
+  }
+
+  public void delegateTactic(Tactic tactic, Class<? extends Tactician> tactician) {
+    this.controllingTactician = Pair.of(tactic.type, newTactician(tactician));  }
 
   private Tactic getTactic() {
     return tacticList.isEmpty() ? defaultTactic : tacticList.getFirst();
@@ -117,26 +122,32 @@ public class TacticManager {
   }
 
   private Tactician getTactician() {
-    return TACTICIAN_MAP.get(getTactic().type);
-  }
+    Tactic tactic = getTactic();
 
-  private String renderTime(float time) {
-    int m = (int) (time / 60);
-    int s = (int) (time % 60);
-
-    if (m == 0) {
-      return String.format("%02.2f", time);
+    if (controllingTactician != null && controllingTactician.getFirst() == tactic.type) {
+      return controllingTactician.getSecond();
+    } else {
+      controllingTactician = null;
     }
 
-    // Update time til moment.
-    return String.format("%02d:%02d", m, s);
+    controllingTactician = Pair.of(tactic.type, newTactician(DEFAULT_TACTICIAN_MAP.get(tactic.type)));
+    return controllingTactician.getSecond();
+  }
+
+  private Tactician newTactician(Class<? extends Tactician> t) {
+    try {
+      return t.getDeclaredConstructor(EruBot.class, TacticManager.class)
+          .newInstance(bot, this);
+    } catch (Throwable e) {
+      throw new IllegalStateException(String.format("Cannot create tactician %s", t), e);
+    }
   }
 
   public void clearTactics() {
     tacticList.clear();
   }
 
-  public void setEndGoal(Vector3 targetLocation) {
-    this.endGoal = targetLocation;
+  public boolean isTacticLocked() {
+    return controllingTactician != null && controllingTactician.getSecond().isLocked();
   }
 }

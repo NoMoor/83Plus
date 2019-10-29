@@ -7,12 +7,12 @@ import com.eru.rlbot.common.output.ControlsOutput;
 /** Manages tactical demos. */
 public class DemoTactician extends Tactician {
 
-  DemoTactician(EruBot bot) {
-    super(bot);
+  DemoTactician(EruBot bot, TacticManager tacticManager) {
+    super(bot, tacticManager);
   }
 
   @Override
-  public boolean execute(DataPacket input, ControlsOutput output, Tactic nextTactic) {
-    return false;
+  public void execute(DataPacket input, ControlsOutput output, Tactic nextTactic) {
+
   }
 }

@@ -20,7 +20,7 @@ def make_default_playlist():
     for exercise in exercises:
         exercise.match_config.player_configs = [
             PlayerConfig.bot_config(
-                Path(__file__).absolute().parent.parent / 'src' / 'main' / 'python' / 'ut_version.cfg',
+                Path(__file__).absolute().parent.parent / 'src' / 'main' / 'python' / 'dev_version.cfg',
                 Team.BLUE)
         ]
 

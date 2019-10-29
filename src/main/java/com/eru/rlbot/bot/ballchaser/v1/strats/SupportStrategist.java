@@ -1,14 +1,15 @@
 package com.eru.rlbot.bot.ballchaser.v1.strats;
 
+import com.eru.rlbot.bot.EruBot;
 import com.eru.rlbot.common.input.DataPacket;
 import com.eru.rlbot.common.output.ControlsOutput;
 import rlbot.Bot;
 
 /** Strategy responsible for patience. */
-public class SupportStategist implements Strategist {
+public class SupportStrategist extends Strategist {
 
-  public SupportStategist(Bot bot) {
-
+  public SupportStrategist(EruBot bot) {
+    super(bot);
   }
 
   @Override

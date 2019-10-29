@@ -69,7 +69,7 @@ public class StrategyManager {
     }
 
     Strategist newStrategist;
-    if (DefendStategist.shouldDefend(input)) {
+    if (DefendStrategist.shouldDefend(input)) {
       newStrategist = strategists.get(Strategy.Type.DEFEND);
     } else if (AttackStrategist.shouldAttack(input)) {
       newStrategist = strategists.get(Strategy.Type.ATTACK);

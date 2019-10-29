@@ -6,12 +6,12 @@ import com.eru.rlbot.common.output.ControlsOutput;
 
 public class RecoveryTactician extends Tactician {
 
-  RecoveryTactician(EruBot bot) {
-    super(bot);
+  RecoveryTactician(EruBot bot, TacticManager tacticManager) {
+    super(bot, tacticManager);
   }
 
   @Override
-  public boolean execute(DataPacket input, ControlsOutput output, Tactic nextTactic) {
+  public void execute(DataPacket input, ControlsOutput output, Tactic nextTactic) {
     // TODO(ahatfield): Update to use Angles3.
     // The car is falling.
     if (!input.car.hasWheelContact && input.car.velocity.z < 0) {
@@ -25,7 +25,5 @@ public class RecoveryTactician extends Tactician {
           .withRoll(input.car.orientation.getLeftVector().z) // If the door is pointing down, roll left.
           .withYaw((float) yawCorrection);
     }
-
-    return false;
   }
 }

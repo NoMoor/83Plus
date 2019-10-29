@@ -7,10 +7,16 @@ import com.eru.rlbot.common.output.ControlsOutput;
 public abstract class Tactician {
 
   protected final EruBot bot;
+  protected final TacticManager tacticManager;
 
-  Tactician(EruBot bot) {
+  Tactician(EruBot bot, TacticManager tacticManager) {
     this.bot = bot;
+    this.tacticManager = tacticManager;
   }
 
-  abstract boolean execute(DataPacket input, ControlsOutput output, Tactic nextTactic);
+  abstract void execute(DataPacket input, ControlsOutput output, Tactic nextTactic);
+
+  public boolean isLocked() {
+    return false;
+  }
 }

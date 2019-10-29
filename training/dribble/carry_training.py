@@ -14,7 +14,7 @@ from rlbottraining.training_exercise import Playlist
 @dataclass
 class StationaryBall(TrainingExercise):
     grader: Grader = field(default_factory=lambda: GameTickPacketWrapperGrader(
-        StrikerGrader(timeout_seconds=10.0, ally_team=0)))
+        StrikerGrader(timeout_seconds=8.0, ally_team=0)))
     ball_start_x: float = 0
     ball_start_y: float = -3000
     ball_start_z: float = 120
@@ -26,7 +26,7 @@ class StationaryBall(TrainingExercise):
     def make_game_state(self, rng: SeededRandomNumberGenerator) -> GameState:
         return GameState(
             ball=BallState(physics=Physics(
-                location=Vector3(self.ball_start_x, self.ball_start_y, self.ball_start_z),
+                location=Vector3(self.ball_start_x + rng.uniform(-30, 30), self.ball_start_y, self.ball_start_z),
                 velocity=Vector3(0, 0, 0),
                 angular_velocity=Vector3(0, 0, 0))),
             cars={

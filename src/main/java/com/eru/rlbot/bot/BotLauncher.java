@@ -20,9 +20,10 @@ public class BotLauncher {
 
         BotManager botManager = new BotManager();
         botManager.setRefreshRate(120);
-        PythonInterface pythonInterface = new SamplePythonInterface(botManager);
+        BotFactory botMaker = new BotFactory(botManager);
         Integer port = PortReader.readPortFromFile("port.cfg");
-        PythonServer pythonServer = new PythonServer(pythonInterface, port);
+
+        PythonServer pythonServer = new PythonServer(botMaker, port);
         pythonServer.start();
 
         JFrame frame = new JFrame("Java Bot");

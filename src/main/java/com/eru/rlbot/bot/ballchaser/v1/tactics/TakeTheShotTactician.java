@@ -9,12 +9,12 @@ import com.eru.rlbot.common.output.ControlsOutput;
 // goal.
 public class TakeTheShotTactician extends Tactician {
 
-  TakeTheShotTactician(EruBot bot) {
-    super(bot);
+  TakeTheShotTactician(EruBot bot, TacticManager tacticManager) {
+    super(bot, tacticManager);
   }
 
   @Override
-  public boolean execute(DataPacket input, ControlsOutput output, Tactic nextTactic) {
-    return false;
+  public void execute(DataPacket input, ControlsOutput output, Tactic nextTactic) {
+
   }
 }

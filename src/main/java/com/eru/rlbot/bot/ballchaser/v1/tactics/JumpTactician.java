@@ -9,8 +9,8 @@ public class JumpTactician extends Tactician {
 
   private Vector3 targetPosition;
 
-  JumpTactician(EruBot bot) {
-    super(bot);
+  JumpTactician(EruBot bot, TacticManager tacticManager) {
+    super(bot, tacticManager);
   }
 
   void setTarget(Vector3 targetPosition) {
@@ -19,7 +19,7 @@ public class JumpTactician extends Tactician {
   }
 
   @Override
-  public boolean execute(DataPacket input, ControlsOutput output, Tactic nextTactic) {
+  public void execute(DataPacket input, ControlsOutput output, Tactic nextTactic) {
     if (input.car.position.distance(targetPosition) < 1000 && input.car.position.z > 1000) {
       output
           .withJump()
@@ -27,7 +27,5 @@ public class JumpTactician extends Tactician {
     } else if (input.car.boost > 50 && !input.car.hasWheelContact) {
       output.withBoost();
     }
-
-    return false;
   }
 }

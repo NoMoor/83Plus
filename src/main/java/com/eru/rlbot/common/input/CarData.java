@@ -96,5 +96,15 @@ public class CarData {
             builderCalled = true;
             return new CarData(this);
         }
+
+        public Builder setVelocity(Vector3 velocity) {
+            this.velocity = velocity;
+            return this;
+        }
+
+        public Builder setPosition(Vector3 position) {
+            this.position = position;
+            return this;
+        }
     }
 }
