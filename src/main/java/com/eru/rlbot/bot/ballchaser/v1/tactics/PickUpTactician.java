@@ -23,18 +23,33 @@ public class PickUpTactician extends Tactician {
     BallData relativeBallData = NormalUtils.noseNormal(input);
     CarData relativeCarData = NormalUtils.rollNormal(input);
 
-    boolean canPickUp = input.ball.position.z < 170
+    return input.ball.position.z < 170
         && input.car.position.distance(input.ball.position) < 1000
         && input.car.boost > 40
-        && relativeBallData.position.y > 0 // Ball is infront of the car
+        && relativeBallData.position.y > 0 // Ball is in-front of the car
         && Math.abs(relativeBallData.position.x) < 300
         && relativeCarData.position.y > 0;
-
-    return canPickUp;
   }
 
   @Override
   void execute(DataPacket input, ControlsOutput output, Tactic tactic) {
+    CarData relativeCarData = NormalUtils.rollNormal(input);
+
+    if (relativeCarData.position.y > 0) {
+      // Ball is rolling toward the car.
+      doStationaryPickup(input, output, tactic);
+    } else {
+      // Ball is rolling away from the car.
+      doRollingPickup(input, output, tactic);
+    }
+
+  }
+
+  private void doRollingPickup(DataPacket input, ControlsOutput output, Tactic tactic) {
+
+  }
+
+  private void doStationaryPickup(DataPacket input, ControlsOutput output, Tactic tactic) {
     BallData relativeBallData = NormalUtils.noseNormal(input);
 
     if (relativeBallData.position.z > 130) {
@@ -42,7 +57,6 @@ public class PickUpTactician extends Tactician {
       output.withThrottle(.02f);
 
       tacticManager.changeTactic(tactic, Tactic.Type.DRIBBLE);
-      bot.botRenderer.addAlertText("Start dribble");
     } else if (Math.abs(relativeBallData.position.x) < 5 && relativeBallData.position.y < PICK_UP_Y_OFFSET) {
       bot.botRenderer.setBranchInfo("Boost");
       output

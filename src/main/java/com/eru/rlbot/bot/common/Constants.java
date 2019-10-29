@@ -72,7 +72,7 @@ public class Constants {
       return (float) (1600 - carVelocity);
     } else if (carVelocity < 1410) {
       return (float) ((carVelocity - 1400) * 20);
-    } else if (carVelocity >= 1410 && carVelocity < 2300){
+    } else if (carVelocity >= 1410 && carVelocity < 2301){
       // Cannot throttle faster.
       return 0;
     }

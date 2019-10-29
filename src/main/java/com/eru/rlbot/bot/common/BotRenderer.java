@@ -41,7 +41,7 @@ public class BotRenderer {
 
   private BotRenderer(Bot bot) {
     this.bot = bot;
-    this.skipRendering = bot.getIndex() != 1;
+    this.skipRendering = bot.getIndex() != 0;
   }
 
   public static BotRenderer forBot(Bot bot) {
