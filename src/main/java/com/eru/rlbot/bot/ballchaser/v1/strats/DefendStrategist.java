@@ -3,6 +3,7 @@ package com.eru.rlbot.bot.ballchaser.v1.strats;
 import com.eru.rlbot.bot.EruBot;
 import com.eru.rlbot.bot.ballchaser.v1.tactics.RotateTactician;
 import com.eru.rlbot.bot.ballchaser.v1.tactics.Tactic;
+import com.eru.rlbot.bot.common.Angles;
 import com.eru.rlbot.bot.common.DllHelper;
 import com.eru.rlbot.bot.common.Goal;
 import com.eru.rlbot.common.input.DataPacket;
@@ -20,7 +21,16 @@ public class DefendStrategist extends Strategist {
   }
 
   static boolean shouldDefend(DataPacket input) {
-    return ballIsNearGoal(input);
+    return ballIsNearGoal(input) || ballIsFarCorner(input);
+  }
+
+  private static boolean ballIsFarCorner(DataPacket input) {
+    Vector3 oppGoalCenter = Goal.opponentGoal(input.car.team).center;
+    Vector3 ballPosition = input.ball.position;
+
+    Vector3 ballToGoal = oppGoalCenter.minus(ballPosition);
+
+    return Math.abs(ballToGoal.x) > Math.abs(ballToGoal.y);
   }
 
   private static boolean ballIsNearGoal(DataPacket input) {
@@ -55,7 +65,13 @@ public class DefendStrategist extends Strategist {
   @Override
   public boolean assign(DataPacket input) {
     if (RotateTactician.shouldRotateBack(input)) {
-      tacticManager.setTactic(new Tactic(Goal.ownGoal(bot.team).center, Tactic.Type.ROTATE));
+      // Rotate back between the ball and the goal
+
+      Vector3 ballToGoal = Goal.ownGoal(bot.team).center.minus(input.ball.position);
+      double rotationNorm = Math.min(ballToGoal.flatten().norm(), 1500);
+      Vector3 rotationTarget = input.ball.position.plus(ballToGoal.scaledToMagnitude(rotationNorm));
+
+      tacticManager.setTactic(new Tactic(rotationTarget, Tactic.Type.ROTATE));
     } else {
       tacticManager.setTactic(new Tactic(Goal.ownGoal(bot.team).center, Tactic.Type.DEFEND));
     }

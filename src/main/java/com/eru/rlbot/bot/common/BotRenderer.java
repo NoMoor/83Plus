@@ -162,11 +162,11 @@ public class BotRenderer {
   private String branch;
 
   private void renderControl() {
-    renderText(0, 300,"%s", strategist == null ? "NONE" : strategist.getType());
-    renderText(250, 300,"%s", tactic == null ? "NONE" : tactic.type);
-    renderText(500, 300,"%s",
+    renderText(Color.PINK, 0, 300,"%s", strategist == null ? "NONE" : strategist.getType());
+    renderText(Color.CYAN, 150, 300,"%s", tactic == null ? "NONE" : tactic.type);
+    renderText(Color.PINK, 400, 300,"%s",
         tactician == null ? "NONE" : tactician.getClass().getSimpleName().replace("Tactician", ""));
-    renderText(700, 300,"%s", branch);
+    renderText(Color.CYAN,700, 300,"%s", branch);
   }
 
   public void setStrategy(Strategist strategist) {
@@ -209,10 +209,10 @@ public class BotRenderer {
 
     if (previousVelocities.size() == SMOOTHING_INTERVAL) {
 
-      double deltaV = previousVelocities.peekLast().minus(previousVelocities.peekFirst()).flatten().magnitude();
+      double deltaV = previousVelocities.peekLast().minus(previousVelocities.peekFirst()).flatten().norm();
       double deltaT = previousVelocityTimes.peekLast() - previousVelocityTimes.peekFirst();
 
-      int speed = (int) carData.velocity.flatten().magnitude();
+      int speed = (int) carData.velocity.flatten().norm();
       // Delta V / Delta T
       int acceleration = (int) (deltaV / deltaT);
 
@@ -248,7 +248,7 @@ public class BotRenderer {
   }
 
   private void renderText(Color color, int x, int y, String text, Object... args) {
-    renderText(Color.WHITE, x, y, 2, text, args);
+    renderText(color, x, y, 2, text, args);
   }
 
   private void renderText(int x, int y, String text, Object... args) {

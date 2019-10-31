@@ -12,7 +12,7 @@ public class SpeedManager {
   private static double speed;
 
   public static void trackSuperSonic(DataPacket input) {
-    speed = input.car.velocity.flatten().magnitude();
+    speed = input.car.velocity.flatten().norm();
 
     if (input.car.isSupersonic) {
       if (superSonicTime == 0) {

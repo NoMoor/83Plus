@@ -18,21 +18,20 @@ class StoneShotOnGoal(TrainingExercise):
     def make_game_state(self, rng: SeededRandomNumberGenerator) -> GameState:
         return GameState(
             ball=BallState(physics=Physics(
-                location=Vector3(rng.uniform(-1000, 1000), rng.uniform(-2000, 2000), 100),
-                # location=Vector3(100, 10, 100),
+                location=Vector3(0, rng.uniform(-3000, 3000), rng.uniform(150, 280)),
                 velocity=Vector3(0, 0, 0),
                 angular_velocity=Vector3(0, 0, 0))),
             cars={
                 0: CarState(
                     physics=Physics(
-                        # location=Vector3(rng.uniform(-800, 800), -5800, 0),
-                        location=Vector3(0, 0, 1800),
-                        rotation=Rotator(0, 1, 0),
+                        location=Vector3(rng.uniform(-200, 200), -5000, 0),
+                        # location=Vector3(0, -5000, 0),
+                        rotation=Rotator(0, pi / 2, 0),
                         velocity=Vector3(0, 0, 0),
                         angular_velocity=Vector3(0, 0, 0)),
                     jumped=False,
                     double_jumped=False,
-                    boost_amount=0)
+                    boost_amount=100)
             },
             boosts={i: BoostState(0) for i in range(34)}, # Is this needed.
         )

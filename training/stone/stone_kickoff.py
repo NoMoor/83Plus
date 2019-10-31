@@ -19,8 +19,8 @@ class StoneKickoff(StrikerExercise):
             cars={
                 0: CarState(
                     physics=Physics(
-                        location=Vector3(rng.uniform(-800, 800), -5800, 0),
-                        #location=Vector3(0, -5800, 0),
+                        # location=Vector3(rng.uniform(-800, 800), -5800, 0),
+                        location=Vector3(0, -5800, 0),
                         rotation=Rotator(0, pi / 2, 0),
                         velocity=Vector3(0, 0, 0),
                         angular_velocity=Vector3(0, 0, 0)),

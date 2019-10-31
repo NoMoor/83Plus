@@ -17,10 +17,11 @@ public class NormalUtils {
   private CarData cacheCar;
 
   private static final Map<Integer, NormalUtils> CACHE = new HashMap<>();
+  private int index;
 
   public static NormalUtils from(int index) {
     if (!CACHE.containsKey(index)) {
-      CACHE.put(index, new NormalUtils());
+      CACHE.put(index, new NormalUtils(index));
     }
 
     return CACHE.get(index);
@@ -34,10 +35,16 @@ public class NormalUtils {
     return from(input.playerIndex);
   }
 
-  private NormalUtils() {}
+  private NormalUtils(int index) {
+    this.index = index;
+  }
 
   public static BallData noseNormal(DataPacket input) {
     return from(input).noseNormalInternal(input);
+  }
+
+  public static BallData noseNormal(DataPacket input, int index) {
+    return from(index).noseNormalInternal(input);
   }
 
   /** Returns the ball position / velocity relative to the car position. */
@@ -66,20 +73,22 @@ public class NormalUtils {
   }
 
   private void update(DataPacket input) {
+    CarData carData = input.allCars.get(index);
+
     cacheKey = input;
     cacheBall = new BallData(
-        translateRelative(input.car.position, input.ball.position, input.car.orientation.getNoseVector()),
-        translateRelative(input.car.velocity, input.ball.velocity, input.car.orientation.getNoseVector()));
+        translateRelative(carData.position, carData.position, carData.orientation.getNoseVector()),
+        translateRelative(carData.velocity, carData.velocity, carData.orientation.getNoseVector()));
 
     Vector3 ballRoll = input.ball.velocity;
     if (ballRoll.norm() < 10) {
       // The ball is stationary enough. Normalize to the car.
-      ballRoll = input.car.position.minus(input.ball.position).normalized();
+      ballRoll = carData.position.minus(input.ball.position).normalized();
     }
 
     cacheCar = new CarData.Builder()
-        .setPosition(translateRelative(input.ball.position, input.car.position, ballRoll))
-        .setVelocity(translateRelative(input.ball.velocity, input.car.velocity, ballRoll))
+        .setPosition(translateRelative(input.ball.position, carData.position, ballRoll))
+        .setVelocity(translateRelative(input.ball.velocity, carData.velocity, ballRoll))
         .build();
   }
 

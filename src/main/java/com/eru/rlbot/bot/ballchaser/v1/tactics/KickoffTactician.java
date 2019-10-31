@@ -28,9 +28,10 @@ public class KickoffTactician extends Tactician {
   }
 
   public static boolean isKickOff(DataPacket input) {
-    return Math.abs(input.ball.position.x) < 1
-        && Math.abs(input.ball.position.y) < 1
-        && input.ball.velocity.norm() < 10;
+    return Math.abs(input.ball.position.x) < .1
+        && Math.abs(input.ball.position.y) < .1
+        && input.ball.velocity.norm() < .1
+        && input.ball.position.z < 120;
   }
 
   private enum StartLocation {
@@ -248,7 +249,7 @@ public class KickoffTactician extends Tactician {
       return;
     }
 
-    if (input.car.velocity.flatten().magnitude() > 1400 && relativeData.position.y > 2000) {
+    if (input.car.velocity.flatten().norm() > 1400 && relativeData.position.y > 2000) {
       // First flip
       flipLock = true;
     } else if (relativeData.position.y < 700){

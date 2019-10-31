@@ -5,12 +5,15 @@ import com.eru.rlbot.common.output.ControlsOutput;
 
 public class JumpManager {
 
-  private static final float MAX_JUMP_TIME = .75f;
+  private static final float MAX_JUMP_TIME = .2f;
+
+  private static final int JUMP_RELEASE_COUNT = 90;
 
   private static boolean jumpPressed;
-  private static float jumpTime;
+  private static float firstJumpTime;
+  private static float secondJumpTime;
   private static boolean canFlip;
-  private static boolean jumpInAirReleased;
+  private static int jumpInAirReleased;
 
   // Updated each cycle
   private static DataPacket input;
@@ -21,10 +24,11 @@ public class JumpManager {
     if (!input.car.hasWheelContact && !jumpPressed) {
       // We've been bumped and we can flip whenever.
       canFlip = true;
-      jumpInAirReleased = true;
+      jumpInAirReleased++;
     } else if (input.car.hasWheelContact) {
-      jumpTime = 0;
-      jumpInAirReleased = false;
+      firstJumpTime = 0;
+      secondJumpTime = 0;
+      jumpInAirReleased = 0;
     }
   }
 
@@ -36,17 +40,18 @@ public class JumpManager {
 
     jumpPressed = output.holdJump();
 
-    if (!input.car.hasWheelContact && jumpPressed) {
-      jumpTime = input.car.elapsedSeconds;
+    if (!input.car.hasWheelContact && jumpPressed && firstJumpTime == 0) {
+      firstJumpTime = input.car.elapsedSeconds;
       canFlip = false;
-    } else if (!input.car.hasWheelContact && !jumpPressed) {
-      jumpInAirReleased = true;
+    } else if (!input.car.hasWheelContact && !jumpPressed && secondJumpTime != 0) {
+      jumpInAirReleased++;
     }
 
-    if (!input.car.hasWheelContact && jumpInAirReleased && jumpPressed) {
+    if (!input.car.hasWheelContact && jumpPressed && hasReleasedJumpInAir()) {
       // Dodging now.
       canFlip = false;
-    } else if (jumpTime > 0 && jumpInAirReleased) {
+      secondJumpTime = input.car.elapsedSeconds;
+    } else if (firstJumpTime > 0 && secondJumpTime == 0 && hasReleasedJumpInAir()) {
       canFlip = true;
     }
   }
@@ -56,15 +61,19 @@ public class JumpManager {
     return elapsedJumpTime() > MAX_JUMP_TIME;
   }
 
-  private static float elapsedJumpTime() {
-    return jumpTime == 0 ? 0 : input.car.elapsedSeconds - jumpTime;
+  public static float elapsedJumpTime() {
+    return firstJumpTime == 0 ? 0 : input.car.elapsedSeconds - firstJumpTime;
   }
 
   public static boolean canFlip() {
     return canFlip;
   }
 
-  public static boolean hasJumpReleasedInAir() {
+  public static boolean hasReleasedJumpInAir() {
+    return jumpInAirReleased > JUMP_RELEASE_COUNT;
+  }
+
+  public static int getJumpCount() {
     return jumpInAirReleased;
   }
 }

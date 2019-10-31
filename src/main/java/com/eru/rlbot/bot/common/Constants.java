@@ -30,13 +30,14 @@ public class Constants {
 
   // Acceleration
   public static final double GRAVITY = 650;
+  public static final double NEG_GRAVITY = -GRAVITY;
   public static final double BOOSTED_ACCELERATION = 991.666;
   // TODO: Use the formula below.
   public static final double ACCELERATION = 500; // Approximate: Acceleration at 1.0 throttle.
   public static final double COASTING_ACCELERATION = -525;
   public static final double BREAKING_ACCELERATION = -3500;
 
-  public static final double JUMP_ACCELERATION_INSTANT = 300; // Directed towards the roof of the car.
+  public static final double JUMP_VELOCITY_INSTANT = 300; // Directed towards the roof of the car.
   public static final double JUMP_HOLD_TIME = .2; // 200ms
   public static final double JUMP_ACCELERATION_HELD = 1400; // Directed towards the roof of the car. Not including gravity.
 
@@ -48,8 +49,8 @@ public class Constants {
    */
 
   // Speed
-  public static final double BOOSTED_MAX_SPEED = 2300;
-  public static final double MAX_SPEED = 1410;
+  public static final double BOOSTED_MAX_SPEED = 2299;
+  public static final double MAX_SPEED = 1409;
 
   public static double turnDepth(double velocity, double angle) {
     return radius(velocity) * Math.sin(angle);
@@ -65,18 +66,6 @@ public class Constants {
 
   private static double radius(double velocity) {
     return velocity == 0 ? 0 : (1 / curvature(velocity));
-  }
-
-  public static float acceleration(double carVelocity) {
-    if (carVelocity < 1400) {
-      return (float) (1600 - carVelocity);
-    } else if (carVelocity < 1410) {
-      return (float) ((carVelocity - 1400) * 20);
-    } else if (carVelocity >= 1410 && carVelocity < 2301){
-      // Cannot throttle faster.
-      return 0;
-    }
-    throw new IllegalArgumentException(String.format("Unknown accelleration for car Velocity %f", carVelocity));
   }
 
   private static double curvature(double velocity) {

@@ -54,7 +54,7 @@ public class CarData {
         this.velocity = Vector3.of(playerInfo.physics().velocity());
         this.angularVelocity = Vector3.of(playerInfo.physics().angularVelocity());
 
-        this.groundSpeed = velocity.flatten().magnitude();
+        this.groundSpeed = velocity.flatten().norm();
 
         this.orientation = CarOrientation.fromFlatbuffer(playerInfo);
         this.boost = playerInfo.boost();
@@ -68,7 +68,7 @@ public class CarData {
         this.position = builder.position;
         this.velocity = builder.velocity;
 
-        this.groundSpeed = velocity.flatten().magnitude();
+        this.groundSpeed = velocity.flatten().norm();
 
         this.orientation = builder.orientation;
         this.angularVelocity = builder.angularVelocity;

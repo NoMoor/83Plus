@@ -16,8 +16,9 @@ public class RotateTactician extends Tactician {
     double carToGoal = input.car.position.distance(Goal.ownGoal(input.car.team).center);
     double ballToGoal = input.ball.position.distance(Goal.ownGoal(input.car.team).center);
 
-    // TODO: Check to see if you are between the ball and the goal.
-    return ballToGoal - 500 < carToGoal;
+    boolean ballIsCloserToGoal = ballToGoal - 500 < carToGoal;
+
+    return ballIsCloserToGoal;
   }
 
   @Override

@@ -37,7 +37,7 @@ public class Vector2 {
         if (isZero()) {
             throw new IllegalStateException("Cannot scale up a vector with length zero!");
         }
-        double scaleRequired = magnitude / magnitude();
+        double scaleRequired = magnitude / norm();
         return scaled(scaleRequired);
     }
 
@@ -50,7 +50,7 @@ public class Vector2 {
     /**
      * This is the length of the vector.
      */
-    public double magnitude() {
+    public double norm() {
         return Math.sqrt(magnitudeSquared());
     }
 
@@ -63,7 +63,7 @@ public class Vector2 {
         if (isZero()) {
             throw new IllegalStateException("Cannot normalize a vector with length zero!");
         }
-        return this.scaled(1 / magnitude());
+        return this.scaled(1 / norm());
     }
 
     public double dotProduct(Vector2 other) {

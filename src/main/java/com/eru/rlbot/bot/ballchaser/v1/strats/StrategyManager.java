@@ -48,9 +48,17 @@ public class StrategyManager {
   }
 
   public ControlsOutput executeStrategy(DataPacket input) {
+    if (checkReset(input) && active != null) {
+      active.abort();
+    }
+
     if (lastStrategyUpdateTime == 0 || input.car.elapsedSeconds - lastStrategyUpdateTime > STRATEGY_UPDATE_INTERVAL) {
       lastStrategyUpdateTime = input.car.elapsedSeconds;
       updateStrategy(input);
+    }
+
+    if (active == null) {
+      return new ControlsOutput();
     }
 
     ControlsOutput output = active.execute(input);
@@ -63,11 +71,6 @@ public class StrategyManager {
 
   /** Called every x ticks to get the best strategy. */
   private void updateStrategy(DataPacket input) {
-    if (checkReset(input)) {
-
-//      return; // TODO: Is this needed?
-    }
-
     Strategist newStrategist;
     if (DefendStrategist.shouldDefend(input)) {
       newStrategist = strategists.get(Strategy.Type.DEFEND);

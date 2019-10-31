@@ -42,6 +42,7 @@ public class Tactic {
     KICKOFF,
     PICK_UP,
     ROTATE,
+    STRIKE,
     STALL,
     WALL_RIDE,
     WAVE_DASH;

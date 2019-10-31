@@ -25,9 +25,10 @@ public class TacticManager {
     DEFAULT_TACTICIAN_MAP.put(Tactic.Type.HIT_BALL, RollingTactician.class);
     DEFAULT_TACTICIAN_MAP.put(Tactic.Type.KICKOFF, KickoffTactician.class);
     DEFAULT_TACTICIAN_MAP.put(Tactic.Type.PICK_UP, PickUpTactician.class);
+    DEFAULT_TACTICIAN_MAP.put(Tactic.Type.ROTATE, RotateTactician.class);
+    DEFAULT_TACTICIAN_MAP.put(Tactic.Type.STRIKE, TakeTheShotTactician.class);
     DEFAULT_TACTICIAN_MAP.put(Tactic.Type.WALL_RIDE, SideWallTactician.class);
     DEFAULT_TACTICIAN_MAP.put(Tactic.Type.WAVE_DASH, WaveDashTactician.class);
-    DEFAULT_TACTICIAN_MAP.put(Tactic.Type.ROTATE, RotateTactician.class);
   }
 
   private final Tactic defendTactic;
@@ -70,6 +71,10 @@ public class TacticManager {
   }
 
   public void setTactic(Tactic tactic) {
+    if (!tactic.equals(getTactic())) {
+      controllingTactician = null;
+    }
+
     tacticList.clear();
     tacticList.add(tactic);
   }

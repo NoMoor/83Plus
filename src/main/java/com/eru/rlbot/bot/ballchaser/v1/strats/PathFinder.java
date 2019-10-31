@@ -107,7 +107,7 @@ public class PathFinder {
 
     if (correctDirection) {
       // TODO(ahatfield): Change this to be only the velocity in the correct direction.
-      double velocity = carData.velocity.flatten().magnitude();
+      double velocity = carData.velocity.flatten().norm();
       double distanceToMaxSpeed = distanceToMaxSpeed(velocity);
 
       if (distanceToMaxSpeed < distanceToPosition) {
@@ -124,7 +124,7 @@ public class PathFinder {
       // time to turn around + time to ball
       // TODO(ahatfield): Plus some distance to turn around.
       return (carData.velocity.norm() / ACCELERATION)
-          + distanceToPosition / (carData.velocity.flatten().magnitude() + (ACCELERATION / 2));
+          + distanceToPosition / (carData.velocity.flatten().norm() + (ACCELERATION / 2));
     }
   }
 

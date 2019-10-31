@@ -54,8 +54,8 @@ public class CatchTactician extends Tactician {
   // TODO: Move this to another class.
   // Called when ball is in the air.
   private void catchBall(DataPacket input, BallData relativeBallData, ControlsOutput output) {
-    double ballSpeed = input.ball.velocity.flatten().magnitude();
-    double carSpeed = input.car.velocity.flatten().magnitude();
+    double ballSpeed = input.ball.velocity.flatten().norm();
+    double carSpeed = input.car.velocity.flatten().norm();
 
     double distanceToCatchPoint = relativeBallData.position.y - CATCH_BALL_POINT;
 
