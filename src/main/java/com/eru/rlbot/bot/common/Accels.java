@@ -45,18 +45,31 @@ public class Accels {
     return t;
   }
 
-  public static float jumpTimeToHeight(double distance) {
+  public static Optional<Float> jumpTimeToHeight(double distance) {
     double t = 0;
     double velocity = Constants.JUMP_VELOCITY_INSTANT;
+
+    boolean useDoubleJump = false;
+
     while (distance > 0) {
       double nextAcceleration = jumpAcceleration(t);
       double newVelocity = velocity + nextAcceleration * STEP_SIZE;
 
+      if (t > .255 && !useDoubleJump) {
+        newVelocity += Constants.JUMP_VELOCITY_INSTANT;
+        useDoubleJump = true;
+      }
+
       distance -= ((velocity + newVelocity) / 2) * STEP_SIZE;
+
+      if (velocity < 0 && distance > 0) {
+        return Optional.empty();
+      }
+
       velocity = newVelocity;
       t += STEP_SIZE;
     }
-    return (float) t;
+    return Optional.of((float) t);
   }
 
   public static Optional<Float> floatingTimeToTarget(double zVelocity, double zDistance) {
@@ -80,7 +93,7 @@ public class Accels {
   // TODO: Assumes car is flat on the ground.
   private static double jumpAcceleration(double time) {
     if (time > Constants.JUMP_HOLD_TIME) {
-      return 0;
+      return Constants.NEG_GRAVITY;
     } else {
       return Constants.JUMP_ACCELERATION_HELD + Constants.NEG_GRAVITY;
     }

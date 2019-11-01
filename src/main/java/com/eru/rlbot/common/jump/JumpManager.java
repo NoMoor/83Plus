@@ -7,7 +7,7 @@ public class JumpManager {
 
   private static final float MAX_JUMP_TIME = .2f;
 
-  private static final int JUMP_RELEASE_COUNT = 90;
+  private static final int JUMP_RELEASE_COUNT = 5;
 
   private static boolean jumpPressed;
   private static float firstJumpTime;
@@ -33,11 +33,6 @@ public class JumpManager {
   }
 
   public static void processOutput(ControlsOutput output, DataPacket input) {
-    if (hasMaxJumpHeight()) {
-      // Automatically let go of the jump button.
-      output.withJump(false);
-    }
-
     jumpPressed = output.holdJump();
 
     if (!input.car.hasWheelContact && jumpPressed && firstJumpTime == 0) {

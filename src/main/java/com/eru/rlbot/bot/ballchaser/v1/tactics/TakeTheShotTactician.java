@@ -75,7 +75,7 @@ public class TakeTheShotTactician extends Tactician {
   public void execute(DataPacket input, ControlsOutput output, Tactic tactic) {
     if (tactic.getTarget().z < 100) {
       rollingBall(input, output, tactic);
-    } else if (tactic.getTarget().z < 300) {
+    } else if (tactic.getTarget().z < 530) {
       jumpingBall(input, output, tactic);
     }
 
@@ -107,38 +107,43 @@ public class TakeTheShotTactician extends Tactician {
       double shotYOffset = goalTarget.z - tactic.getTarget().z;
 
       // TODO: Update 5000 this to be distance from tactic target to 'shot' target.
-      double zOffset = getRoughUnderCut(shotDistance, shotYOffset, velocity);
-      // Adjust the z based on the speed since longer shots can hit lower on the ball.
-      double zTimeToTarget = Accels.jumpTimeToHeight(tactic.getTarget().z - zOffset);
+//      double zOffset = getRoughUnderCut(shotDistance, shotYOffset, input.car.velocity.flatten().norm());
+      double zOffset = 0;
+      double targetHeight = tactic.getTarget().z - zOffset;
 
-      if (zTimeToTarget > timeToTarget) {
+      Optional<Float> zTimeToTarget = Accels.jumpTimeToHeight(targetHeight);
+
+      // Adjust the z based on the speed since longer shots can hit lower on the ball.
+      if (!zTimeToTarget.isPresent()) {
+        bot.botRenderer.setBranchInfo("Cannot jump that high %d", (int) targetHeight);
+      } else if (zTimeToTarget.get() > timeToTarget) {
         output.withJump();
       }
     } else {
       boolean secondJumping = false;
-      bot.botRenderer.setBranchInfo("Jump time: %f", JumpManager.elapsedJumpTime());
       if (!JumpManager.hasMaxJumpHeight()) {
         // First Jump
-        output.withJump();
+        output
+            .withJump()
+            .withThrottle(1.0);
       } else if (!JumpManager.hasReleasedJumpInAir()) {
         // No Jump
+        output.withThrottle(1.0);
       } else {
-//        bot.botRenderer.addAlertText("Maybe second Jump");
         double zVelocity = input.car.velocity.z;
         double zDistance = tactic.getTarget().z - input.car.position.z;
 
         Optional<Float> floatingTimeToTarget = Accels.floatingTimeToTarget(zVelocity, zDistance);
 
         if (secondJumpLock) {
-          output.withJump();
-          if (jumpVelocity != 0) {
-            jumpVelocity = 0;
-          }
-        } else if (!floatingTimeToTarget.isPresent()) {
+          output
+              .withThrottle(1.0);
+        } else if (!floatingTimeToTarget.isPresent() && input.ball.velocity.norm() == 0) {
           // Do we need to go higher?
           secondJumping = true;
-          output.withJump();
-          jumpVelocity = input.car.velocity.z;
+          output
+              .withJump()
+              .withThrottle(1.0);
           secondJumpLock = true;
         }
       }
@@ -146,9 +151,16 @@ public class TakeTheShotTactician extends Tactician {
       if (!secondJumping || !JumpManager.canFlip()) {
         // Pitch to target the ball
         Vector3 noseVector = input.ball.position.minus(input.car.position).normalized();
-        if (Math.abs(noseVector.z - input.car.orientation.getNoseVector().z - .2) > 0.2) {
-          // TODO: Update to be continuous.
-          output.withPitch(Math.signum(noseVector.z - input.car.orientation.getNoseVector().z) * .5);
+
+        float carNoseZ = input.car.orientation.getNoseVector().z;
+        float carNoseDz = input.car.angularVelocity.z;
+
+        // TODO: Update to be the angle that we will hit the ball instead of the current angle.
+        if (noseVector.z - (carNoseZ + carNoseDz) > 0.1) {
+          // Need to tilt back
+          output.withPitch(.5);
+        } else if (noseVector.z - (carNoseZ + carNoseDz) < 0.1) {
+          output.withPitch(-.5);
         }
       }
     }
