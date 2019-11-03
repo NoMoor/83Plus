@@ -2,6 +2,7 @@ package com.eru.rlbot.bot.common;
 
 import com.eru.rlbot.common.input.BallData;
 import com.eru.rlbot.common.input.CarData;
+import com.eru.rlbot.common.input.DataPacket;
 import com.eru.rlbot.common.vector.Vector2;
 import com.eru.rlbot.common.vector.Vector3;
 
@@ -35,6 +36,12 @@ public final class Angles {
     return Math.abs(a) < Math.abs(b)
         ? a
         : b;
+  }
+
+  public static Vector3 ballOffset(double correctionAngle) {
+    double xCorrection = -Math.sin(2 * correctionAngle) * Constants.BALL_RADIUS / 2; // TODO: This is very rough.
+    double yCorrection = 0;
+    return Vector3.of(xCorrection, yCorrection, 0);
   }
 
   private Angles() {}
