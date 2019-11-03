@@ -239,7 +239,6 @@ public class BotRenderer {
     previousVelocities.add(carData.velocity);
     previousVelocityTimes.add(carData.elapsedSeconds);
 
-    // TODO: Figure out why this isn't working.
     BallData relativeBallData = NormalUtils.noseNormal(input);
 
     renderText(0, 400, "Z: %d", (int) relativeBallData.position.z);

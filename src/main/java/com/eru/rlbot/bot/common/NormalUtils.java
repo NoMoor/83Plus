@@ -77,8 +77,8 @@ public class NormalUtils {
 
     cacheKey = input;
     cacheBall = new BallData(
-        translateRelative(carData.position, carData.position, carData.orientation.getNoseVector()),
-        translateRelative(carData.velocity, carData.velocity, carData.orientation.getNoseVector()));
+        translateRelative(carData.position, input.ball.position, carData.orientation.getNoseVector()),
+        translateRelative(carData.velocity, input.ball.velocity, carData.orientation.getNoseVector()));
 
     Vector3 ballRoll = input.ball.velocity;
     if (ballRoll.norm() < 10) {
