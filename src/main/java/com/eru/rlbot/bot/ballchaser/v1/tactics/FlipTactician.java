@@ -7,7 +7,7 @@ import com.eru.rlbot.common.jump.JumpManager;
 import com.eru.rlbot.common.output.ControlsOutput;
 import com.eru.rlbot.common.vector.Vector3;
 
-import static com.eru.rlbot.bot.common.Constants.BALL_SIZE;
+import static com.eru.rlbot.bot.common.Constants.BALL_RADIUS;
 
 /** Handles flip tactics for front and diagonal flips. */
 public class FlipTactician extends Tactician {
@@ -39,7 +39,7 @@ public class FlipTactician extends Tactician {
     if (flatCorrectionAngle < .25) {
 
       // Is touching the ground or holding the button doesn't do anything anymore
-      double heightDifference = targetPosition.z - input.car.position.z - BALL_SIZE;
+      double heightDifference = targetPosition.z - input.car.position.z - BALL_RADIUS;
       // TODO(ahatfield): This 750 should change based on the height I was at when I jumped.
       boolean canSingleJumpTo = heightDifference > input.car.velocity.z && heightDifference < 750;
 

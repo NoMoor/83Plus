@@ -26,7 +26,7 @@ public class RotateTactician extends Tactician {
     output.withSteer(Angles.flatCorrectionDirection(input.car, tactic.target.position))
         .withThrottle(1);
 
-    if (input.car.position.distance(tactic.getTarget()) < 500) {
+    if (input.car.position.distance(tactic.getTarget()) < 100) {
       tacticManager.setTacticComplete(tactic);
     }
   }

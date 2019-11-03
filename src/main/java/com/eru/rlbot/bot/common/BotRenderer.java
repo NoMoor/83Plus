@@ -86,6 +86,7 @@ public class BotRenderer {
     renderControl();
     renderRefreshRate(input);
     renderBallPrediction(input);
+    renderTactic(input.car);
 
     renderAcceleration(input);
     renderOutput(output);
@@ -160,6 +161,17 @@ public class BotRenderer {
   private Tactic tactic;
   private Tactician tactician;
   private String branch;
+  private Vector3 carTarget;
+
+  public void setCarTarget(Vector3 target) {
+    this.carTarget = target;
+  }
+
+  private void renderTactic(CarData carData) {
+    if (carTarget != null) {
+      render3DLine(Color.GREEN, carData.position, carTarget);
+    }
+  }
 
   private void renderControl() {
     renderText(Color.PINK, 0, 300,"%s", strategist == null ? "NONE" : strategist.getType());
@@ -175,6 +187,7 @@ public class BotRenderer {
 
   public void setTactic(Tactic tactic) {
     this.tactic = tactic;
+    this.carTarget = tactic.getTarget();
   }
 
   public void setTactician(Tactician tactician) {
@@ -226,6 +239,7 @@ public class BotRenderer {
     previousVelocities.add(carData.velocity);
     previousVelocityTimes.add(carData.elapsedSeconds);
 
+    // TODO: Figure out why this isn't working.
     BallData relativeBallData = NormalUtils.noseNormal(input);
 
     renderText(0, 400, "Z: %d", (int) relativeBallData.position.z);
@@ -274,7 +288,7 @@ public class BotRenderer {
     }
   }
 
-  public void render3DLine(Color color, Vector3 loc1, Vector3 loc2) {
+  private void render3DLine(Color color, Vector3 loc1, Vector3 loc2) {
     if (!skipRendering)
       getRenderer().drawLine3d(color, loc1, loc2);
   }

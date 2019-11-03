@@ -288,7 +288,7 @@ public class DribbleTactician extends Tactician {
 
   private boolean ballIsOnGround(DataPacket input) {
     boolean initialPosition = input.ball.velocity.z == 0 && input.ball.position.z < 150;
-    boolean onGround = input.ball.position.z <= BALL_SIZE;
+    boolean onGround = input.ball.position.z <= BALL_RADIUS;
 //    if (onGround || initialPosition) {
 //      bot.botRenderer.addDebugText("Ball on Ground", Color.RED);
 //    } else {

@@ -27,7 +27,7 @@ public class Tactic {
   }
 
   public enum Type {
-    // These may be more maneuvers and not tactics.
+    AERIAL,
     CATCH,
     DEMO,
     DEFEND,

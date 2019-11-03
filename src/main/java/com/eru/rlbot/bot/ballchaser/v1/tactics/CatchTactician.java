@@ -13,7 +13,7 @@ import java.awt.*;
 public class CatchTactician extends Tactician {
 
   private static final float CATCH_BALL_POINT = OCTANE_BALANCE_POINT;
-  private static final float BALL_DIAMETER = BALL_SIZE;
+  private static final float BALL_DIAMETER = BALL_RADIUS;
 
   CatchTactician(EruBot bot, TacticManager tacticManager) {
     super(bot, tacticManager);

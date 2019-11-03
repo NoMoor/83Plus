@@ -7,6 +7,7 @@ import com.eru.rlbot.common.input.CarData;
 import com.eru.rlbot.common.input.DataPacket;
 import com.eru.rlbot.common.jump.JumpManager;
 import com.eru.rlbot.common.output.ControlsOutput;
+import com.eru.rlbot.common.vector.Vector2;
 import com.eru.rlbot.common.vector.Vector3;
 import com.google.common.collect.ImmutableMap;
 import java.util.Optional;
@@ -73,7 +74,7 @@ public class TakeTheShotTactician extends Tactician {
 
   @Override
   public void execute(DataPacket input, ControlsOutput output, Tactic tactic) {
-    if (tactic.getTarget().z < 100) {
+    if (tactic.getTarget().z < 120) {
       rollingBall(input, output, tactic);
     } else if (tactic.getTarget().z < 530) {
       jumpingBall(input, output, tactic);
@@ -102,12 +103,12 @@ public class TakeTheShotTactician extends Tactician {
         output.withBoost();
       }
 
-      Vector3 goalTarget = Goal.opponentGoal(input.car.team).center;
-      double shotDistance = tactic.getTarget().distance(goalTarget);
-      double shotYOffset = goalTarget.z - tactic.getTarget().z;
-
-      // TODO: Update 5000 this to be distance from tactic target to 'shot' target.
-//      double zOffset = getRoughUnderCut(shotDistance, shotYOffset, input.car.velocity.flatten().norm());
+//      Vector3 goalTarget = Goal.opponentGoal(input.car.team).center;
+//      double shotDistance = tactic.getTarget().distance(goalTarget);
+//      double shotYOffset = goalTarget.z - tactic.getTarget().z;
+//
+//      // TODO: Update 5000 this to be distance from tactic target to 'shot' target.
+////      double zOffset = getRoughUnderCut(shotDistance, shotYOffset, input.car.velocity.flatten().norm());
       double zOffset = 0;
       double targetHeight = tactic.getTarget().z - zOffset;
 
@@ -175,18 +176,31 @@ public class TakeTheShotTactician extends Tactician {
   }
 
   private void rollingBall(DataPacket input, ControlsOutput output, Tactic tactic) {
-    bot.botRenderer.setBranchInfo("Rolling Ball %d", (int) input.car.velocity.flatten().norm());
+    bot.botRenderer.setBranchInfo("Rolling Ball");
 
     double distance = tactic.getTarget().distance(Goal.opponentGoal(input.car.team).center);
 
-    output.withSteer(Angles.flatCorrectionDirection(input.car, input.ball.position));
+    double steeringAngle = Angles.flatCorrectionDirection(input.car, input.ball.position);
+
+    output.withSteer(steeringAngle);
 
     double targetSpeed = getRoughSpeed(distance);
-    if (input.car.velocity.norm() < targetSpeed) { // TODO: Take into account the relative ball speed.
+
+    BallData noseNormalBall = NormalUtils.noseNormal(input);
+
+    // TODO: take into account angular velocity.
+    if (Math.abs(steeringAngle) > 1) {
+      output
+          .withThrottle(1.0f)
+          .withSlide();
+      if (Math.abs(steeringAngle) < 1.4) {
+        output.withBoost();
+      }
+    } else if (noseNormalBall.velocity.norm() < targetSpeed) { // TODO: Take into account the relative ball speed.
       output
           .withThrottle(1.0f)
           .withBoost();
-    } else if (input.car.velocity.norm() > targetSpeed + 100f) {
+    } else if (noseNormalBall.velocity.norm() > targetSpeed + 100f) {
       // Coast.
     } else {
       output.withThrottle(.02f);

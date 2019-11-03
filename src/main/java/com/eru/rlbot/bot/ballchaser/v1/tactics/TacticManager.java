@@ -3,12 +3,10 @@ package com.eru.rlbot.bot.ballchaser.v1.tactics;
 import com.eru.rlbot.bot.EruBot;
 import com.eru.rlbot.bot.common.BotRenderer;
 import com.eru.rlbot.bot.common.Pair;
-import com.eru.rlbot.common.input.CarData;
 import com.eru.rlbot.common.input.DataPacket;
 import com.eru.rlbot.common.output.ControlsOutput;
 import com.eru.rlbot.common.vector.Vector3;
 
-import java.awt.*;
 import java.util.*;
 
 public class TacticManager {
@@ -17,8 +15,9 @@ public class TacticManager {
   private static final Map<Tactic.Type, Class<? extends Tactician>> DEFAULT_TACTICIAN_MAP = new HashMap<>();
 
   static {
+    DEFAULT_TACTICIAN_MAP.put(Tactic.Type.AERIAL, AerialTactician.class);
     DEFAULT_TACTICIAN_MAP.put(Tactic.Type.CATCH, CatchTactician.class);
-    DEFAULT_TACTICIAN_MAP.put(Tactic.Type.DEFEND, BackupTactician.class);
+    DEFAULT_TACTICIAN_MAP.put(Tactic.Type.DEFEND, GoalLineTactician.class);
     DEFAULT_TACTICIAN_MAP.put(Tactic.Type.DRIBBLE, DribbleTactician.class);
     DEFAULT_TACTICIAN_MAP.put(Tactic.Type.FRONT_FLIP, FlipTactician.class);
     DEFAULT_TACTICIAN_MAP.put(Tactic.Type.FLICK, FlickTactician.class);
@@ -80,31 +79,30 @@ public class TacticManager {
   }
 
   public void execute(DataPacket input, ControlsOutput output) {
-    getTactician().execute(input, output, getTactic());
-
     botRenderer.setTactic(getTactic());
     botRenderer.setTactician(getTactician());
-    renderTactics(input.car);
+
+    getTactician().execute(input, output, getTactic());
 
     if (completedTacticis.remove(getTactic()) && !tacticList.isEmpty()) {
       tacticList.pop();
     }
   }
 
-  private void renderTactics(CarData carData) {
-    Vector3 previousTarget = carData.position;
-
-    if (!tacticList.isEmpty()) {
-      for (int i = 0; i < tacticList.size(); i++) {
-        Vector3 nextTarget = tacticList.get(i).target.position;
-        bot.botRenderer.render3DLine(i == 0 ? Color.green : Color.ORANGE, previousTarget, nextTarget);
-        previousTarget = nextTarget;
-      }
-    } else {
-      Vector3 nextTarget = getNextTarget();
-      bot.botRenderer.render3DLine(Color.green, previousTarget, nextTarget);
-    }
-  }
+//  private void renderTactics(CarData carData) {
+//    Vector3 previousTarget = carData.position;
+//
+//    if (!tacticList.isEmpty()) {
+//      for (int i = 0; i < tacticList.size(); i++) {
+//        Vector3 nextTarget = tacticList.get(i).target.position;
+//        bot.botRenderer.render3DLine(i == 0 ? Color.green : Color.ORANGE, previousTarget, nextTarget);
+//        previousTarget = nextTarget;
+//      }
+//    } else {
+//      Vector3 nextTarget = getNextTarget();
+//      bot.botRenderer.render3DLine(Color.green, previousTarget, nextTarget);
+//    }
+//  }
 
   public void setTacticComplete(Tactic tactic) {
     this.completedTacticis.add(tactic);

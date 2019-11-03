@@ -2,8 +2,7 @@ package com.eru.rlbot.bot.ballchaser.v1.strats;
 
 import com.eru.rlbot.bot.EruBot;
 import com.eru.rlbot.bot.ballchaser.v1.tactics.*;
-import com.eru.rlbot.bot.common.Accels;
-import com.eru.rlbot.bot.common.DllHelper;
+import com.eru.rlbot.bot.common.*;
 import com.eru.rlbot.common.input.DataPacket;
 import com.eru.rlbot.common.vector.Vector3;
 import rlbot.flat.BallPrediction;
@@ -28,31 +27,47 @@ public class AttackStrategist extends Strategist {
       return true;
     }
 
+//    tacticManager.setTactic(new Tactic(input.ball.position, Tactic.Type.AERIAL));
+//    if (true) return true;
+
     Optional<BallPrediction> ballPredictionOptional = DllHelper.getBallPrediction();
     if (KickoffTactician.isKickOff(input)) {
       tacticManager.setTactic(new Tactic(input.ball.position, Tactic.Type.KICKOFF));
-    } else if (TakeTheShotTactician.takeTheShot(input) && ballPredictionOptional.isPresent()) {
-      BallPrediction ballPrediction = ballPredictionOptional.get();
-      Vector3 target = Vector3.of(ballPrediction.slices(0).physics().location());
+    } else if (Locations.isOpponentSideOfBall(input)) { // TODO: We should only do this if we have an open goal.
 
-      // TODO: Put this back in but it doesn't work when using rlbottraining.
-//      for (int i = 0 ; i < ballPrediction.slicesLength() ; i = Math.min(i + 5, ballPrediction.slicesLength() - 1)) {
-//        PredictionSlice slice = ballPrediction.slices(i);
-//
-//        Vector3 slicePosition = Vector3.of(slice.physics().location());
-//
-//        if (slicePosition.z < 300) {
-//          float timeToLocation =
-//              Accels.timeToDistance(
-//                  input.car.velocity.flatten().norm(),
-//                  input.car.position.flatten().distance(slicePosition.flatten()));
-//          if (timeToLocation < slice.gameSeconds() - input.car.elapsedSeconds) {
-//            // Target Acquired.
-//            target = slicePosition;
-//            break;
-//          }
-//        }
-//      }
+      Vector3 rotationPost = Goal.ownGoal(bot.team).getSameSidePost(input.car);
+      Vector3 carToGoal = rotationPost.minus(input.car.position);
+
+      double rotationNorm = Math.min(carToGoal.flatten().norm(), NormalUtils.noseNormal(input).position.y + 2000);
+      Vector3 rotationDirection = carToGoal.scaledToMagnitude(rotationNorm);
+
+      Vector3 rotationTarget = input.car.position.plus(rotationDirection);
+
+      tacticManager.setTactic(new Tactic(rotationTarget, Tactic.Type.ROTATE));
+    } else if (TakeTheShotTactician.takeTheShot(input)) {
+      Vector3 target = input.ball.position;
+      if (ballPredictionOptional.isPresent()) {
+        BallPrediction ballPrediction = ballPredictionOptional.get();
+        target = Vector3.of(ballPrediction.slices(0).physics().location());
+
+        for (int i = 0 ; i < ballPrediction.slicesLength() ; i = Math.min(i + 5, ballPrediction.slicesLength() - 1)) {
+          PredictionSlice slice = ballPrediction.slices(i);
+
+          Vector3 slicePosition = Vector3.of(slice.physics().location());
+
+          if (slicePosition.z < 300) {
+            float timeToLocation =
+                Accels.timeToDistance(
+                    input.car.velocity.flatten().norm(),
+                    input.car.position.flatten().distance(slicePosition.flatten()));
+            if (timeToLocation < slice.gameSeconds() - input.car.elapsedSeconds) {
+              // Target Acquired.
+              target = slicePosition;
+              break;
+            }
+          }
+        }
+      }
 
       tacticManager.setTactic(new Tactic(target, Tactic.Type.STRIKE));
     } else if (DribbleTactician.canDribble(input)) {

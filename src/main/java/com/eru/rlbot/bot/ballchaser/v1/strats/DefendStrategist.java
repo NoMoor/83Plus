@@ -43,14 +43,14 @@ public class DefendStrategist extends Strategist {
 
     int i = 0;
     while (i < ballPrediction.slicesLength()) {
-      Physics ballPysics = ballPrediction.slices(i).physics();
+      Physics ballPhysics = ballPrediction.slices(i).physics();
 
       double distanceToGoal =
-          Vector3.of(ballPysics.location()).distance(Goal.ownGoal(input.car.team).center);
+          Vector3.of(ballPhysics.location()).distance(Goal.ownGoal(input.car.team).center);
 
       boolean ballMovingTowardsGoal = input.car.team == 0
-          ? ballPysics.velocity().y() < 0
-          : ballPysics.velocity().y() > 0;
+          ? ballPhysics.velocity().y() < 0
+          : ballPhysics.velocity().y() > 0;
 
       if (distanceToGoal < 5000 && ballMovingTowardsGoal) {
         return true;
@@ -73,7 +73,7 @@ public class DefendStrategist extends Strategist {
 
       tacticManager.setTactic(new Tactic(rotationTarget, Tactic.Type.ROTATE));
     } else {
-      tacticManager.setTactic(new Tactic(Goal.ownGoal(bot.team).center, Tactic.Type.DEFEND));
+      tacticManager.setTactic(new Tactic(input.car.position, Tactic.Type.DEFEND));
     }
 
     return true;
