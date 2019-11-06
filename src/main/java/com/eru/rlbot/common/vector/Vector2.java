@@ -10,7 +10,9 @@ import java.awt.*;
  */
 public class Vector2 {
 
-    public final double x;
+  public static final Vector2 NORTH = new Vector2(0, 1);
+
+  public final double x;
     public final double y;
 
     public Vector2(double x, double y) {

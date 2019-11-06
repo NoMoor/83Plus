@@ -30,8 +30,6 @@ public class TacticManager {
     DEFAULT_TACTICIAN_MAP.put(Tactic.Type.WAVE_DASH, WaveDashTactician.class);
   }
 
-  private final Tactic defendTactic;
-  private final Tactic dribbleTactic;
   private final Tactic defaultTactic;
 
   private final BotRenderer botRenderer;
@@ -45,9 +43,7 @@ public class TacticManager {
     this.bot = bot;
     this.botRenderer = BotRenderer.forBot(bot);
 
-    defendTactic = new Tactic(bot.ownGoal.center, Tactic.Type.DEFEND);
-    dribbleTactic = new Tactic(bot.opponentsGoal.center, Tactic.Type.DRIBBLE);
-    defaultTactic = dribbleTactic;
+    defaultTactic = new Tactic(Vector3.of(0, 0, 0), Tactic.Type.ROTATE);
   }
 
   // TODO: Probably don't want to call this.
@@ -89,21 +85,6 @@ public class TacticManager {
     }
   }
 
-//  private void renderTactics(CarData carData) {
-//    Vector3 previousTarget = carData.position;
-//
-//    if (!tacticList.isEmpty()) {
-//      for (int i = 0; i < tacticList.size(); i++) {
-//        Vector3 nextTarget = tacticList.get(i).target.position;
-//        bot.botRenderer.render3DLine(i == 0 ? Color.green : Color.ORANGE, previousTarget, nextTarget);
-//        previousTarget = nextTarget;
-//      }
-//    } else {
-//      Vector3 nextTarget = getNextTarget();
-//      bot.botRenderer.render3DLine(Color.green, previousTarget, nextTarget);
-//    }
-//  }
-
   public void setTacticComplete(Tactic tactic) {
     this.completedTacticis.add(tactic);
     this.controllingTactician = null;
@@ -117,7 +98,11 @@ public class TacticManager {
     this.controllingTactician = Pair.of(tactic.type, newTactician(tactician));  }
 
   private Tactic getTactic() {
-    return tacticList.isEmpty() ? defaultTactic : tacticList.getFirst();
+    if (tacticList.isEmpty()) {
+      botRenderer.setBranchInfo("Default Tactic");
+      return defaultTactic;
+    }
+    return tacticList.getFirst();
   }
 
   private Tactic getLastTactic() {

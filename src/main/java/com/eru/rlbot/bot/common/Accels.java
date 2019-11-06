@@ -1,5 +1,6 @@
 package com.eru.rlbot.bot.common;
 
+import com.eru.rlbot.common.input.CarData;
 import java.util.Optional;
 
 public class Accels {
@@ -16,6 +17,18 @@ public class Accels {
       // Cannot throttle faster.
       return 0;
     }
+  }
+
+  public static float minTimeToDistance(CarData carData, double distance) {
+    double velocity = carData.velocity.flatten().norm();
+
+    return boostedTimeToDistance(carData.boost, velocity, distance);
+  }
+
+  public static float minTimeToDistance(CarData carData, double distance, double targetSpeed) {
+    double velocity = carData.velocity.flatten().norm();
+
+    return boostedTimeToDistance(carData.boost, velocity, targetSpeed, distance);
   }
 
   private static final double STEP_SIZE = 1.0/120;
@@ -41,6 +54,44 @@ public class Accels {
       distance -= ((velocity + newVelocity) / 2) * STEP_SIZE;
       velocity = newVelocity;
       t += STEP_SIZE;
+    }
+    return t;
+  }
+
+  public static float boostedTimeToDistance(double boost, double velocity, double distance) {
+    float t = 0;
+    while (distance > 0) {
+      double nextAcceleration = acceleration(velocity) + ((boost > 0) ? Constants.BOOSTED_ACCELERATION : 0);
+      double newVelocity = velocity + nextAcceleration * STEP_SIZE;
+
+      distance -= ((velocity + newVelocity) / 2) * STEP_SIZE;
+      velocity = newVelocity;
+      t += STEP_SIZE;
+
+      if (boost > 0) {
+        boost -= STEP_SIZE * 33;
+      }
+    }
+    return t;
+  }
+
+  // TODO: Make more sophisticated. For now. Assume the we wont' exceed Max(velocity, targetVelocity)
+  public static float boostedTimeToDistance(double boost, double velocity, double targetVelocity, double distance) {
+    float t = 0;
+    while (distance > 0) {
+      double nextAcceleration = 0;
+      if (targetVelocity > velocity) {
+        nextAcceleration = acceleration(velocity) + ((boost > 0) ? Constants.BOOSTED_ACCELERATION : 0);
+      }
+
+      double newVelocity = velocity + nextAcceleration * STEP_SIZE;
+      distance -= ((velocity + newVelocity) / 2) * STEP_SIZE;
+      velocity = newVelocity;
+      t += STEP_SIZE;
+
+      if (boost > 0) {
+        boost -= STEP_SIZE * 33;
+      }
     }
     return t;
   }

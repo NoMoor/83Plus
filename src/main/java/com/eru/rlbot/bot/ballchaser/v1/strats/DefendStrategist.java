@@ -3,7 +3,7 @@ package com.eru.rlbot.bot.ballchaser.v1.strats;
 import com.eru.rlbot.bot.EruBot;
 import com.eru.rlbot.bot.ballchaser.v1.tactics.RotateTactician;
 import com.eru.rlbot.bot.ballchaser.v1.tactics.Tactic;
-import com.eru.rlbot.bot.common.Angles;
+import com.eru.rlbot.bot.common.Constants;
 import com.eru.rlbot.bot.common.DllHelper;
 import com.eru.rlbot.bot.common.Goal;
 import com.eru.rlbot.common.input.DataPacket;
@@ -21,42 +21,29 @@ public class DefendStrategist extends Strategist {
   }
 
   static boolean shouldDefend(DataPacket input) {
-    return ballIsNearGoal(input) || ballIsFarCorner(input);
+    return shotOnGoal(input);
   }
 
-  private static boolean ballIsFarCorner(DataPacket input) {
-    Vector3 oppGoalCenter = Goal.opponentGoal(input.car.team).center;
-    Vector3 ballPosition = input.ball.position;
-
-    Vector3 ballToGoal = oppGoalCenter.minus(ballPosition);
-
-    return Math.abs(ballToGoal.x) > Math.abs(ballToGoal.y);
-  }
-
-  private static boolean ballIsNearGoal(DataPacket input) {
+  private static boolean shotOnGoal(DataPacket input) {
     Optional<BallPrediction> ballPredictionOptional = DllHelper.getBallPrediction();
     if (!ballPredictionOptional.isPresent()) {
       return false;
     }
 
+    float ownGoalY = Goal.ownGoal(input.car.team).center.y;
+    float inGoalY = ownGoalY + Math.signum(ownGoalY) * Constants.BALL_RADIUS;
     final BallPrediction ballPrediction = ballPredictionOptional.get();
 
     int i = 0;
     while (i < ballPrediction.slicesLength()) {
       Physics ballPhysics = ballPrediction.slices(i).physics();
+      float ballY = ballPhysics.location().y();
 
-      double distanceToGoal =
-          Vector3.of(ballPhysics.location()).distance(Goal.ownGoal(input.car.team).center);
-
-      boolean ballMovingTowardsGoal = input.car.team == 0
-          ? ballPhysics.velocity().y() < 0
-          : ballPhysics.velocity().y() > 0;
-
-      if (distanceToGoal < 5000 && ballMovingTowardsGoal) {
+      if (ownGoalY > 0 ? inGoalY < ballY : inGoalY > ballY) {
         return true;
       }
 
-      i += 10;
+      i += 30;
     }
 
     return false;

@@ -96,6 +96,7 @@ public class CatchTactician extends Tactician {
   private static double carToBallTime(BallData relativeBallData) {
     double distanceToCatchPoint = relativeBallData.position.y - CATCH_BALL_POINT;
 
+    // TODO: fix this.
     // Negate the velocity since moving toward the ball is a relative negative velocity.
     return distanceToCatchPoint / -relativeBallData.velocity.y;
   }

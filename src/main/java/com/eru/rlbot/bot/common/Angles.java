@@ -38,10 +38,32 @@ public final class Angles {
         : b;
   }
 
-  public static Vector3 ballOffset(double correctionAngle) {
-    double xCorrection = -Math.sin(2 * correctionAngle) * Constants.BALL_RADIUS / 2; // TODO: This is very rough.
-    double yCorrection = 0;
-    return Vector3.of(xCorrection, yCorrection, 0);
+  private static final double CORRECTION_GAIN = 6d;
+  public static Vector3 getTargetOffset(Vector3 carBall, double correctionAngle) {
+    double xCorrection = -Constants.BALL_RADIUS * Math.sin(correctionAngle) * CORRECTION_GAIN;
+    double yCorrection = -Constants.BALL_RADIUS;
+
+    double rotation = carBall.flatten().correctionAngle(Vector2.NORTH);
+
+    return rotate(new Vector2(xCorrection, yCorrection), rotation).asVector3();
+  }
+
+  public static Vector2 rotate(Vector2 position, double angle) {
+    double cos = Math.cos(angle);
+    double sin = Math.sin(angle);
+
+    double xPrime = (position.x * cos) + (position.y * sin);
+    double yPrime = (-position.x * sin) + (position.y * cos);
+
+    return new Vector2(xPrime, yPrime);
+  }
+
+  public static Vector3 carBall(DataPacket input) {
+    return carTarget(input.car, input.ball.position);
+  }
+
+  public static Vector3 carTarget(CarData car, Vector3 target) {
+    return target.minus(car.position);
   }
 
   private Angles() {}

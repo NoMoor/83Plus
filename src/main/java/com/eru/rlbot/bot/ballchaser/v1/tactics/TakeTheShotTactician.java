@@ -7,7 +7,6 @@ import com.eru.rlbot.common.input.CarData;
 import com.eru.rlbot.common.input.DataPacket;
 import com.eru.rlbot.common.jump.JumpManager;
 import com.eru.rlbot.common.output.ControlsOutput;
-import com.eru.rlbot.common.vector.Vector2;
 import com.eru.rlbot.common.vector.Vector3;
 import com.google.common.collect.ImmutableMap;
 import java.util.Optional;
@@ -33,21 +32,20 @@ public class TakeTheShotTactician extends Tactician {
   }
 
   public static boolean takeTheShot(DataPacket input) {
-    if (input.ball.position.z > 500) {
-      return false;
-    }
-
-    BallData relativeBallData = NormalUtils.noseNormal(input);
-    if (Math.abs(relativeBallData.position.x) > 400) {
-      return false;
-    }
-
     if (input.allCars.size() == 1) {
       return true;
     }
 
+    BallData relativeBallData = NormalUtils.noseNormal(input);
+
+    // The ball must mostly be in front of the car.
+    if (Math.abs(relativeBallData.position.x) * 2 > relativeBallData.position.y) {
+      return false;
+    }
+
     float timeToBall = timeToBall(relativeBallData, input.car);
 
+    // Am the closest car to the ball.
     for (int i = 0 ; i < input.allCars.size() ; i++) {
       CarData carData = input.allCars.get(i);
       if (carData == input.car) {
@@ -67,22 +65,42 @@ public class TakeTheShotTactician extends Tactician {
   }
 
   private static float timeToBall(BallData relativeBallData, CarData carData) {
-    return carData.boost > 20
+    return carData.boost > 40
         ? Accels.boostedTimeToDistance(carData.velocity.flatten().norm(), relativeBallData.position.flatten().norm())
         : Accels.timeToDistance(carData.velocity.flatten().norm(), relativeBallData.position.flatten().norm());
   }
 
   @Override
   public void execute(DataPacket input, ControlsOutput output, Tactic tactic) {
-    if (tactic.getTarget().z < 200) {
+    // TODO: We should only do this if we have an open goal.
+    if (Locations.isOpponentSideOfBall(input)) {
+      getGoalSide(input, output, tactic);
+    } else if (tactic.getTarget().z < 200) {
       rollingBall(input, output, tactic);
     } else if (tactic.getTarget().z < 530) {
       jumpingBall(input, output, tactic);
     }
+  }
 
-//    if (input.ball.position.z > 100 && input.ball.position.z < 125) {
-//      bot.botRenderer.setBranchInfo("Striking speed: %f", input.car.velocity.norm());
-//    }
+  private void getGoalSide(DataPacket input, ControlsOutput output, Tactic tactic) {
+    bot.botRenderer.setBranchInfo("Get goal side.");
+    Vector3 rotationPost = Goal.ownGoal(bot.team).getSameSidePost(input.car);
+    Vector3 carToGoal = rotationPost.minus(input.car.position);
+
+    double rotationNorm = Math.min(carToGoal.flatten().norm(), NormalUtils.noseNormal(input).position.y + 2000);
+    Vector3 rotationDirection = carToGoal.scaledToMagnitude(rotationNorm);
+
+    Vector3 rotationTarget = input.car.position.plus(rotationDirection);
+
+    double steeringAngle = Angles.flatCorrectionDirection(input.car, rotationTarget);
+
+    output
+        .withSteer(steeringAngle)
+        .withThrottle(1.0f);
+
+    if (rotationTarget.distance(input.car.position) > 1000) {
+      output.withBoost();
+    }
   }
 
   private float jumpVelocity;
@@ -167,69 +185,102 @@ public class TakeTheShotTactician extends Tactician {
     }
   }
 
-  private double getRoughUnderCut(double shotDistance, double shotYOffset, double carSpeed) {
-    double ballVelocity = carSpeed * .6; // Fill in constant.
-
-    // TODO: What angle to fly the distance required?
-
-    return (shotDistance / 1000) * 7 + (shotYOffset / 7);
-  }
-
   private void rollingBall(DataPacket input, ControlsOutput output, Tactic tactic) {
     // Get the vector on target with the smallest correction angle
+    CarData rollNormal = NormalUtils.rollNormal(input);
 
-    // Assume we are shooting on net
-    double correctionAngle = Locations.getSmallestBallGoalCorrection(input);
+    if (rollNormal.position.y > 0) {
+      // Ball is rolling toward the car
+      shoot(input, output, tactic);
+    } else {
+      guide(input, output, tactic);
+    }
+  }
 
-    if (Math.abs(correctionAngle) > .45) { // TODO: Make this dynamic.
-      bot.botRenderer.setBranchInfo("Swing out");
-      // TODO: PD?
+  private static double timeToShot = 0;
+  private static double shotStartTime = 0;
+  private void shoot(DataPacket input, ControlsOutput output, Tactic tactic) {
+    bot.botRenderer.setBranchInfo("Shoot");
+
+    double distance = tactic.getTarget().distance(Goal.opponentGoal(input.car.team).center);
+    double targetSpeed = getRoughSpeed(distance);
+
+    // Determine where to aim the car
+    double shotCorrectionAngle = Locations.minCarTargetGoalCorrection(input, tactic.target.position);
+    BallData noseNormalBall = NormalUtils.noseNormal(input);
+    Vector3 targetOffset = Angles.getTargetOffset(Angles.carBall(input), shotCorrectionAngle);
+    Vector3 ballTarget = input.ball.position.plus(targetOffset);
+
+    double steeringAngle = Angles.flatCorrectionDirection(input.car, ballTarget);
+    output.withSteer(steeringAngle * 10); // TODO: Scale the steering angle with how close you are to the ball
+
+    double absSteeringAngle = Math.abs(steeringAngle);
+    // TODO: take into account angular velocity.
+    if (absSteeringAngle > 1) {
+      // Need to slide / turn
+      output
+          .withThrottle(1.0f)
+          .withSlide();
+
+      // Boost to finish the turn
+      if (absSteeringAngle < 1.4) {
+        output.withBoost();
+      }
+    } else if (noseNormalBall.velocity.norm() < targetSpeed) { // TODO: Take into account the relative ball speed.
+      output
+          .withThrottle(1.0f);
+      if (absSteeringAngle < .4) {
+        output.withBoost();
+      }
+    } else if (noseNormalBall.velocity.norm() < targetSpeed + 100f) {
+      output.withThrottle(.02f);
+    } else {
+      // Coast.
+    }
+
+    // Render elements
+    bot.botRenderer.setCarTarget(ballTarget);
+//    trackShotTime(input, targetSpeed, ballTarget);
+  }
+
+  private void trackShotTime(DataPacket input, double targetSpeed, Vector3 ballTarget) {
+    if (input.ball.velocity.norm() > 300) {
+      shotStartTime = 0;
+      timeToShot = 0;
+    } else if (timeToShot == 0) {
+      timeToShot = Accels.minTimeToDistance(
+          input.car, Angles.carTarget(input.car, ballTarget).flatten().norm(), targetSpeed);
+      shotStartTime = input.car.elapsedSeconds;
+    } else if (shotStartTime != 0 && Angles.carBall(input).flatten().norm() < 150 && input.ball.velocity.norm() == 0) {
+      double shotTime = input.car.elapsedSeconds - shotStartTime;
+      bot.botRenderer.addAlertText("Hit time %f off by %f", shotTime, timeToShot - shotTime);
+      shotStartTime = 0;
+      timeToShot = 0;
+    }
+  }
+
+  private void guide(DataPacket input, ControlsOutput output, Tactic tactic) {
+    // Assumes ball is in front of me.
+
+    double correctionAngle = Locations.minCarTargetGoalCorrection(input, tactic.getTarget());
+
+    BallData relativeBall = NormalUtils.noseNormal(input);
+    if (relativeBall.position.y > 120) {
+      bot.botRenderer.setBranchInfo("Get alongside");
+      if (relativeBall.velocity.y < 500) {
+        output.withThrottle(1.0f);
+      }
+
+      if (Math.abs(relativeBall.position.x) < 150) {
+        output.withSteer(Math.signum(correctionAngle));
+      } else if (Math.abs(relativeBall.position.x) < 200) {
+        output.withSteer(-Math.signum(correctionAngle));
+      }
+    } else {
+      bot.botRenderer.setBranchInfo("Turn in");
       output
           .withSteer(correctionAngle)
-          .withThrottle(1.0); // TODO: Something smarter here.
-
-      if (Math.abs(correctionAngle) > 1) {
-        output.withSlide();
-      }
-
-    } else {
-      bot.botRenderer.setBranchInfo("Hit ball %f", correctionAngle);
-
-      Vector3 ballTarget = input.ball.position.plus(Angles.ballOffset(correctionAngle));
-      double steeringAngle = Angles.flatCorrectionDirection(input.car, ballTarget);
-
-      output.withSteer(steeringAngle);
-
-      double distance = tactic.getTarget().distance(Goal.opponentGoal(input.car.team).center);
-
-      double targetSpeed = getRoughSpeed(distance);
-
-      BallData noseNormalBall = NormalUtils.noseNormal(input);
-
-      double absSteeringAngle = Math.abs(steeringAngle);
-      // TODO: take into account angular velocity.
-
-      if (absSteeringAngle > 1) {
-        // Need to slide / turn
-        output
-            .withThrottle(1.0f)
-            .withSlide();
-
-        // Boost to finish the turn
-        if (absSteeringAngle < 1.4) {
-          output.withBoost();
-        }
-      } else if (noseNormalBall.velocity.norm() < targetSpeed) { // TODO: Take into account the relative ball speed.
-        output
-            .withThrottle(1.0f);
-        if (absSteeringAngle < .4) {
-          output.withBoost();
-        }
-      } else if (noseNormalBall.velocity.norm() > targetSpeed + 100f) {
-        // Coast.
-      } else {
-        output.withThrottle(.02f);
-      }
+          .withThrottle(1.0f);
     }
   }
 

@@ -45,7 +45,7 @@ public class RollingTactician extends Tactician {
 
     output.withSteer((float) flatCorrectionAngle)
         .withThrottle(1)
-        .withSlide(Math.abs(flatCorrectionAngle) > 1);
+        .withSlide(Math.abs(flatCorrectionAngle) > 1.2);
 
     boostToShoot(input, output, flatCorrectionAngle);
   }

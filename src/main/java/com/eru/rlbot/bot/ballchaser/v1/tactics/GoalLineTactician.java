@@ -36,7 +36,7 @@ public class GoalLineTactician extends Tactician {
     if (Math.abs(correctionAngle) > 1.5) {
       output.withSlide();
       sliding = true;
-    } else if (sliding && Math.abs(correctionAngle) > 1.0) {
+    } else if (sliding && Math.abs(correctionAngle) > 1.2) {
       output.withSlide()
           .withBoost();
     } else {
