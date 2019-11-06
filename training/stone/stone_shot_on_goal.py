@@ -9,7 +9,7 @@ from rlbottraining.training_exercise import Playlist, TrainingExercise
 from rlbottraining.grading.grader import Grader
 
 def make_grader():
-    return StrikerGrader(timeout_seconds=10.0)
+    return StrikerGrader(timeout_seconds=6.0)
 
 @dataclass
 class StoneShotOnGoal(TrainingExercise):
@@ -28,7 +28,7 @@ class StoneShotOnGoal(TrainingExercise):
             cars={
                 0: CarState(
                     physics=Physics(
-                        location=Vector3(self.car_start_x, self.car_start_y, 0),
+                        location=Vector3(self.car_start_x + rng.uniform(-1500, 1500), self.car_start_y, 0),
                         # location=Vector3(0, -5000, 0),
                         rotation=Rotator(0, pi / 2, 0),
                         velocity=Vector3(0, 0, 0),
@@ -58,10 +58,10 @@ def make_default_playlist() -> Playlist:
         # StoneShotOnGoal('Close Angle Right 14', ball_start_x=-1400, ball_start_y=3500, car_start_x=0, car_start_y=0),
         # StoneShotOnGoal('Close Angle Left 16', ball_start_x=1600, ball_start_y=3500, car_start_x=0, car_start_y=0),
         # StoneShotOnGoal('Close Angle Right 16', ball_start_x=-1600, ball_start_y=3500, car_start_x=0, car_start_y=0),
-
-        StoneShotOnGoal('Med Angle Left 14', ball_start_x=1400, ball_start_y=2000, car_start_x=0, car_start_y=-1000),
+        #
+        StoneShotOnGoal('Med Angle Left 14', ball_start_x=1400, ball_start_y=2000, car_start_y=-1000),
         StoneShotOnGoal('Med Angle Right 14', ball_start_x=-1400, ball_start_y=2000, car_start_x=0, car_start_y=-1000),
-
+        #
         StoneShotOnGoal('Long Angle Left 14', ball_start_x=1400, ball_start_y=0, car_start_x=0, car_start_y=-3000),
         StoneShotOnGoal('Long Angle Right 14', ball_start_x=-1400, ball_start_y=0, car_start_x=0, car_start_y=-3000),
     ]

@@ -7,6 +7,7 @@ import com.eru.rlbot.common.input.CarData;
 import com.eru.rlbot.common.input.DataPacket;
 import com.eru.rlbot.common.jump.JumpManager;
 import com.eru.rlbot.common.output.ControlsOutput;
+import com.eru.rlbot.common.vector.Vector2;
 import com.eru.rlbot.common.vector.Vector3;
 import com.google.common.collect.ImmutableMap;
 import java.util.Optional;
@@ -208,11 +209,13 @@ public class TakeTheShotTactician extends Tactician {
     // Determine where to aim the car
     double shotCorrectionAngle = Locations.minCarTargetGoalCorrection(input, tactic.target.position);
     BallData noseNormalBall = NormalUtils.noseNormal(input);
-    Vector3 targetOffset = Angles.getTargetOffset(Angles.carBall(input), shotCorrectionAngle);
+    Vector3 targetOffset = getTargetOffset(input, shotCorrectionAngle);
     Vector3 ballTarget = input.ball.position.plus(targetOffset);
 
     double steeringAngle = Angles.flatCorrectionDirection(input.car, ballTarget);
-    output.withSteer(steeringAngle * 10); // TODO: Scale the steering angle with how close you are to the ball
+
+    // TODO: Scale the steering angle with how close you are to the ball
+    output.withSteer(steeringAngle * STEERING_SENSITIVITY);
 
     double absSteeringAngle = Math.abs(steeringAngle);
     // TODO: take into account angular velocity.
@@ -232,7 +235,7 @@ public class TakeTheShotTactician extends Tactician {
       if (absSteeringAngle < .4) {
         output.withBoost();
       }
-    } else if (noseNormalBall.velocity.norm() < targetSpeed + 100f) {
+    } else if (noseNormalBall.velocity.norm() < targetSpeed + 20f) {
       output.withThrottle(.02f);
     } else {
       // Coast.
@@ -240,7 +243,22 @@ public class TakeTheShotTactician extends Tactician {
 
     // Render elements
     bot.botRenderer.setCarTarget(ballTarget);
-//    trackShotTime(input, targetSpeed, ballTarget);
+    trackShotTime(input, targetSpeed, ballTarget);
+  }
+
+  private static final double P_GAIN = 15d * -Constants.BALL_RADIUS;
+  private static final double D_GAIN = .2d;
+  private static final double STEERING_SENSITIVITY = 15d;
+  private Vector3 getTargetOffset(DataPacket input, double correctionAngle) {
+    double xCorrection = Math.sin(correctionAngle) * P_GAIN;
+    double xDampeningCorrection = -Math.sin(correctionAngle) * input.car.velocity.flatten().norm() * D_GAIN;
+
+    double yCorrection = -Constants.BALL_RADIUS;
+
+    // Rotate to be relative to where the car is.
+    Vector3 carBall = Angles.carBall(input);
+    double rotationAngle = carBall.flatten().correctionAngle(Vector2.NORTH);
+    return Angles.rotate(new Vector2(xCorrection + xDampeningCorrection, yCorrection), rotationAngle).asVector3();
   }
 
   private void trackShotTime(DataPacket input, double targetSpeed, Vector3 ballTarget) {
@@ -260,6 +278,7 @@ public class TakeTheShotTactician extends Tactician {
   }
 
   private void guide(DataPacket input, ControlsOutput output, Tactic tactic) {
+    // TODO: Gets stuck here sometimes.
     // Assumes ball is in front of me.
 
     double correctionAngle = Locations.minCarTargetGoalCorrection(input, tactic.getTarget());

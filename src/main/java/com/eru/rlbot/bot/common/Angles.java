@@ -38,16 +38,6 @@ public final class Angles {
         : b;
   }
 
-  private static final double CORRECTION_GAIN = 6d;
-  public static Vector3 getTargetOffset(Vector3 carBall, double correctionAngle) {
-    double xCorrection = -Constants.BALL_RADIUS * Math.sin(correctionAngle) * CORRECTION_GAIN;
-    double yCorrection = -Constants.BALL_RADIUS;
-
-    double rotation = carBall.flatten().correctionAngle(Vector2.NORTH);
-
-    return rotate(new Vector2(xCorrection, yCorrection), rotation).asVector3();
-  }
-
   public static Vector2 rotate(Vector2 position, double angle) {
     double cos = Math.cos(angle);
     double sin = Math.sin(angle);
