@@ -20,7 +20,7 @@ public class CatchTactician extends Tactician {
   }
 
   public static boolean canCatch(DataPacket input) {
-    BallData relativeCarData = NormalUtils.noseNormal(input);
+    BallData relativeCarData = NormalUtils.noseRelativeBall(input);
 
     return (input.ball.position.z > 100 || input.ball.velocity.z > 100)
         && (ballDownTime(relativeCarData) > carToBallTime(relativeCarData));
@@ -28,7 +28,7 @@ public class CatchTactician extends Tactician {
 
   @Override
   public void execute(DataPacket input, ControlsOutput output, Tactic nextTactic) {
-    BallData relativeBallData = NormalUtils.noseNormal(input);
+    BallData relativeBallData = NormalUtils.noseRelativeBall(input);
     catchBall(input, relativeBallData, output);
     relativeAngleToBall(input, relativeBallData, output); // Set up the angle here too.
 

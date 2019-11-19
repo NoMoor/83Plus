@@ -57,4 +57,11 @@ public final class Angles {
   }
 
   private Angles() {}
+
+  public static boolean isRotatingBack(DataPacket input) {
+    Vector3 ownGoal = Goal.ownGoal(input.car.team).center;
+    double correction = Angles.flatCorrectionDirection(input.car, ownGoal);
+
+    return Math.abs(correction) < Math.PI / 4;
+  }
 }

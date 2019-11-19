@@ -19,6 +19,8 @@ public class SupportStrategist extends Strategist {
 
   @Override
   public boolean assign(DataPacket input) {
+    // TODO: If we are supporting, pick up boost nearby.
+
     if (input.car.boost < 50) {
       tacticManager.setTactic(new Tactic(input.car.position.x > 0 ? LEFT_MID : RIGHT_MID, Tactic.Type.ROTATE));
     } else {

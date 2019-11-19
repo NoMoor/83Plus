@@ -33,7 +33,7 @@ public class DribbleTactician extends Tactician {
 
   @Override
   public void execute(DataPacket input, ControlsOutput output, Tactic tactic) {
-    BallData relativeBallData = NormalUtils.noseNormal(input);
+    BallData relativeBallData = NormalUtils.noseRelativeBall(input);
 
     if (input.car.velocity.norm() > 1550 && Math.abs(relativeBallData.velocity.y) < 50) {
       tacticManager.delegateTactic(tactic, FlickTactician.class);
@@ -73,9 +73,9 @@ public class DribbleTactician extends Tactician {
         && (correctionRightAngle + momentumAngle) > 0;
 
     double correctionAngle = Angles.minAbs(correctionLeftAngle, correctionRightAngle);
-    // TODO: How to tell if we've turned past the target?
+    // TODO: How to tell if we've turned past the targetMoment?
 
-      // Need to turn right.
+    // Need to turn right.
     boolean tooFarRight = correctionAngle > 0 && correctionLeftAngle + momentumAngle > correctionRightAngle;
     boolean tooFarLeft = correctionAngle < 0 && correctionRightAngle + momentumAngle < correctionLeftAngle;
 
@@ -93,21 +93,21 @@ public class DribbleTactician extends Tactician {
 //      bot.botRenderer.addAlertText("Hard Left");
 //    } else
 
-      if (needToTurnMore && canTurnMore) {
-      bot.botRenderer.addAlertText("Dribble start turn");
-
-      // TODO: Figure out how much more throttle to give.
-      moveBallTo(getBalancePoint(input), input, relativeBallData, output); // TODO: Make speed / distance dependent
-
-      // Ball is balanced. Initiate turn.
-      double steeringInput = correctionAngle / 5;
-
-      // Turn opposite the correction angle to get the ball to move the other way.
-      output.withSteer(steeringInput);
-    } else {
+//    if (needToTurnMore && canTurnMore) {
+//      bot.botRenderer.addAlertText("Dribble start turn");
+//
+//      // TODO: Figure out how much more throttle to give.
+//      moveBallTo(getBalancePoint(input) - 10, input, relativeBallData, output); // TODO: Make speed / distance dependent
+//
+//      // Ball is balanced. Initiate turn.
+//      double steeringInput = correctionAngle / 5;
+//
+//      // Turn opposite the correction angle to get the ball to move the other way.
+//      output.withSteer(steeringInput);
+//    } else {
       balanceFrontBack(input, relativeBallData, output);
       balanceLeftRight(input, relativeBallData, output);
-    }
+//    }
   }
 
   private double getMomentum(BallData relativeBallData) {
@@ -298,18 +298,18 @@ public class DribbleTactician extends Tactician {
   }
 
   private static boolean ballIsOnCar(DataPacket input) {
-    BallData relativeBallData = NormalUtils.noseNormal(input);
+    BallData relativeBallData = NormalUtils.noseRelativeBall(input);
 
     boolean heightOnCar = relativeBallData.position.z > 100 && relativeBallData.position.z < 200;
     boolean locationOnCar = relativeBallData.position.y < CAR_LENGTH
-      && relativeBallData.position.y > -CAR_LENGTH;
+        && relativeBallData.position.y > -CAR_LENGTH;
     boolean striking = Math.abs(relativeBallData.velocity.z) > 300;
 
     return heightOnCar && locationOnCar && !striking;
   }
 
   private static boolean ballCouldBeOnCar(DataPacket input) {
-    BallData relativeBallData = NormalUtils.noseNormal(input);
+    BallData relativeBallData = NormalUtils.noseRelativeBall(input);
 
     boolean heightOnCar = relativeBallData.position.z > 100 && relativeBallData.position.z < 300;
     boolean rightInFrontOfCar = relativeBallData.position.y > 0 && relativeBallData.position.y < 200;

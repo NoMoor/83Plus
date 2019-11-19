@@ -39,10 +39,6 @@ public class KickoffTactician extends Tactician {
   }
 
   private void setStartLocation(CarData car) {
-    if (car.groundSpeed > 4) {
-      return;
-    }
-
     boolean rightPosition = (car.position.y > 0 ^ car.position.x > 0);
     if (Math.abs(car.position.x) < 1) {
       location = StartLocation.CENTER;
@@ -64,18 +60,64 @@ public class KickoffTactician extends Tactician {
     }
     bot.botRenderer.setBranchInfo(String.format("%s", location));
 
-    mustyKicks(output, input);
-
-    if (NormalUtils.noseNormal(input).position.y < 0) {
-      // We've missed. Handoff to someone else.
-      tacticManager.delegateTactic(nextTactic, RollingTactician.class);
+    switch (location) {
+      case LEFT:
+      case RIGHT:
+      case LEFT_CENTER:
+      case RIGHT_CENTER:
+      case CENTER:
+        centerKickOff(input, output);
+        break;
     }
+
+//    mustyKicks(output, input);
 
     // dumbKickoff(output, input);
   }
 
+  private static int flipTicks = 0;
+  private void centerKickOff(DataPacket input, ControlsOutput output) {
+    if (flipLock) {
+      if (input.car.position.z < 25 && input.car.velocity.z >= 0) {
+        output
+            .withJump()
+            .withBoost();
+      } else if (!JumpManager.canFlip()) {
+        output.withBoost();
+      } else if (input.car.hasWheelContact) {
+        flipLock = false;
+        output.withThrottle(1.0f);
+      } else {
+        output
+            .withJump()
+            .withPitch(-1.0f);
+      }
+    } else if (input.car.groundSpeed > 1600) {
+      bot.botRenderer.setBranchInfo("Second flip.");
+      output
+          .withThrottle(1.0f)
+          .withBoost();
+
+      BallData relativeBall = NormalUtils.noseRelativeBall(input);
+      if (relativeBall.position.y < 600) {
+        flipLock = true;
+      }
+    } else if (input.car.groundSpeed < 1500) {
+      output
+          .withBoost()
+          .withThrottle(1.0f);
+    } else {
+      flipLock = true;
+      flipTicks = 0;
+      output
+          .withThrottle(1.0f)
+          .withBoost();
+    }
+    output.withSteer(Angles.flatCorrectionDirection(input.car, input.ball.position) * 10);
+  }
+
   private void mustyKicks(ControlsOutput output, DataPacket input) {
-    BallData relativeData = NormalUtils.noseNormal(input);
+    BallData relativeData = NormalUtils.noseRelativeBall(input);
 
     if (secondFlipLock) {
       if (input.car.hasWheelContact) {
@@ -161,7 +203,7 @@ public class KickoffTactician extends Tactician {
   // Do not modify...
 
   private void dumbKickoff(ControlsOutput output, DataPacket input) {
-    BallData relativeData = NormalUtils.noseNormal(input);
+    BallData relativeData = NormalUtils.noseRelativeBall(input);
 
     tryFlipLock(input, relativeData);
 

@@ -25,7 +25,7 @@ public class Angles3 {
   // How far ahead to look.
   private static final float HORIZON_TIME = .05f;
 
-  /** Returns controls to optimally rotate toward the target orientation. */
+  /** Returns controls to optimally rotate toward the targetMoment orientation. */
   public static boolean setControlsFor(CarData car, Matrix3 target, ControlsOutput controls) {
     // Omega = Velocity
     Vector3 omega = target.transpose().dot(car.angularVelocity);

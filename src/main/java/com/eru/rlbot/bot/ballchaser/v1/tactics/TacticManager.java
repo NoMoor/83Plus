@@ -25,6 +25,7 @@ public class TacticManager {
     DEFAULT_TACTICIAN_MAP.put(Tactic.Type.KICKOFF, KickoffTactician.class);
     DEFAULT_TACTICIAN_MAP.put(Tactic.Type.PICK_UP, PickUpTactician.class);
     DEFAULT_TACTICIAN_MAP.put(Tactic.Type.ROTATE, RotateTactician.class);
+    DEFAULT_TACTICIAN_MAP.put(Tactic.Type.SHADOW, ShadowTactician.class);
     DEFAULT_TACTICIAN_MAP.put(Tactic.Type.STRIKE, TakeTheShotTactician.class);
     DEFAULT_TACTICIAN_MAP.put(Tactic.Type.WALL_RIDE, SideWallTactician.class);
     DEFAULT_TACTICIAN_MAP.put(Tactic.Type.WAVE_DASH, WaveDashTactician.class);
@@ -52,7 +53,7 @@ public class TacticManager {
   }
 
   public Vector3 getNextTarget() {
-    return nextTactic().getTarget();
+    return nextTactic().getTargetPosition();
   }
 
   private Tactic nextTactic() {
@@ -66,10 +67,11 @@ public class TacticManager {
   }
 
   public void setTactic(Tactic tactic) {
-    if (!tactic.equals(getTactic())) {
-      controllingTactician = null;
+    if (tactic.equals(getTactic())) {
+      return;
     }
 
+    controllingTactician = null;
     tacticList.clear();
     tacticList.add(tactic);
   }
@@ -91,7 +93,7 @@ public class TacticManager {
   }
 
   public void changeTactic(Tactic tactic, Tactic.Type type) {
-    this.setTactic(new Tactic(tactic.target.position, type));
+    this.setTactic(new Tactic(tactic.targetMoment.position, type));
   }
 
   public void delegateTactic(Tactic tactic, Class<? extends Tactician> tactician) {

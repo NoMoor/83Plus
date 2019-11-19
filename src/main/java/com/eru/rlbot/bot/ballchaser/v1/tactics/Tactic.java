@@ -3,26 +3,29 @@ package com.eru.rlbot.bot.ballchaser.v1.tactics;
 import com.eru.rlbot.common.Moment;
 import com.eru.rlbot.common.input.DataPacket;
 import com.eru.rlbot.common.vector.Vector3;
-import rlbot.flat.Physics;
 import rlbot.flat.PredictionSlice;
 
+// TODO: Some subclasses of tactic should have a second target (eg. Strike)
 public class Tactic {
 
   private static final double MIN_DISTANCE = 80;
 
   // DO NOT CHANGE THIS.
-  public Moment target;
+  public final Moment targetMoment;
   public final Type type;
 
   public Tactic(PredictionSlice prediction, Type type) {
-    Physics physics = prediction.physics();
+    this.targetMoment = new Moment(prediction);
+    this.type = type;
+  }
 
-    this.target = new Moment(physics.location(), physics.velocity(), prediction.gameSeconds());
+  public Tactic(Moment moment, Type type) {
+    this.targetMoment = moment;
     this.type = type;
   }
 
   public Tactic(Vector3 vector3, Type type) {
-    this.target = new Moment(vector3);
+    this.targetMoment = new Moment(vector3, Vector3.zero());
     this.type = type;
   }
 
@@ -42,6 +45,7 @@ public class Tactic {
     KICKOFF,
     PICK_UP,
     ROTATE,
+    SHADOW,
     STRIKE,
     STALL,
     WALL_RIDE,
@@ -54,12 +58,12 @@ public class Tactic {
 
   public void updateTactic(DataPacket input) {
 //    if (type == Type.HIT_BALL) {
-//      target = input.ball.position;
+//      targetMoment = input.ball.position;
 //    }
   }
 
-  public Vector3 getTarget() {
-    return target.position;
+  public Vector3 getTargetPosition() {
+    return targetMoment.position;
   }
 
   @Override
@@ -77,7 +81,7 @@ public class Tactic {
     if (o == this) return true;
     if (o instanceof Tactic) {
       Tactic t = (Tactic) o;
-      return this.type == t.type && this.target.equals(t.target);
+      return this.type == t.type && this.targetMoment.equals(t.targetMoment);
     }
 
     return false;

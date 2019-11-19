@@ -33,7 +33,6 @@ class KickOff(TrainingExercise):
                         angular_velocity=Vector3(0, 0, 0)),
                     boost_amount=33)
             },
-            boosts={7: BoostState(100), 13: BoostState(100)},
         )
 
 def make_default_playlist() -> Playlist:

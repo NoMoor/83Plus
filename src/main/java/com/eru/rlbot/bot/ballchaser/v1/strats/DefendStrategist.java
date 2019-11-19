@@ -21,7 +21,20 @@ public class DefendStrategist extends Strategist {
   }
 
   static boolean shouldDefend(DataPacket input) {
-    return shotOnGoal(input);
+    return lastManBack(input) || shotOnGoal(input);
+  }
+
+  private static boolean lastManBack(DataPacket input) {
+    // Check how many people are on your team.
+    int myTeam = input.car.team;
+    // TODO: Do something else here.
+
+    // Check if ball is closer to your goal than you.
+    Vector3 centerGoal = Goal.ownGoal(myTeam).center;
+    double carToGoal = input.car.position.distance(centerGoal);
+    double ballToGoal = input.ball.position.distance(centerGoal);
+
+    return carToGoal > ballToGoal;
   }
 
   private static boolean shotOnGoal(DataPacket input) {
@@ -51,7 +64,17 @@ public class DefendStrategist extends Strategist {
 
   @Override
   public boolean assign(DataPacket input) {
-    if (RotateTactician.shouldRotateBack(input)) {
+    if (tacticManager.isTacticLocked()) {
+      // Let the tactic finish it's motion.
+      return true;
+    }
+
+    // TODO: Update this to go after the ball if needed...
+    if (shotOnGoal(input)) {
+      // Save the ball...
+      // TODO: Do something else if you are between the ball and the goal.
+      tacticManager.setTactic(new Tactic(input.ball.position, Tactic.Type.SHADOW));
+    } else if (RotateTactician.shouldRotateBack(input)) {
       // Rotate back between the ball and the goal
 
       Vector3 ballToGoal = Goal.ownGoal(bot.team).center.minus(input.ball.position);

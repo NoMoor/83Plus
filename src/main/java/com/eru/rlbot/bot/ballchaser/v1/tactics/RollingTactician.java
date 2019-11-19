@@ -22,7 +22,7 @@ public class RollingTactician extends Tactician {
   @Override
   public void execute(DataPacket input, ControlsOutput output, Tactic nextTactic) {
     Vector2 carDirection = input.car.orientation.getNoseVector().flatten();
-    Vector3 targetPosition = nextTactic.target.position;
+    Vector3 targetPosition = nextTactic.targetMoment.position;
 
     // Subtract the two positions to get a vector pointing from the car to the ball.
     Vector3 carToTarget = targetPosition.minus(input.car.position);
@@ -34,16 +34,16 @@ public class RollingTactician extends Tactician {
             && Math.abs(input.car.position.x) > 3000 // Near the wall
             && input.car.position.z < 20) { // On the ground
 
+      bot.botRenderer.setBranchInfo("Wall Ride");
       flatCorrectionAngle = wallRideCorrectionAngle(input, nextTactic);
     } else {
+
       // How far does the car need to rotate before it's pointing exactly at the ball?
       bot.botRenderer.setBranchInfo("Flat correction angle.");
       flatCorrectionAngle = Angles.flatCorrectionDirection(input.car, targetPosition);
     }
 
-    Angles3.setControlsFor(input.car, Matrix3.IDENTITY, output);
-
-    output.withSteer((float) flatCorrectionAngle)
+    output.withSteer(flatCorrectionAngle)
         .withThrottle(1)
         .withSlide(Math.abs(flatCorrectionAngle) > 1.2);
 
@@ -51,10 +51,8 @@ public class RollingTactician extends Tactician {
   }
 
   private double wallRideCorrectionAngle(DataPacket input, Tactic nextTactic) {
-    bot.botRenderer.setBranchInfo("Wall Ride");
-
     Vector2 carDirection = input.car.orientation.getNoseVector().flatten();
-    Vector3 targetPosition = nextTactic.target.position;
+    Vector3 targetPosition = nextTactic.targetMoment.position;
     Vector3 carToTarget = targetPosition.minus(input.car.position);
 
     Vector2 targetVector = targetPosition.flatten();

@@ -2,7 +2,6 @@ package com.eru.rlbot.bot.ballchaser.v1.tactics;
 
 import com.eru.rlbot.bot.EruBot;
 import com.eru.rlbot.bot.common.Angles;
-import com.eru.rlbot.bot.common.BotRenderer;
 import com.eru.rlbot.bot.common.NormalUtils;
 import com.eru.rlbot.common.input.BallData;
 import com.eru.rlbot.common.input.CarData;
@@ -20,7 +19,7 @@ public class PickUpTactician extends Tactician {
   }
 
   public static boolean canPickUp(DataPacket input) {
-    BallData relativeBallData = NormalUtils.noseNormal(input);
+    BallData relativeBallData = NormalUtils.noseRelativeBall(input);
     CarData relativeCarData = NormalUtils.rollNormal(input);
 
     return input.ball.position.z < 170
@@ -50,7 +49,7 @@ public class PickUpTactician extends Tactician {
   }
 
   private void doStationaryPickup(DataPacket input, ControlsOutput output, Tactic tactic) {
-    BallData relativeBallData = NormalUtils.noseNormal(input);
+    BallData relativeBallData = NormalUtils.noseRelativeBall(input);
 
     if (relativeBallData.position.z > 130) {
       bot.botRenderer.setBranchInfo("Got it!");

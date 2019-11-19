@@ -41,7 +41,7 @@ public class BotRenderer {
 
   private BotRenderer(Bot bot) {
     this.bot = bot;
-    this.skipRendering = bot.getIndex() != 1;
+    this.skipRendering = bot.getIndex() != 0;
   }
 
   public static BotRenderer forBot(Bot bot) {
@@ -147,6 +147,10 @@ public class BotRenderer {
     }
   }
 
+  public void setIntersectionTarget(Vector3 target) {
+    this.intersectionTarget = target;
+  }
+
   private static class RenderedString {
     final String text;
     final Color color;
@@ -162,6 +166,7 @@ public class BotRenderer {
   private Tactician tactician;
   private String branch;
   private Vector3 carTarget;
+  private Vector3 intersectionTarget;
 
   public void setCarTarget(Vector3 target) {
     this.carTarget = target;
@@ -170,6 +175,10 @@ public class BotRenderer {
   private void renderTactic(CarData carData) {
     if (carTarget != null) {
       render3DLine(Color.GREEN, carData.position, carTarget);
+    }
+
+    if (intersectionTarget != null) {
+      render3DSquare(Color.ORANGE, intersectionTarget, 30);
     }
   }
 
@@ -187,7 +196,7 @@ public class BotRenderer {
 
   public void setTactic(Tactic tactic) {
     this.tactic = tactic;
-    this.carTarget = tactic.getTarget();
+    this.carTarget = tactic.getTargetPosition();
   }
 
   public void setTactician(Tactician tactician) {
@@ -239,7 +248,7 @@ public class BotRenderer {
     previousVelocities.add(carData.velocity);
     previousVelocityTimes.add(carData.elapsedSeconds);
 
-    BallData relativeBallData = NormalUtils.noseNormal(input);
+    BallData relativeBallData = NormalUtils.noseRelativeBall(input);
 
     renderText(0, 400, "Z: %d", (int) relativeBallData.position.z);
     renderText(0, 430, "Y: %d", (int) relativeBallData.position.y);
@@ -290,5 +299,17 @@ public class BotRenderer {
   private void render3DLine(Color color, Vector3 loc1, Vector3 loc2) {
     if (!skipRendering)
       getRenderer().drawLine3d(color, loc1, loc2);
+  }
+
+  private void render3DSquare(Color color, Vector3 center, float sideLength) {
+    float halfSide = sideLength / 2;
+
+    if (!skipRendering)
+      getRenderer().drawRectangle3d(
+          color,
+          Vector3.of(center.x + halfSide, center.y + halfSide, center.z + halfSide),
+          (int) sideLength,
+          (int) sideLength,
+          true);
   }
 }

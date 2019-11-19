@@ -1,16 +1,27 @@
 package com.eru.rlbot.common;
 
+import com.eru.rlbot.common.input.BallData;
 import com.eru.rlbot.common.vector.Vector3;
+import rlbot.flat.PredictionSlice;
 
-/** Represents a target that will happen at a given time. */
+/** Represents a targetMoment that will happen at a given time. */
 public class Moment {
 
   public final Vector3 velocity;
   public final Vector3 position;
   public final float time;
 
-  public Moment(Vector3 position) {
-    this(position, Vector3.zero(), 300);
+  public Moment(PredictionSlice predictionSlice) {
+    this(
+        predictionSlice.physics().location(),
+        predictionSlice.physics().velocity(),
+        predictionSlice.gameSeconds());
+  }
+
+  public Moment(Vector3 position, Vector3 velocity) {
+    this.position = position;
+    this.velocity = velocity;
+    this.time = 300;
   }
 
   public Moment(Vector3 position, Vector3 velocity, float time) {
@@ -23,6 +34,12 @@ public class Moment {
     this.position = Vector3.of(location);
     this.velocity = Vector3.of(velocity);
     this.time = time;
+  }
+
+  public Moment(BallData ball) {
+    this.position = ball.position;
+    this.velocity = ball.velocity;
+    this.time = 300;
   }
 
   @Override

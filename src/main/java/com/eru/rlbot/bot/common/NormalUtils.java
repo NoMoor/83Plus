@@ -39,11 +39,11 @@ public class NormalUtils {
     this.index = index;
   }
 
-  public static BallData noseNormal(DataPacket input) {
+  public static BallData noseRelativeBall(DataPacket input) {
     return from(input).noseNormalInternal(input);
   }
 
-  public static BallData noseNormal(DataPacket input, int index) {
+  public static BallData noseRelativeBall(DataPacket input, int index) {
     return from(index).noseNormalInternal(input);
   }
 

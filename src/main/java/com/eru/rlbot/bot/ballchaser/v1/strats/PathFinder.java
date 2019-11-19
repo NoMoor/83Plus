@@ -55,10 +55,10 @@ public class PathFinder {
   // TODO: Move this to another place.
   private List<Tactic> createPath(CarData carData, Tactic tactic, Vector3 targetLocation) {
     // Connect the goal and the tactic in a line.
-    Vector3 ballToGoalVector = targetLocation.minus(tactic.target.position);
+    Vector3 ballToGoalVector = targetLocation.minus(tactic.targetMoment.position);
     // Get a 1 unit directional vector.
     Vector2 glideSlope = ballToGoalVector.normalized().flatten().scaled(1000); // TODO: This scaling should depend on the turn in angle.
-    Vector3 attackTarget = tactic.target.position.flatten().minus(glideSlope).asVector3(); // TODO: Draw this.
+    Vector3 attackTarget = tactic.targetMoment.position.flatten().minus(glideSlope).asVector3(); // TODO: Draw this.
 
     // Run through the point on the approach.
 //    Tactic approachTactic = new Tactic(attackTarget, Tactic.Type.HIT_BALL);

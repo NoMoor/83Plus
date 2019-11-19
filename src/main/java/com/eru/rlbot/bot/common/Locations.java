@@ -1,5 +1,6 @@
 package com.eru.rlbot.bot.common;
 
+import com.eru.rlbot.common.Moment;
 import com.eru.rlbot.common.input.BallData;
 import com.eru.rlbot.common.input.DataPacket;
 import com.eru.rlbot.common.vector.Vector2;
@@ -27,7 +28,7 @@ public class Locations {
   }
 
   public static boolean isOpponentSideOfBall(DataPacket input) {
-    double correctionAngle = minCarTargetGoalCorrection(input, input.ball.position);
+    double correctionAngle = minCarTargetGoalCorrection(input, new Moment(input.ball));
 
     boolean carFacingOwnGoal = Math.abs(correctionAngle) > Math.PI * .5;
 
@@ -35,14 +36,14 @@ public class Locations {
   }
 
   public static boolean ballIsInFrontOfCar(DataPacket input) {
-    BallData relativeBallLocation = NormalUtils.noseNormal(input);
+    BallData relativeBallLocation = NormalUtils.noseRelativeBall(input);
 
     return relativeBallLocation.position.y > 0;
   }
 
-  public static double minCarTargetGoalCorrection(DataPacket input, Vector3 targetContactPoint) {
-    Vector2 ballToGoalRight = toInsideRightGoal(input, targetContactPoint).flatten();
-    Vector2 ballToGoalLeft = toInsideLeftGoal(input, targetContactPoint).flatten();
+  public static double minCarTargetGoalCorrection(DataPacket input, Moment targetContactPoint) {
+    Vector2 ballToGoalRight = toInsideRightGoal(input, targetContactPoint.position).flatten();
+    Vector2 ballToGoalLeft = toInsideLeftGoal(input, targetContactPoint.position).flatten();
 
     Vector2 carToBall = carToBall(input).flatten();
 

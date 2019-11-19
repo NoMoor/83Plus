@@ -21,7 +21,7 @@ public class StrategyManager {
 
   private static final Tactic LEFT_WALL_TACTIC = new Tactic(LEFT_SIDE_WALL, Tactic.Type.HIT_BALL);
   private static final Tactic RIGHT_WALL_TACTIC = new Tactic(RIGHT_SIDE_WALL, Tactic.Type.HIT_BALL);
-  private static final float STRATEGY_UPDATE_INTERVAL = .5F;
+  private static final float STRATEGY_UPDATE_INTERVAL = .25F;
 
   private static boolean grabBoostStrat = false;
   private static boolean wallRideStrat = false;
@@ -103,7 +103,7 @@ public class StrategyManager {
 //      if (input.car.position.distance(TacticManager.getNextTarget()) < 100) {
 //        Tactic lastTactic = TacticManager.tacticFulfilled();
 //
-//        if (lastTactic.target.position == LEFT_SIDE_WALL) {
+//        if (lastTactic.targetMoment.position == LEFT_SIDE_WALL) {
 //          TacticManager.setTactic(RIGHT_WALL_TACTIC);
 //        } else {
 //          TacticManager.setTactic(LEFT_WALL_TACTIC);

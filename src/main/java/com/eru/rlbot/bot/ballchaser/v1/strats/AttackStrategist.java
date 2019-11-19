@@ -3,6 +3,7 @@ package com.eru.rlbot.bot.ballchaser.v1.strats;
 import com.eru.rlbot.bot.EruBot;
 import com.eru.rlbot.bot.ballchaser.v1.tactics.*;
 import com.eru.rlbot.bot.common.*;
+import com.eru.rlbot.common.Moment;
 import com.eru.rlbot.common.input.DataPacket;
 import com.eru.rlbot.common.vector.Vector3;
 import rlbot.flat.BallPrediction;
@@ -36,15 +37,14 @@ public class AttackStrategist extends Strategist {
       return true;
     }
 
-    Optional<BallPrediction> ballPredictionOptional = DllHelper.getBallPrediction();
     if (KickoffTactician.isKickOff(input)) {
       tacticManager.setTactic(new Tactic(input.ball.position, Tactic.Type.KICKOFF));
       return true;
     }
 
     if (TakeTheShotTactician.takeTheShot(input)) {
-      Vector3 target = Locations.getFirstPossibleTouch(input);
-      tacticManager.setTactic(new Tactic(target, Tactic.Type.STRIKE));
+      Moment targetMoment = TakeTheShotTactician.shotTarget(input);
+      tacticManager.setTactic(new Tactic(targetMoment, Tactic.Type.STRIKE));
       return true;
     }
 //    else if (DribbleTactician.canDribble(input)) {
@@ -57,7 +57,8 @@ public class AttackStrategist extends Strategist {
 //      tacticManager.setTactic(new Tactic(input.ball.position, Tactic.Type.HIT_BALL));
 //    }
 
-    return false;
+    tacticManager.setTactic(new Tactic(input.ball.position, Tactic.Type.HIT_BALL));
+    return true;
   }
 
   @Override
