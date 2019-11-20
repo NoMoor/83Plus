@@ -3,6 +3,7 @@ package com.eru.rlbot.bot.ballchaser.v1.tactics;
 import com.eru.rlbot.bot.EruBot;
 import com.eru.rlbot.bot.common.*;
 import com.eru.rlbot.common.input.CarData;
+import com.eru.rlbot.common.input.CarOrientation;
 import com.eru.rlbot.common.input.DataPacket;
 import com.eru.rlbot.common.jump.JumpManager;
 import com.eru.rlbot.common.output.ControlsOutput;
@@ -59,7 +60,7 @@ public class RotateTactician extends Tactician {
       output.withBoost();
     }
 
-    if (distanceToTarget > 1000 && correctionAngle < .5 && input.car.velocity.norm() > 1400) {
+    if (distanceToTarget > 1000 && Math.abs(correctionAngle) < .2 && input.car.velocity.norm() > 1400) {
       flipLock = true;
       output.withJump();
     } else if (distanceToTarget < 100) {
@@ -101,8 +102,11 @@ public class RotateTactician extends Tactician {
           .withPitch(-1)
           .withJump();
     } else {
-      // TODO: Update this to be flat facing in the direction of travel.
-//      Angles3.setControlsFor(input.car, Matrix3.IDENTITY, output);
+      Angles3.setControlsFor(
+          input.car,
+          // TODO: Refactor this to get the orientation matrix for the car velocity.
+          CarOrientation.convert(0, Vector2.WEST.correctionAngle(input.car.velocity.flatten()), 0).getOrientationMatrix(),
+          output);
       output.withThrottle(1.0f);
       if (input.car.hasWheelContact) {
         flipLock = false;

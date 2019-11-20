@@ -12,14 +12,22 @@ import java.util.Optional;
 public class Locations {
 
   public static Vector3 toInsideLeftGoal(DataPacket input, Vector3 target) {
-    return Goal.opponentGoal(input.car.team).leftInside.minus(input.ball.position);
+    return Goal.opponentGoal(input.car.team).leftInside.minus(target);
   }
 
   public static Vector3 toInsideRightGoal(DataPacket input, Vector3 target) {
     return Goal.opponentGoal(input.car.team).rightInside.minus(target);
   }
 
-  public static Vector3 ballToGoalCenter(DataPacket input) {
+  private static Vector3 toOutsideLeftGoal(DataPacket input, Vector3 target) {
+    return Goal.ownGoal(input.car.team).leftOutside.minus(target);
+  }
+
+  private static Vector3 toOutsideRightGoal(DataPacket input, Vector3 position) {
+    return Goal.ownGoal(input.car.team).rightOutside.minus(position);
+  }
+
+  public static Vector3 ballToOppGoalCenter(DataPacket input) {
     return Goal.opponentGoal(input.car.team).center.minus(input.ball.position);
   }
 
@@ -57,9 +65,25 @@ public class Locations {
     return Angles.minAbs(leftCorrectAngle, rightCorrectAngle);
   }
 
+  public static double minCarTargetNotGoalCorrection(DataPacket input, Moment targetContactPoint) {
+    Vector2 ballToGoalRight = toOutsideRightGoal(input, targetContactPoint.position).flatten();
+    Vector2 ballToGoalLeft = toOutsideLeftGoal(input, targetContactPoint.position).flatten();
+
+    Vector2 carToBall = carToBall(input).flatten();
+
+    double leftCorrectAngle = Math.max(ballToGoalLeft.correctionAngle(carToBall), 0);
+    double rightCorrectAngle = Math.min(ballToGoalRight.correctionAngle(carToBall), 0);
+
+    if (leftCorrectAngle == 0 || rightCorrectAngle == 0) {
+      return 0;
+    }
+
+    return Angles.minAbs(leftCorrectAngle, rightCorrectAngle);
+  }
+
   public static double minBallGoalCorrection(DataPacket input) {
-    Vector2 ballToGoalRight = toInsideRightGoal(input, input.ball.position).flatten();
-    Vector2 ballToGoalLeft = toInsideLeftGoal(input, input.ball.position).flatten();
+    Vector2 ballToGoalRight = toOutsideRightGoal(input, input.ball.position).flatten();
+    Vector2 ballToGoalLeft = toOutsideLeftGoal(input, input.ball.position).flatten();
 
     Vector2 ballRoll = input.ball.velocity.flatten();
 

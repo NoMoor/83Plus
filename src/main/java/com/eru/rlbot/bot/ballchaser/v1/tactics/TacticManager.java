@@ -47,17 +47,8 @@ public class TacticManager {
     defaultTactic = new Tactic(Vector3.of(0, 0, 0), Tactic.Type.ROTATE);
   }
 
-  // TODO: Probably don't want to call this.
-  public void updateTactics(DataPacket packet) {
-    tacticList.forEach(tactic -> tactic.updateTactic(packet));
-  }
-
-  public Vector3 getNextTarget() {
-    return nextTactic().getTargetPosition();
-  }
-
-  private Tactic nextTactic() {
-    return tacticList.isEmpty() ? defaultTactic : tacticList.get(0);
+  private Optional<Tactic> nextTactic() {
+    return tacticList.isEmpty() ? Optional.empty() : Optional.of(tacticList.get(0));
   }
 
   public void addTactic(Tactic tactic) {

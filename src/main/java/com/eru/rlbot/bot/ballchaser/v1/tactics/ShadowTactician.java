@@ -3,6 +3,7 @@ package com.eru.rlbot.bot.ballchaser.v1.tactics;
 import com.eru.rlbot.bot.EruBot;
 import com.eru.rlbot.bot.common.*;
 import com.eru.rlbot.common.input.BallData;
+import com.eru.rlbot.common.input.CarData;
 import com.eru.rlbot.common.input.DataPacket;
 import com.eru.rlbot.common.output.ControlsOutput;
 import com.eru.rlbot.common.vector.Vector3;
@@ -17,33 +18,52 @@ public class ShadowTactician extends Tactician {
   }
 
   @Override
-  public void execute(DataPacket input, ControlsOutput output, Tactic nextTactic) {
-    BallData noseRelativeBall = NormalUtils.noseRelativeBall(input);
+  public void execute(DataPacket input, ControlsOutput output, Tactic tactic) {
+    double minCorrection = Locations.minCarTargetNotGoalCorrection(input, tactic.targetMoment);
+    double targetCorrectionAngle = Angles.flatCorrectionDirection(input.car, tactic.targetMoment.position);
 
-    float positionVelocityRatio = noseRelativeBall.position.y / noseRelativeBall.velocity.y;
-
-    if (Math.abs(positionVelocityRatio) > .15) {
-      getAlongSide(input, output);
+    if (Math.abs(minCorrection) > getSpeedAdjustedMinAngle(input.car, targetCorrectionAngle)) {
+      bot.botRenderer.setBranchInfo("Get along side %f", minCorrection);
+      getAlongSide(input, output, tactic);
     } else {
+
+      bot.botRenderer.setBranchInfo("Sweep %f", targetCorrectionAngle);
       // TODO: Make this better
+      float ballToTargetTime = tactic.targetMoment.time - input.car.elapsedSeconds;
+      float carToTargetTime = Accels.timeToDistance(input.car.velocity.norm(), input.car.position.distance(tactic.targetMoment.position));
+
       output
-          .withSteer(-Math.signum(noseRelativeBall.position.x));
+          .withSteer(targetCorrectionAngle)
+          .withThrottle(ballToTargetTime > carToTargetTime ? -1 : 1.0);
     }
   }
 
-  private void getAlongSide(DataPacket input, ControlsOutput output) {
+  private final double MIN_ANGLE_GAIN = 0.0003f;
+  private double getSpeedAdjustedMinAngle(CarData car, double targetCorrectionAngle) {
+    double groundspeed = car.groundSpeed;
+
+    // Faster + bigger angle = larger number.
+    // 2000 * .5 * x = .3
+    return groundspeed * Math.abs(targetCorrectionAngle) * MIN_ANGLE_GAIN;
+//    return .15f;
+  }
+
+  private void getAlongSide(DataPacket input, ControlsOutput output, Tactic tactic) {
     float ballToGoalTime = getBallToGoalTime(input);
     float carToGoalTime = getCarToGoalTime(input);
 
     if (ballToGoalTime < carToGoalTime + 1) {
       output
           .withThrottle(1.0f)
-          .withBoost(ballToGoalTime < carToGoalTime + 2);
+          .withBoost(ballToGoalTime < carToGoalTime + 1);
     } else {
       output.withThrottle(.02f);
-    }
 
-    output.withSteer(Angles.flatCorrectionDirection(input.car, input.ball.position.addX(135)));
+      double correctionAngle = Angles.flatCorrectionDirection(input.car, tactic.targetMoment.position);
+      if (Math.abs(correctionAngle) < .5) {
+        output.withSteer(Locations.minCarTargetNotGoalCorrection(input, tactic.targetMoment));
+      }
+    }
   }
 
   private float getCarToGoalTime(DataPacket input) {

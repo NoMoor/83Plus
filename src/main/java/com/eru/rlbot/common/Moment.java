@@ -37,9 +37,11 @@ public class Moment {
   }
 
   public Moment(BallData ball) {
-    this.position = ball.position;
-    this.velocity = ball.velocity;
-    this.time = 300;
+    this(ball, 300);
+  }
+
+  public Moment(BallData ball, float elapsedSeconds) {
+    this(ball.position, ball.velocity, elapsedSeconds);
   }
 
   @Override

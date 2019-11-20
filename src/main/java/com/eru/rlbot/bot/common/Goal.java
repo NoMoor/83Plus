@@ -15,6 +15,7 @@ public class Goal {
   private static final Vector3 BLUE_CENTER = Vector3.of(0, -1 * HALF_LENGTH, 0);
   private static final Vector3 HALF_GOAL = Vector3.of(WIDTH / 2f, 0, 0);
   private static final Vector3 HALF_GOAL_INSIDE = Vector3.of((WIDTH / 2f) - BALL_RADIUS, 0, 0);
+  private static final Vector3 HALF_GOAL_OUTSIDE = Vector3.of((WIDTH / 2f) + BALL_RADIUS, 0, 0);
 
   private static final Goal BLUE_GOAL = new Goal(BLUE_CENTER);
   private static final Goal ORANGE_GOAL = new Goal(ORANGE_CENTER);
@@ -33,13 +34,17 @@ public class Goal {
   public final Vector3 right;
   public final Vector3 leftInside;
   public final Vector3 rightInside;
+  public final Vector3 leftOutside;
+  public final Vector3 rightOutside;
 
   private Goal(Vector3 center) {
     this.center = center;
     this.left = center.y > 0 ? center.plus(HALF_GOAL) : center.minus(HALF_GOAL);
     this.leftInside = center.y > 0 ? center.plus(HALF_GOAL_INSIDE) : center.minus(HALF_GOAL_INSIDE);
+    this.leftOutside = center.y > 0 ? center.plus(HALF_GOAL_OUTSIDE) : center.minus(HALF_GOAL_OUTSIDE);
     this.right = center.y < 0 ? center.plus(HALF_GOAL) : center.minus(HALF_GOAL);
     this.rightInside = center.y < 0 ? center.plus(HALF_GOAL_INSIDE) : center.minus(HALF_GOAL_INSIDE);
+    this.rightOutside = center.y < 0 ? center.plus(HALF_GOAL_OUTSIDE) : center.minus(HALF_GOAL_OUTSIDE);
   }
 
   public Vector3 getSameSidePost(CarData car) {

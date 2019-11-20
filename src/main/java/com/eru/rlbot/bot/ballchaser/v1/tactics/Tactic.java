@@ -1,32 +1,33 @@
 package com.eru.rlbot.bot.ballchaser.v1.tactics;
 
 import com.eru.rlbot.common.Moment;
-import com.eru.rlbot.common.input.DataPacket;
 import com.eru.rlbot.common.vector.Vector3;
 import rlbot.flat.PredictionSlice;
 
 // TODO: Some subclasses of tactic should have a second target (eg. Strike)
 public class Tactic {
 
-  private static final double MIN_DISTANCE = 80;
-
   // DO NOT CHANGE THIS.
   public final Moment targetMoment;
+  public final Vector3 targetTarget;
   public final Type type;
 
-  public Tactic(PredictionSlice prediction, Type type) {
-    this.targetMoment = new Moment(prediction);
+  public Tactic(Moment moment, Vector3 targetTarget, Type type) {
+    this.targetMoment = moment;
+    this.targetTarget = targetTarget;
     this.type = type;
+  }
+
+  public Tactic(PredictionSlice prediction, Type type) {
+    this(new Moment(prediction), type);
   }
 
   public Tactic(Moment moment, Type type) {
-    this.targetMoment = moment;
-    this.type = type;
+    this(moment, moment.position, type);
   }
 
   public Tactic(Vector3 vector3, Type type) {
-    this.targetMoment = new Moment(vector3, Vector3.zero());
-    this.type = type;
+    this(new Moment(vector3, Vector3.zero()), type);
   }
 
   public enum Type {
@@ -50,16 +51,6 @@ public class Tactic {
     STALL,
     WALL_RIDE,
     WAVE_DASH;
-  }
-
-  private boolean isMovingTarget() {
-    return type == Type.HIT_BALL || type == Type.DEMO;
-  }
-
-  public void updateTactic(DataPacket input) {
-//    if (type == Type.HIT_BALL) {
-//      targetMoment = input.ball.position;
-//    }
   }
 
   public Vector3 getTargetPosition() {

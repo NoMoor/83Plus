@@ -11,6 +11,7 @@ import java.awt.*;
 public class Vector2 {
 
   public static final Vector2 NORTH = new Vector2(0, 1);
+  public static final Vector2 WEST = new Vector2(1, 0);
 
   public final double x;
     public final double y;

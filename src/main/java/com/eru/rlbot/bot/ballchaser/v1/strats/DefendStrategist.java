@@ -6,6 +6,7 @@ import com.eru.rlbot.bot.ballchaser.v1.tactics.Tactic;
 import com.eru.rlbot.bot.common.Constants;
 import com.eru.rlbot.bot.common.DllHelper;
 import com.eru.rlbot.bot.common.Goal;
+import com.eru.rlbot.bot.common.PredictionUtils;
 import com.eru.rlbot.common.input.DataPacket;
 import com.eru.rlbot.common.vector.Vector3;
 import rlbot.flat.BallPrediction;
@@ -72,8 +73,8 @@ public class DefendStrategist extends Strategist {
     // TODO: Update this to go after the ball if needed...
     if (shotOnGoal(input)) {
       // Save the ball...
-      // TODO: Do something else if you are between the ball and the goal.
-      tacticManager.setTactic(new Tactic(input.ball.position, Tactic.Type.SHADOW));
+      // TODO: Figure out where you should hit the ball.
+      tacticManager.setTactic(new Tactic(PredictionUtils.getFirstHittableBall(input.car, input.ball), Tactic.Type.SHADOW));
     } else if (RotateTactician.shouldRotateBack(input)) {
       // Rotate back between the ball and the goal
 
