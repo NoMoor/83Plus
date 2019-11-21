@@ -5,6 +5,7 @@ import com.eru.rlbot.bot.common.Accels;
 import com.eru.rlbot.bot.common.Angles;
 import com.eru.rlbot.bot.common.Constants;
 import com.eru.rlbot.bot.common.DllHelper;
+import com.eru.rlbot.common.Moment;
 import com.eru.rlbot.common.input.DataPacket;
 import com.eru.rlbot.common.output.ControlsOutput;
 import com.eru.rlbot.common.vector.Vector3;
@@ -22,18 +23,26 @@ public class GoalLineTactician extends Tactician {
 
   @Override
   public void execute(DataPacket input, ControlsOutput output, Tactic tactic) {
-    Vector3 target = getFirstHittableLocation(input);
+    Moment target = getFirstHittableLocation(input);
 
-    bot.botRenderer.setCarTarget(target);
+    bot.botRenderer.setCarTarget(target.position);
 
     // Stay between the ball and the goal.
-    double correctionAngle = Angles.flatCorrectionDirection(input.car, target);
+    double correctionAngle = Angles.flatCorrectionDirection(input.car, target.position);
+
+    double carTimeToTarget = Accels.timeToDistance(input.car.groundSpeed, input.car.position.distance(target.position));
+    double ballTimeToTarget = target.time - input.car.elapsedSeconds;
 
     output
         .withSteer(correctionAngle)
-        .withThrottle(1.0f);
+        .withThrottle(carTimeToTarget < ballTimeToTarget ? 0 : 1f);
 
-    if (Math.abs(correctionAngle) > 1.5) {
+    Optional<Float> zTimeToTarget = Accels.jumpTimeToHeight(target.position.z);
+
+    if (zTimeToTarget.isPresent() && zTimeToTarget.get() + .1f > carTimeToTarget) {
+      // TODO: Adjust this jump better.
+      output.withJump();
+    } else if (Math.abs(correctionAngle) > 1.5) {
       output.withSlide();
       sliding = true;
     } else if (sliding && Math.abs(correctionAngle) > 1.2) {
@@ -44,24 +53,22 @@ public class GoalLineTactician extends Tactician {
     }
   }
 
-  private Vector3 getFirstHittableLocation(DataPacket input) {
+  private Moment getFirstHittableLocation(DataPacket input) {
     Optional<BallPrediction> ballPredictionOptional = DllHelper.getBallPrediction();
-    if (!ballPredictionOptional.isPresent()) {
-      return input.ball.position;
-    }
+    if (ballPredictionOptional.isPresent()) {
+      BallPrediction ballPrediction = ballPredictionOptional.get();
+      for (int i = 0 ; i < ballPrediction.slicesLength() ; i++) {
+        PredictionSlice predictionSlice = ballPrediction.slices(i);
+        Vector3 ballLocation = Vector3.of(predictionSlice.physics().location());
+        double ballDistance = ballLocation.minus(input.car.position).norm() - Constants.BALL_RADIUS;
 
-    BallPrediction ballPrediction = ballPredictionOptional.get();
-    for (int i = 0 ; i < ballPrediction.slicesLength() ; i++) {
-      PredictionSlice predictionSlice = ballPrediction.slices(i);
-      Vector3 ballLocation = Vector3.of(predictionSlice.physics().location());
-      double ballDistance = ballLocation.minus(input.car.position).norm() - Constants.BALL_RADIUS;
-
-      double timeToDistance = Accels.timeToDistance(input.car.velocity.flatten().norm(), ballDistance);
-      if (input.car.elapsedSeconds + timeToDistance < predictionSlice.gameSeconds()) {
-        return ballLocation;
+        double timeToDistance = Accels.timeToDistance(input.car.velocity.flatten().norm(), ballDistance);
+        if (input.car.elapsedSeconds + timeToDistance < predictionSlice.gameSeconds() && ballLocation.z < 300) {
+          return new Moment(predictionSlice);
+        }
       }
     }
 
-    return input.ball.position;
+    return new Moment(input.ball, input.car.elapsedSeconds);
   }
 }

@@ -309,32 +309,6 @@ public class TakeTheShotTactician extends Tactician {
     }
   }
 
-  private void guide(DataPacket input, ControlsOutput output, Tactic tactic) {
-    // TODO: Gets stuck here sometimes.
-    // Assumes ball is in front of me.
-
-    double correctionAngle = Locations.minCarTargetGoalCorrection(input, tactic.targetMoment);
-
-    BallData relativeBall = NormalUtils.noseRelativeBall(input);
-    if (relativeBall.position.y > 120) {
-      bot.botRenderer.setBranchInfo("Get alongside");
-      if (relativeBall.velocity.y < 500) {
-        output.withThrottle(1.0f);
-      }
-
-      if (Math.abs(relativeBall.position.x) < 150) {
-        output.withSteer(Math.signum(correctionAngle));
-      } else if (Math.abs(relativeBall.position.x) < 200) {
-        output.withSteer(-Math.signum(correctionAngle));
-      }
-    } else {
-      bot.botRenderer.setBranchInfo("Turn in");
-      output
-          .withSteer(correctionAngle)
-          .withThrottle(1.0f);
-    }
-  }
-
   // TODO: Update these speeds to account for rolling / relative speed which takes away from delta V from impact.
   private static double getTargetSpeed(int team, Vector3 position) {
     return getRoughSpeed(position.distance(Goal.opponentGoal(team).center));

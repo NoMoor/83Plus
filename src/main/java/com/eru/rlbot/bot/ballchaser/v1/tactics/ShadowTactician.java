@@ -2,12 +2,10 @@ package com.eru.rlbot.bot.ballchaser.v1.tactics;
 
 import com.eru.rlbot.bot.EruBot;
 import com.eru.rlbot.bot.common.*;
-import com.eru.rlbot.common.input.BallData;
 import com.eru.rlbot.common.input.CarData;
 import com.eru.rlbot.common.input.DataPacket;
 import com.eru.rlbot.common.output.ControlsOutput;
 import com.eru.rlbot.common.vector.Vector3;
-import rlbot.flat.BallPrediction;
 import rlbot.flat.PredictionSlice;
 import java.util.Optional;
 
@@ -67,40 +65,23 @@ public class ShadowTactician extends Tactician {
   }
 
   private float getCarToGoalTime(DataPacket input) {
-    PredictionSlice slice = getBallInGoalSlice();
-    if (slice == null) {
+    Optional<PredictionSlice> slice = PredictionUtils.getBallInGoalSlice();
+    if (!slice.isPresent()) {
       return 0;
     }
 
-    Vector3 goalLocation = Vector3.of(slice.physics().location());
+    Vector3 goalLocation = Vector3.of(slice.get().physics().location());
     double distanceToSave = input.car.position.distance(goalLocation);
 
     return Accels.timeToDistance(input.car.velocity.flatten().norm(), distanceToSave);
   }
 
   private float getBallToGoalTime(DataPacket input) {
-    PredictionSlice slice = getBallInGoalSlice();
-    if (slice == null) {
+    Optional<PredictionSlice> slice = PredictionUtils.getBallInGoalSlice();
+    if (!slice.isPresent()) {
       return 0;
     }
 
-    return slice.gameSeconds() - input.car.elapsedSeconds;
-  }
-
-  private PredictionSlice getBallInGoalSlice() {
-    Optional<BallPrediction> ballPredictionOptional = DllHelper.getBallPrediction();
-    if (!ballPredictionOptional.isPresent()) {
-      return null;
-    }
-
-    BallPrediction ballPrediction = ballPredictionOptional.get();
-    for (int i = 0 ; i < ballPrediction.slicesLength() ; i++) {
-      PredictionSlice predictionSlice = ballPrediction.slices(i);
-      if (Math.abs(predictionSlice.physics().location().y()) > Constants.HALF_LENGTH + Constants.BALL_RADIUS) {
-        return predictionSlice;
-      }
-    }
-
-    return null;
+    return slice.get().gameSeconds() - input.car.elapsedSeconds;
   }
 }

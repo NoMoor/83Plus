@@ -34,4 +34,21 @@ public class PredictionUtils {
 
     return new Moment(ball, car.elapsedSeconds);
   }
+
+  public static Optional<PredictionSlice> getBallInGoalSlice() {
+    Optional<BallPrediction> ballPredictionOptional = DllHelper.getBallPrediction();
+    if (!ballPredictionOptional.isPresent()) {
+      return Optional.empty();
+    }
+
+    BallPrediction ballPrediction = ballPredictionOptional.get();
+    for (int i = 0 ; i < ballPrediction.slicesLength() ; i++) {
+      PredictionSlice predictionSlice = ballPrediction.slices(i);
+      if (Math.abs(predictionSlice.physics().location().y()) > Constants.HALF_LENGTH + Constants.BALL_RADIUS) {
+        return Optional.of(predictionSlice);
+      }
+    }
+
+    return Optional.empty();
+  }
 }

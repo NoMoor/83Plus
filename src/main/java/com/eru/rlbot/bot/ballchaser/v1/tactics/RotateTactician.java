@@ -60,12 +60,12 @@ public class RotateTactician extends Tactician {
       output.withBoost();
     }
 
-    if (distanceToTarget > 1000 && Math.abs(correctionAngle) < .2 && input.car.velocity.norm() > 1400) {
-      flipLock = true;
-      output.withJump();
-    } else if (distanceToTarget < 100) {
-      output.withThrottle(-1f);
-    }
+//    if (distanceToTarget > 1000 && Math.abs(correctionAngle) < .2 && input.car.velocity.norm() > 1400) {
+//      flipLock = true;
+//      output.withJump();
+//    } else if (distanceToTarget < 100) {
+//      output.withThrottle(-1f);
+//    }
   }
 
   private static final double P_GAIN = 15d * -Constants.BALL_RADIUS;
