@@ -7,7 +7,7 @@ public class JumpManager {
 
   private static final float MAX_JUMP_TIME = .2f;
 
-  private static final int JUMP_RELEASE_COUNT = 5;
+  private static final int JUMP_RELEASE_COUNT = 1;
 
   private static boolean jumpPressed;
   private static float firstJumpTime;
@@ -23,26 +23,30 @@ public class JumpManager {
 
     if (!input.car.hasWheelContact && !jumpPressed) {
       // We've been bumped and we can flip whenever.
-      canFlip = true;
+      if (hasReleasedJumpInAir() && secondJumpTime == 0) {
+        canFlip = true;
+      }
       jumpInAirReleased++;
     } else if (input.car.hasWheelContact) {
       firstJumpTime = 0;
       secondJumpTime = 0;
       jumpInAirReleased = 0;
+      canFlip = false;
     }
   }
 
   public static void processOutput(ControlsOutput output, DataPacket input) {
     jumpPressed = output.holdJump();
 
-    if (!input.car.hasWheelContact && jumpPressed && firstJumpTime == 0) {
+    if (input.car.hasWheelContact && jumpPressed && firstJumpTime == 0) {
+      // We will jump on this frame.
       firstJumpTime = input.car.elapsedSeconds;
       canFlip = false;
-    } else if (!input.car.hasWheelContact && !jumpPressed && secondJumpTime != 0) {
+    } else if (!input.car.hasWheelContact && !jumpPressed && firstJumpTime != 0) {
       jumpInAirReleased++;
     }
 
-    if (!input.car.hasWheelContact && jumpPressed && hasReleasedJumpInAir()) {
+    if (firstJumpTime > 0 && jumpPressed && canFlip) {
       // Dodging now.
       canFlip = false;
       secondJumpTime = input.car.elapsedSeconds;
@@ -65,7 +69,7 @@ public class JumpManager {
   }
 
   public static boolean hasReleasedJumpInAir() {
-    return jumpInAirReleased > JUMP_RELEASE_COUNT;
+    return jumpInAirReleased >= JUMP_RELEASE_COUNT;
   }
 
   public static int getJumpCount() {
