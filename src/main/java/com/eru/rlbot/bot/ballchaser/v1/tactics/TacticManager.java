@@ -5,7 +5,6 @@ import com.eru.rlbot.bot.common.BotRenderer;
 import com.eru.rlbot.bot.common.Pair;
 import com.eru.rlbot.common.input.DataPacket;
 import com.eru.rlbot.common.output.ControlsOutput;
-import com.eru.rlbot.common.vector.Vector3;
 
 import java.util.*;
 
@@ -31,20 +30,16 @@ public class TacticManager {
     DEFAULT_TACTICIAN_MAP.put(Tactic.Type.WAVE_DASH, WaveDashTactician.class);
   }
 
-  private final Tactic defaultTactic;
-
   private final BotRenderer botRenderer;
   private LinkedList<Tactic> tacticList = new LinkedList<>();
 
   private final EruBot bot;
-  private final Set<Tactic> completedTacticis = new HashSet<>();
+  private final Set<Tactic> completedTactics = new HashSet<>();
   private Pair<Tactic.Type, Tactician> controllingTactician;
 
   public TacticManager(EruBot bot) {
     this.bot = bot;
     this.botRenderer = BotRenderer.forBot(bot);
-
-    defaultTactic = new Tactic(Vector3.of(0, 0, 0), Tactic.Type.ROTATE);
   }
 
   private Optional<Tactic> nextTactic() {
@@ -52,16 +47,18 @@ public class TacticManager {
   }
 
   public void addTactic(Tactic tactic) {
-    if (!tactic.equals(getLastTactic())) { // TODO: Do something better here.
+    if (!hasTactic() || !tactic.equals(getLastTactic())) { // TODO: Do something better here.
       tacticList.add(tactic);
     }
   }
 
   public void setTactic(Tactic tactic) {
-    if (tactic.equals(getTactic())) {
+    if (hasTactic() && tactic.equals(getTactic())) {
+      botRenderer.addAlertText("Same tactic! %s", tactic.type);
       return;
     }
 
+    botRenderer.addAlertText("New tactic! %s", tactic.type);
     controllingTactician = null;
     tacticList.clear();
     tacticList.add(tactic);
@@ -73,13 +70,13 @@ public class TacticManager {
 
     getTactician().execute(input, output, getTactic());
 
-    if (completedTacticis.remove(getTactic()) && !tacticList.isEmpty()) {
+    if (completedTactics.remove(getTactic()) && !tacticList.isEmpty()) {
       tacticList.pop();
     }
   }
 
   public void setTacticComplete(Tactic tactic) {
-    this.completedTacticis.add(tactic);
+    this.completedTactics.add(tactic);
     this.controllingTactician = null;
   }
 
@@ -90,16 +87,16 @@ public class TacticManager {
   public void delegateTactic(Tactic tactic, Class<? extends Tactician> tactician) {
     this.controllingTactician = Pair.of(tactic.type, newTactician(tactician));  }
 
+  public boolean hasTactic() {
+    return !tacticList.isEmpty();
+  }
+
   private Tactic getTactic() {
-    if (tacticList.isEmpty()) {
-      botRenderer.setBranchInfo("Default Tactic");
-      return defaultTactic;
-    }
     return tacticList.getFirst();
   }
 
   private Tactic getLastTactic() {
-    return tacticList.isEmpty() ? defaultTactic : tacticList.getLast();
+    return tacticList.getLast();
   }
 
   private Tactician getTactician() {

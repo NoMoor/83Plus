@@ -1,15 +1,17 @@
 package com.eru.rlbot.bot.ballchaser.v1.tactics;
 
 import com.eru.rlbot.bot.EruBot;
-import com.eru.rlbot.bot.common.Angles;
-import com.eru.rlbot.bot.common.Angles3;
-import com.eru.rlbot.bot.common.Matrix3;
+import com.eru.rlbot.bot.common.*;
 import com.eru.rlbot.common.input.DataPacket;
 import com.eru.rlbot.common.output.ControlsOutput;
 import com.eru.rlbot.common.vector.Vector2;
 import com.eru.rlbot.common.vector.Vector3;
+import rlbot.flat.BallPrediction;
+import rlbot.flat.PredictionSlice;
 
 import static com.eru.rlbot.bot.common.Constants.HALF_LENGTH;
+
+import java.util.Optional;
 
 public class RollingTactician extends Tactician {
 
@@ -20,9 +22,11 @@ public class RollingTactician extends Tactician {
   }
 
   @Override
-  public void execute(DataPacket input, ControlsOutput output, Tactic nextTactic) {
+  public void execute(DataPacket input, ControlsOutput output, Tactic tactic) {
+    // TODO: Fix this
+
     Vector2 carDirection = input.car.orientation.getNoseVector().flatten();
-    Vector3 targetPosition = nextTactic.targetMoment.position;
+    Vector3 targetPosition = tactic.targetMoment.position;
 
     // Subtract the two positions to get a vector pointing from the car to the ball.
     Vector3 carToTarget = targetPosition.minus(input.car.position);
@@ -35,7 +39,7 @@ public class RollingTactician extends Tactician {
             && input.car.position.z < 20) { // On the ground
 
       bot.botRenderer.setBranchInfo("Wall Ride");
-      flatCorrectionAngle = wallRideCorrectionAngle(input, nextTactic);
+      flatCorrectionAngle = wallRideCorrectionAngle(input, tactic);
     } else {
 
       // How far does the car need to rotate before it's pointing exactly at the ball?
@@ -43,11 +47,30 @@ public class RollingTactician extends Tactician {
       flatCorrectionAngle = Angles.flatCorrectionDirection(input.car, targetPosition);
     }
 
-    output.withSteer(flatCorrectionAngle)
+    output
+        .withSteer(flatCorrectionAngle)
         .withThrottle(1)
         .withSlide(Math.abs(flatCorrectionAngle) > 1.2);
 
     boostToShoot(input, output, flatCorrectionAngle);
+
+    checkComplete(tactic);
+  }
+
+  private void checkComplete(Tactic tactic) {
+    Optional<BallPrediction> predictionOptional = DllHelper.getBallPrediction();
+    if (predictionOptional.isPresent()) {
+      BallPrediction prediction = predictionOptional.get();
+      for (int i = 0 ; i < prediction.slicesLength() ; i++) {
+        PredictionSlice predictionSlice = prediction.slices(i);
+        if (tactic.getTargetPosition().distance(Vector3.of(predictionSlice.physics().location())) < 50) {
+          return;
+        }
+      }
+
+      // If the ball is no longer predicted to be at the given tactic location.
+      tacticManager.setTacticComplete(tactic);
+    }
   }
 
   private double wallRideCorrectionAngle(DataPacket input, Tactic nextTactic) {

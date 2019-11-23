@@ -52,13 +52,14 @@ public class StrategyManager {
       active.abort();
     }
 
-    if (lastStrategyUpdateTime == 0 || input.car.elapsedSeconds - lastStrategyUpdateTime > STRATEGY_UPDATE_INTERVAL) {
+    boolean timedUpdate = lastStrategyUpdateTime == 0
+        || input.car.elapsedSeconds - lastStrategyUpdateTime > STRATEGY_UPDATE_INTERVAL;
+    boolean strategistUpdate = active == null || active.isComplete();
+    boolean strategistLocked = active != null && active.tacticManager.isTacticLocked();
+
+    if (!strategistLocked && (strategistUpdate || timedUpdate)) {
       lastStrategyUpdateTime = input.car.elapsedSeconds;
       updateStrategy(input);
-    }
-
-    if (active == null) {
-      return new ControlsOutput();
     }
 
     ControlsOutput output = active.execute(input);
@@ -80,36 +81,12 @@ public class StrategyManager {
       newStrategist = strategists.get(Strategy.Type.SUPPORT);
     }
 
-    if (newStrategist != active) {
-      if (active != null) {
-        active.abort();
-      }
-
-      active = newStrategist;
-      active.assign(input);
+    if (active != null) {
+      active.abort();
     }
 
-    // TODO: Find a place for this code.
-//    if (grabBoostStrat && input.car.boost < 20) {
-//      // TODO(ahatfield): Put this as an available tactic that can just be added.
-//      // Lets get some boost.
-//      // TODO(ahatfield): Prioritize one that is in front of me.
-//      // TODO(ahatfield): Prioritize one that is closer to my goal.
-//      BoostManager.allBoosts().stream()
-//          .filter(BoostPad::isActive)
-//          .min(selectBoost(input))
-//          .ifPresent(boost -> TacticManager.setTactic(new Tactic(boost.getLocation(), Tactic.Type.GRAB_BOOST)));
-//    } else if (wallRideStrat) {
-//      if (input.car.position.distance(TacticManager.getNextTarget()) < 100) {
-//        Tactic lastTactic = TacticManager.tacticFulfilled();
-//
-//        if (lastTactic.targetMoment.position == LEFT_SIDE_WALL) {
-//          TacticManager.setTactic(RIGHT_WALL_TACTIC);
-//        } else {
-//          TacticManager.setTactic(LEFT_WALL_TACTIC);
-//        }
-//      }
-//    }
+    active = newStrategist;
+    active.assign(input);
   }
 
   private boolean checkReset(DataPacket input) {

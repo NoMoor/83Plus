@@ -131,7 +131,7 @@ public class Vector3 extends rlbot.vector.Vector3 {
         if (o == this) return true;
         if (o instanceof Vector3) {
             Vector3 v = (Vector3) o;
-            return x == v.x && y == v.y && z == v.z;
+            return this.x == v.x && this.y == v.y && this.z == v.z;
         }
         return false;
     }

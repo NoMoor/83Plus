@@ -32,19 +32,20 @@ public class RotateTactician extends Tactician {
 
   @Override
   void execute(DataPacket input, ControlsOutput output, Tactic tactic) {
+    bot.botRenderer.setBranchInfo("Rotate fliplock: %s", flipLock);
+
     if (flipLock) {
-      flip(input, output, tactic.targetMoment.position);
+      flip(input, output, tactic);
     } else {
-      moveTowardTarget(input, output, tactic.targetMoment.position);
+      moveTowardTarget(input, output, tactic);
     }
   }
 
-  private void moveTowardTarget(DataPacket input, ControlsOutput output, Vector3 nextTargetPoint) {
+  private void moveTowardTarget(DataPacket input, ControlsOutput output, Tactic tactic) {
+    Vector3 nextTargetPoint = tactic.targetMoment.position;
 
     // How far to rotate the car to see the ball
     double correctionAngle = Angles.flatCorrectionDirection(input.car, input.ball.position);
-
-    bot.botRenderer.setBranchInfo("Rotate %f", correctionAngle);
 
     Vector3 correctedTarget = nextTargetPoint.plus(getTargetOffset(input.car, nextTargetPoint, correctionAngle));
     double correctionDirection = Angles.flatCorrectionDirection(input.car, correctedTarget);
@@ -52,6 +53,9 @@ public class RotateTactician extends Tactician {
     bot.botRenderer.setCarTarget(correctedTarget);
 
     output.withSteer(correctionDirection * STEERING_SENSITIVITY);
+    if (correctionDirection > 1) {
+      output.withSlide();
+    }
 
     output.withThrottle(1);
     double distanceToTarget = input.car.position.distance(nextTargetPoint);
@@ -66,6 +70,9 @@ public class RotateTactician extends Tactician {
 //    } else if (distanceToTarget < 100) {
 //      output.withThrottle(-1f);
 //    }
+    if (distanceToTarget < 100) {
+      tacticManager.setTacticComplete(tactic);
+    }
   }
 
   private static final double P_GAIN = 15d * -Constants.BALL_RADIUS;
@@ -84,7 +91,8 @@ public class RotateTactician extends Tactician {
   }
 
   private int jumpTicks;
-  private void flip(DataPacket input, ControlsOutput output, Vector3 nextTargetPoint) {
+  private void flip(DataPacket input, ControlsOutput output, Tactic tactic) {
+    Vector3 nextTargetPoint = tactic.targetMoment.position;
     double correctionAngle = Angles.flatCorrectionDirection(input.car, nextTargetPoint);
 
     output.withThrottle(1.0f);

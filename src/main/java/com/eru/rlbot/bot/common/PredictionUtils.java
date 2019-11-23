@@ -1,8 +1,7 @@
 package com.eru.rlbot.bot.common;
 
 import com.eru.rlbot.common.Moment;
-import com.eru.rlbot.common.input.BallData;
-import com.eru.rlbot.common.input.CarData;
+import com.eru.rlbot.common.input.DataPacket;
 import com.eru.rlbot.common.vector.Vector3;
 import rlbot.flat.BallPrediction;
 import rlbot.flat.PredictionSlice;
@@ -10,29 +9,29 @@ import java.util.Optional;
 
 public class PredictionUtils {
 
-  public static Moment getFirstHittableBall(CarData car, BallData ball) {
+  public static Moment getFirstHittableBall(DataPacket input) {
     Optional<BallPrediction> ballPredictionOptional = DllHelper.getBallPrediction();
 
     if (!ballPredictionOptional.isPresent()) {
       // TODO: This should likely include time.
-      return new Moment(ball);
+      return new Moment(input.ball);
     }
 
     BallPrediction ballPrediction = ballPredictionOptional.get();
     for (int i = 0 ; i < ballPrediction.slicesLength() ; i++) {
       PredictionSlice predictionSlice = ballPrediction.slices(i);
 
-      double distance = Vector3.of(predictionSlice.physics().location()).distance(car.position);
+      double distance = Vector3.of(predictionSlice.physics().location()).distance(input.car.position);
 
-      float timeToBall = Accels.minTimeToDistance(car, distance);
-      float timeToPrediction = predictionSlice.gameSeconds() - car.elapsedSeconds;
+      float timeToBall = Accels.minTimeToDistance(input.car, distance);
+      float timeToPrediction = predictionSlice.gameSeconds() - input.car.elapsedSeconds;
 
       if (timeToBall < timeToPrediction) {
         return new Moment(predictionSlice);
       }
     }
 
-    return new Moment(ball, car.elapsedSeconds);
+    return new Moment(input.ball, input.car.elapsedSeconds);
   }
 
   public static Optional<PredictionSlice> getBallInGoalSlice() {

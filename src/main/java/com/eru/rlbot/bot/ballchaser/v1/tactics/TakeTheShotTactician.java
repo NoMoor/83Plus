@@ -43,7 +43,7 @@ public class TakeTheShotTactician extends Tactician {
     BallData relativeBallData = NormalUtils.noseRelativeBall(input);
 
     // The ball must mostly be in front of the car.
-    if (Math.abs(relativeBallData.position.x) * 2 > relativeBallData.position.y) {
+    if (Math.abs(relativeBallData.position.x) > relativeBallData.position.y) {
       return false;
     }
 
@@ -61,7 +61,7 @@ public class TakeTheShotTactician extends Tactician {
 
       float oppTimeToBall = timeToBall(relativeBallDataI, carData);
 
-      if (oppTimeToBall < timeToBall) {
+      if (oppTimeToBall < timeToBall + .25) {
         return false;
       }
     }

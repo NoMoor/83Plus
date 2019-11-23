@@ -19,8 +19,8 @@ public abstract class Strategist {
   abstract boolean assign(DataPacket input);
 
   /** Returns true if the strategy is complete. */
-  public boolean isComplete(DataPacket input) {
-    return false;
+  public boolean isComplete() {
+    return !tacticManager.hasTactic();
   }
 
   /** Informs the strategist that control has been taken away. It should pack up and go home. */
@@ -30,10 +30,8 @@ public abstract class Strategist {
 
   /** Allow the strategist to execute the strategy. */
   public ControlsOutput execute(DataPacket input) {
-    // TODO: Decide how / when to set new tactics.
-    assign(input);
-
     ControlsOutput output = new ControlsOutput();
+
     tacticManager.execute(input, output);
     return output;
   }

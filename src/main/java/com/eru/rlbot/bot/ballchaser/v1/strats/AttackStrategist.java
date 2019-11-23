@@ -57,7 +57,7 @@ public class AttackStrategist extends Strategist {
 //      tacticManager.setTactic(new Tactic(input.ball.position, Tactic.Type.HIT_BALL));
 //    }
 
-    tacticManager.setTactic(new Tactic(input.ball.position, Tactic.Type.HIT_BALL));
+    tacticManager.setTactic(new Tactic(PredictionUtils.getFirstHittableBall(input), Tactic.Type.HIT_BALL));
     return true;
   }
 
