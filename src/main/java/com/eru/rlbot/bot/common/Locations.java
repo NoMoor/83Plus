@@ -81,6 +81,14 @@ public class Locations {
     return Angles.minAbs(leftCorrectAngle, rightCorrectAngle);
   }
 
+  public static Vector3 farPost(DataPacket input) {
+    Goal ownGoal = Goal.ownGoal(input.car.team);
+
+    double leftPostDistance = input.ball.position.distance(ownGoal.left);
+    double rightPostDistance = input.ball.position.distance(ownGoal.right);
+    return leftPostDistance > rightPostDistance ? ownGoal.left : ownGoal.right;
+  }
+
   public static double minBallGoalCorrection(DataPacket input) {
     Vector2 ballToGoalRight = toOutsideRightGoal(input, input.ball.position).flatten();
     Vector2 ballToGoalLeft = toOutsideLeftGoal(input, input.ball.position).flatten();

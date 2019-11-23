@@ -37,9 +37,10 @@ public class GoalLineTactician extends Tactician {
         .withSteer(correctionAngle)
         .withThrottle(carTimeToTarget < ballTimeToTarget ? 0 : 1f);
 
-    Optional<Float> zTimeToTarget = Accels.jumpTimeToHeight(target.position.z);
+    Optional<Float> zTimeToTarget = Accels.jumpTimeToHeight(target.position.z - Constants.BALL_RADIUS);
 
-    if (zTimeToTarget.isPresent() && zTimeToTarget.get() + .1f > carTimeToTarget) {
+    if (zTimeToTarget.isPresent() && zTimeToTarget.get() > carTimeToTarget) {
+      bot.botRenderer.setBranchInfo("Time to Z %f", zTimeToTarget.get());
       // TODO: Adjust this jump better.
       output.withJump();
     } else if (Math.abs(correctionAngle) > 1.5) {

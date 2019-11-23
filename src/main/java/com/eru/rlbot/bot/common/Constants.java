@@ -41,6 +41,9 @@ public class Constants {
   public static final double JUMP_HOLD_TIME = .2; // 200ms
   public static final double JUMP_ACCELERATION_HELD = 1400; // Directed towards the roof of the car. Not including gravity.
 
+  public static final int GOAL_WIDTH = 1785; // 892.755 * 2
+  public static final int GOAL_HEIGH = 643; // Technically 642.775
+
   /**
    * Maximum Car Angular Acceleration:
    * Yaw: 9.11 radians/s^2
@@ -50,6 +53,7 @@ public class Constants {
 
   // Speed
   public static final double BOOSTED_MAX_SPEED = 2299;
+  public static final double SUPER_SONIC = 2200;
   public static final double MAX_SPEED = 1409;
 
   public static double turnDepth(double velocity, double angle) {

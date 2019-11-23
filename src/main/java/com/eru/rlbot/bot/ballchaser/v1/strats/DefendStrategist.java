@@ -3,12 +3,9 @@ package com.eru.rlbot.bot.ballchaser.v1.strats;
 import com.eru.rlbot.bot.EruBot;
 import com.eru.rlbot.bot.ballchaser.v1.tactics.RotateTactician;
 import com.eru.rlbot.bot.ballchaser.v1.tactics.Tactic;
-import com.eru.rlbot.bot.common.Constants;
-import com.eru.rlbot.bot.common.DllHelper;
-import com.eru.rlbot.bot.common.Goal;
-import com.eru.rlbot.bot.common.PredictionUtils;
+import com.eru.rlbot.bot.common.*;
+import com.eru.rlbot.common.Moment;
 import com.eru.rlbot.common.input.DataPacket;
-import com.eru.rlbot.common.vector.Vector2;
 import com.eru.rlbot.common.vector.Vector3;
 import rlbot.flat.BallPrediction;
 import rlbot.flat.Physics;
@@ -65,6 +62,31 @@ public class DefendStrategist extends Strategist {
     return false;
   }
 
+  private static double GOAL_NEARNESS_THRESHOLD = Constants.GOAL_WIDTH * 2;
+  private static boolean ballNearGoal(DataPacket input) {
+    Vector3 ownGoal = Goal.ownGoal(input.car.team).center;
+    Optional<BallPrediction> ballPredictionOptional = DllHelper.getBallPrediction();
+    if (!ballPredictionOptional.isPresent()) {
+      return input.ball.position.distance(ownGoal) < GOAL_NEARNESS_THRESHOLD;
+    }
+
+    final BallPrediction ballPrediction = ballPredictionOptional.get();
+
+    int i = 0;
+    while (i < ballPrediction.slicesLength()) {
+      Physics ballPhysics = ballPrediction.slices(i).physics();
+      double toGoalDistance = Vector3.of(ballPhysics.location()).distance(ownGoal);
+
+      if (toGoalDistance < GOAL_NEARNESS_THRESHOLD) {
+        return true;
+      }
+
+      i += 5;
+    }
+
+    return false;
+  }
+
   private boolean shadow(DataPacket input) {
     Optional<PredictionSlice> ballInGoalOptional = PredictionUtils.getBallInGoalSlice();
     if (!ballInGoalOptional.isPresent()) {
@@ -93,21 +115,27 @@ public class DefendStrategist extends Strategist {
         tacticManager.setTactic(new Tactic(input.car.position, Tactic.Type.DEFEND));
       }
       rotateCounter = 0;
+    } else if (canClear(input)) {
+      tacticManager.setTactic(new Tactic(input.ball.position, Tactic.Type.DEFEND));
     } else if (RotateTactician.shouldRotateBack(input)) {
-      // Rotate back between the ball and the goal
-
-      Vector2 ballToGoal = Goal.ownGoal(bot.team).center.minus(input.ball.position).flatten();
-      double rotationNorm = Math.min(ballToGoal.norm(), 1500);
-      Vector3 rotationTarget = input.ball.position.flatten().plus(ballToGoal.scaledToMagnitude(rotationNorm)).asVector3(); // TODO: Fix this
-
-//      bot.botRenderer.addAlertText("Rotate again! %d %d", (int) rotationTarget.x, (int) rotationTarget.y);
-      tacticManager.setTactic(new Tactic(rotationTarget, Tactic.Type.ROTATE));
+      // Rotate far post
+      Vector3 farPost = Locations.farPost(input);
+      farPost = farPost.addY(-Math.signum(farPost.y) * 500);
+      tacticManager.setTactic(new Tactic(farPost, Tactic.Type.ROTATE));
     } else {
       tacticManager.setTactic(new Tactic(input.car.position, Tactic.Type.DEFEND));
       rotateCounter = 0;
     }
 
     return true;
+  }
+
+  private boolean canClear(DataPacket input) {
+    boolean ballIsInFrontOfCar = Math.abs(Angles.flatCorrectionDirection(input.car, input.ball.position)) < .75;
+    boolean ballNearGoal = ballNearGoal(input);
+    boolean isPointedAwayFromGoal = Math.abs(Locations.minCarTargetNotGoalCorrection(input, new Moment(input.ball, input.car.elapsedSeconds))) < .2;
+
+    return ballIsInFrontOfCar && ballNearGoal && isPointedAwayFromGoal;
   }
 
   @Override

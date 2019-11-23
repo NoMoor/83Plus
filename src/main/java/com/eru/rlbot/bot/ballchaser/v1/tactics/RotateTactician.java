@@ -2,17 +2,11 @@ package com.eru.rlbot.bot.ballchaser.v1.tactics;
 
 import com.eru.rlbot.bot.EruBot;
 import com.eru.rlbot.bot.common.*;
-import com.eru.rlbot.common.input.CarData;
-import com.eru.rlbot.common.input.CarOrientation;
 import com.eru.rlbot.common.input.DataPacket;
-import com.eru.rlbot.common.jump.JumpManager;
 import com.eru.rlbot.common.output.ControlsOutput;
-import com.eru.rlbot.common.vector.Vector2;
 import com.eru.rlbot.common.vector.Vector3;
 
 public class RotateTactician extends Tactician {
-
-  private boolean flipLock;
 
   RotateTactician(EruBot bot, TacticManager tacticManager) {
     super(bot, tacticManager);
@@ -26,99 +20,54 @@ public class RotateTactician extends Tactician {
   }
 
   @Override
-  public boolean isLocked() {
-    return flipLock;
-  }
-
-  @Override
   void execute(DataPacket input, ControlsOutput output, Tactic tactic) {
-    bot.botRenderer.setBranchInfo("Rotate fliplock: %s", flipLock);
-
-    if (flipLock) {
-      flip(input, output, tactic);
-    } else {
-      moveTowardTarget(input, output, tactic);
-    }
+    moveTowardTarget(input, output, tactic);
   }
 
   private void moveTowardTarget(DataPacket input, ControlsOutput output, Tactic tactic) {
     Vector3 nextTargetPoint = tactic.targetMoment.position;
 
-    // How far to rotate the car to see the ball
-    double correctionAngle = Angles.flatCorrectionDirection(input.car, input.ball.position);
 
-    Vector3 correctedTarget = nextTargetPoint.plus(getTargetOffset(input.car, nextTargetPoint, correctionAngle));
-    double correctionDirection = Angles.flatCorrectionDirection(input.car, correctedTarget);
-
-    bot.botRenderer.setCarTarget(correctedTarget);
+    double correctionDirection = getTargetOffset(input, nextTargetPoint, tactic);
 
     output.withSteer(correctionDirection * STEERING_SENSITIVITY);
-    if (correctionDirection > 1) {
-      output.withSlide();
-    }
 
+    // TODO: Perhaps slow down...
     output.withThrottle(1);
     double distanceToTarget = input.car.position.distance(nextTargetPoint);
 
-    if (input.car.hasWheelContact && distanceToTarget > 1000 && (input.car.boost > 50 || Angles.isRotatingBack(input))) {
+    if (input.car.hasWheelContact && input.car.groundSpeed < Constants.SUPER_SONIC && (input.car.boost > 50 || Angles.isRotatingBack(input))) {
       output.withBoost();
     }
 
-//    if (distanceToTarget > 1000 && Math.abs(correctionAngle) < .2 && input.car.velocity.norm() > 1400) {
-//      flipLock = true;
-//      output.withJump();
-//    } else if (distanceToTarget < 100) {
-//      output.withThrottle(-1f);
-//    }
     if (distanceToTarget < 100) {
       tacticManager.setTacticComplete(tactic);
     }
   }
 
-  private static final double P_GAIN = 15d * -Constants.BALL_RADIUS;
-  private static final double D_GAIN = .2d;
+  private static final double P_GAIN = .4d;
+  private static final double D_GAIN = -.0001d;
   private static final double STEERING_SENSITIVITY = 15d;
-  private Vector3 getTargetOffset(CarData car, Vector3 target, double correctionAngle) {
-    double xCorrection = Math.sin(correctionAngle) * P_GAIN;
-    double xDampeningCorrection = -Math.sin(correctionAngle) * car.velocity.flatten().norm() * D_GAIN;
+  private double getTargetOffset(DataPacket input, Vector3 target, Tactic tactic) {
+    double targetNoseBall = Angles.flatCorrectionAngle(
+        tactic.targetMoment.position, input.car.orientation.getNoseVector(), input.ball.position);
 
-    double yCorrection = -Constants.BALL_RADIUS;
+    double carTargetCorrection = Angles.flatCorrectionDirection(input.car, target);
 
-    // Rotate to be relative to where the car is.
-    Vector3 carBall = Angles.carTarget(car, target);
-    double rotationAngle = carBall.flatten().correctionAngle(Vector2.NORTH);
-    return Angles.rotate(new Vector2(xCorrection + xDampeningCorrection, yCorrection), rotationAngle).asVector3();
-  }
+    double xCorrection = -targetNoseBall * P_GAIN;
 
-  private int jumpTicks;
-  private void flip(DataPacket input, ControlsOutput output, Tactic tactic) {
-    Vector3 nextTargetPoint = tactic.targetMoment.position;
-    double correctionAngle = Angles.flatCorrectionDirection(input.car, nextTargetPoint);
+    Vector3 carTargetVector = tactic.targetMoment.position.minus(input.car.position);
+    double carTargetBallCorrection =
+        Angles.flatCorrectionAngle(tactic.targetMoment.position, carTargetVector, input.ball.position);
+    double projectedCorrection = carTargetBallCorrection + carTargetCorrection;
 
-    output.withThrottle(1.0f);
+    double attackVelocity = Math.sin(Math.abs(projectedCorrection)) * input.car.groundSpeed;
 
-    if (!JumpManager.hasReleasedJumpInAir()) {
-      // Prevent getting stuck
-      if (jumpTicks++ > 20 && input.car.hasWheelContact) {
-        flipLock = false;
-      }
-    } else if (JumpManager.canFlip()) {
-      jumpTicks = 0;
-      // TODO: Check ball location before flipping.
-      output
-          .withYaw(-Math.signum(correctionAngle) * .5)
-          .withPitch(-1)
-          .withJump();
-    } else {
-      Angles3.setControlsFor(
-          input.car,
-          // TODO: Refactor this to get the orientation matrix for the car velocity.
-          CarOrientation.convert(0, Vector2.WEST.correctionAngle(input.car.velocity.flatten()), 0).getOrientationMatrix(),
-          output);
-      output.withThrottle(1.0f);
-      if (input.car.hasWheelContact) {
-        flipLock = false;
-      }
-    }
+    double xDampeningCorrection = attackVelocity * D_GAIN;
+
+    double correctionAngle = carTargetCorrection + xCorrection + xDampeningCorrection;
+
+    bot.botRenderer.setBranchInfo(Math.signum(targetNoseBall) != Math.signum(correctionAngle) ? "Swing out" : "Sweep through");
+    return correctionAngle;
   }
 }

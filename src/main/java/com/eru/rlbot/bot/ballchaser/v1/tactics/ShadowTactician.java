@@ -20,30 +20,20 @@ public class ShadowTactician extends Tactician {
     double minCorrection = Locations.minCarTargetNotGoalCorrection(input, tactic.targetMoment);
     double targetCorrectionAngle = Angles.flatCorrectionDirection(input.car, tactic.targetMoment.position);
 
-    if (Math.abs(minCorrection) > getSpeedAdjustedMinAngle(input.car, targetCorrectionAngle)) {
-      bot.botRenderer.setBranchInfo("Get along side %f", minCorrection);
+    bot.botRenderer.setBranchInfo("Get along side");
+    if (Math.abs(minCorrection) > 0) {
       getAlongSide(input, output, tactic);
     } else {
-
-      bot.botRenderer.setBranchInfo("Sweep %f", targetCorrectionAngle);
+      bot.botRenderer.setBranchInfo("Sweep");
       // TODO: Make this better
       float ballToTargetTime = tactic.targetMoment.time - input.car.elapsedSeconds;
       float carToTargetTime = Accels.timeToDistance(input.car.velocity.norm(), input.car.position.distance(tactic.targetMoment.position));
 
       output
-          .withSteer(targetCorrectionAngle)
-          .withThrottle(ballToTargetTime > carToTargetTime ? -1 : 1.0);
+          .withSteer(targetCorrectionAngle * 5)
+          .withThrottle(ballToTargetTime > carToTargetTime + .1 ? -1 : ballToTargetTime > carToTargetTime ? 0 : 1.0)
+          .withBoost(ballToTargetTime < carToTargetTime + .1);
     }
-  }
-
-  private final double MIN_ANGLE_GAIN = 0.0003f;
-  private double getSpeedAdjustedMinAngle(CarData car, double targetCorrectionAngle) {
-    double groundspeed = car.groundSpeed;
-
-    // Faster + bigger angle = larger number.
-    // 2000 * .5 * x = .3
-    return groundspeed * Math.abs(targetCorrectionAngle) * MIN_ANGLE_GAIN;
-//    return .15f;
   }
 
   private void getAlongSide(DataPacket input, ControlsOutput output, Tactic tactic) {

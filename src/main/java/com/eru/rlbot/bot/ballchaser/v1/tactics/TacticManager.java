@@ -54,11 +54,9 @@ public class TacticManager {
 
   public void setTactic(Tactic tactic) {
     if (hasTactic() && tactic.equals(getTactic())) {
-      botRenderer.addAlertText("Same tactic! %s", tactic.type);
       return;
     }
 
-    botRenderer.addAlertText("New tactic! %s", tactic.type);
     controllingTactician = null;
     tacticList.clear();
     tacticList.add(tactic);
