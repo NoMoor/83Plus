@@ -37,6 +37,6 @@ class Strategy {
         return new SupportStrategist(bot);
     }
 
-    throw new IllegalArgumentException(String.format("Unknown strategy type %s", type));
+    throw new IllegalArgumentException(String.format("Unknown strategy tacticType %s", type));
   }
 }

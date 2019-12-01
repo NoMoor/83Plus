@@ -32,10 +32,15 @@ public abstract class Strategist {
   public ControlsOutput execute(DataPacket input) {
     ControlsOutput output = new ControlsOutput();
 
-    tacticManager.execute(input, output);
+    if (!tacticManager.hasTactic()) {
+      bot.botRenderer.addAlertText("%s has no tactic", this.getType());
+    } else {
+      tacticManager.execute(input, output);
+    }
+
     return output;
   }
 
-  /** Returns the strategy type. */
+  /** Returns the strategy tacticType. */
   public abstract Strategy.Type getType();
 }

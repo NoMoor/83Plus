@@ -9,16 +9,12 @@ import com.eru.rlbot.common.vector.Vector3;
 /** Utilities to get angles. */
 public final class Angles {
 
-  public static double flatCorrectionDirection(BallData ballData, Vector3 targetPoint) {
+  public static double flatCorrectionAngle(BallData ballData, Vector3 targetPoint) {
     return flatCorrectionAngle(ballData.position, ballData.velocity, targetPoint);
   }
 
-  public static double flatCorrectionDirection(CarData carData, Vector3 targetPoint) {
+  public static double flatCorrectionAngle(CarData carData, Vector3 targetPoint) {
     return flatCorrectionAngle(carData.position, carData.orientation.getNoseVector(), targetPoint);
-  }
-
-  public static double correctionDirection(Vector2 sourcePoint, Vector2 sourceOrientation, Vector2 targetPoint) {
-    return flatCorrectionAngle(sourcePoint, sourceOrientation, targetPoint);
   }
 
   public static double flatCorrectionAngle(Vector3 sourcePoint, Vector3 sourceOrientation, Vector3 targetPoint) {
@@ -30,6 +26,10 @@ public final class Angles {
     Vector2 sourceToTargetVector = targetPoint.minus(sourcePoint);
 
     return sourceOrientation.correctionAngle(sourceToTargetVector);
+  }
+
+  public static double correctionAngle(Vector2 sourcePoint, Vector2 sourceOrientation, Vector2 targetPoint) {
+    return flatCorrectionAngle(sourcePoint, sourceOrientation, targetPoint);
   }
 
   public static double minAbs(double a, double b) {
@@ -60,7 +60,7 @@ public final class Angles {
 
   public static boolean isRotatingBack(DataPacket input) {
     Vector3 ownGoal = Goal.ownGoal(input.car.team).center;
-    double correction = Angles.flatCorrectionDirection(input.car, ownGoal);
+    double correction = Angles.flatCorrectionAngle(input.car, ownGoal);
 
     return Math.abs(correction) < Math.PI / 4;
   }

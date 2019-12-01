@@ -12,27 +12,27 @@ import java.util.Optional;
 public class Locations {
 
   public static Vector3 toInsideLeftGoal(DataPacket input, Vector3 target) {
-    return Goal.opponentGoal(input.car.team).leftInside.minus(target);
+    return Vector3.from(target, Goal.opponentGoal(input.car.team).leftInside);
   }
 
   public static Vector3 toInsideRightGoal(DataPacket input, Vector3 target) {
-    return Goal.opponentGoal(input.car.team).rightInside.minus(target);
+    return Vector3.from(target, Goal.opponentGoal(input.car.team).rightInside);
   }
 
   private static Vector3 toOutsideLeftGoal(DataPacket input, Vector3 target) {
-    return Goal.ownGoal(input.car.team).leftOutside.minus(target);
+    return Vector3.from(target, Goal.ownGoal(input.car.team).leftOutside);
   }
 
   private static Vector3 toOutsideRightGoal(DataPacket input, Vector3 position) {
-    return Goal.ownGoal(input.car.team).rightOutside.minus(position);
+    return Vector3.from(position, Goal.ownGoal(input.car.team).rightOutside);
   }
 
   public static Vector3 ballToOppGoalCenter(DataPacket input) {
-    return Goal.opponentGoal(input.car.team).center.minus(input.ball.position);
+    return Vector3.from(input.ball.position, Goal.opponentGoal(input.car.team).center);
   }
 
   public static Vector3 carToBall(DataPacket input) {
-    return input.ball.position.minus(input.car.position);
+    return Vector3.from(input.car.position, input.ball.position);
   }
 
   public static boolean isOpponentSideOfBall(DataPacket input) {
@@ -84,9 +84,9 @@ public class Locations {
   public static Vector3 farPost(DataPacket input) {
     Goal ownGoal = Goal.ownGoal(input.car.team);
 
-    double leftPostDistance = input.ball.position.distance(ownGoal.left);
-    double rightPostDistance = input.ball.position.distance(ownGoal.right);
-    return leftPostDistance > rightPostDistance ? ownGoal.left : ownGoal.right;
+    double leftPostDistance = input.ball.position.distance(ownGoal.leftInside);
+    double rightPostDistance = input.ball.position.distance(ownGoal.rightInside);
+    return leftPostDistance > rightPostDistance ? ownGoal.leftInside : ownGoal.rightInside;
   }
 
   public static double minBallGoalCorrection(DataPacket input) {

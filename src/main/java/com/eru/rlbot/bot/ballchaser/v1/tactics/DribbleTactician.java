@@ -65,15 +65,15 @@ public class DribbleTactician extends Tactician {
   }
 
   private void driveToTarget(DataPacket input, BallData relativeBallData, ControlsOutput output) {
-    double correctionLeftAngle = -Angles.flatCorrectionDirection(input.ball, target_left);
-    double correctionRightAngle = -Angles.flatCorrectionDirection(input.ball, target_right);
+    double correctionLeftAngle = -Angles.flatCorrectionAngle(input.ball, target_left);
+    double correctionRightAngle = -Angles.flatCorrectionAngle(input.ball, target_right);
 
     double momentumAngle = getMomentum(relativeBallData);
     boolean isPointingAtTarget = (correctionLeftAngle + momentumAngle) < 0
         && (correctionRightAngle + momentumAngle) > 0;
 
     double correctionAngle = Angles.minAbs(correctionLeftAngle, correctionRightAngle);
-    // TODO: How to tell if we've turned past the targetMoment?
+    // TODO: How to tell if we've turned past the subject?
 
     // Need to turn right.
     boolean tooFarRight = correctionAngle > 0 && correctionLeftAngle + momentumAngle > correctionRightAngle;
@@ -141,12 +141,12 @@ public class DribbleTactician extends Tactician {
   }
 
   private void angleToBall(DataPacket input, ControlsOutput output) {
-    double correctionAngle = Angles.flatCorrectionDirection(input.car, input.ball.position);
+    double correctionAngle = Angles.flatCorrectionAngle(input.car, input.ball.position);
 
     if (Math.abs(correctionAngle) > 2.5f) {
       // Prefer turning toward your own goal.
       bot.botRenderer.addDebugText("Ground Turn to Goal");
-      double goalCorrectionAngle = Angles.flatCorrectionDirection(input.car, ownGoal);
+      double goalCorrectionAngle = Angles.flatCorrectionAngle(input.car, ownGoal);
 
       // If the goal and the ball are both far turns, turn toward the goal.
       output.withSteer(Math.abs(goalCorrectionAngle) > 1 ? goalCorrectionAngle : correctionAngle);

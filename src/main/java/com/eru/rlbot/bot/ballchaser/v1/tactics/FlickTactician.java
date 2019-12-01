@@ -111,7 +111,7 @@ public class FlickTactician extends Tactician {
 
           // Spin the opposite direction of the way you'd need to turn so the flick hits the ball back toward the goal.
           rotationDirection =
-              (float) Math.signum(-Angles.flatCorrectionDirection(input.ball, Goal.opponentGoal(bot.team).center));
+              (float) Math.signum(-Angles.flatCorrectionAngle(input.ball, Goal.opponentGoal(bot.team).center));
         } else if (boostTicks > 0) {
           boostTicks--;
           output.withBoost();

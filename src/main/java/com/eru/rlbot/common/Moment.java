@@ -4,7 +4,7 @@ import com.eru.rlbot.common.input.BallData;
 import com.eru.rlbot.common.vector.Vector3;
 import rlbot.flat.PredictionSlice;
 
-/** Represents a targetMoment that will happen at a given time. */
+/** Represents a subject that will happen at a given time. */
 public class Moment {
 
   public final Vector3 velocity;

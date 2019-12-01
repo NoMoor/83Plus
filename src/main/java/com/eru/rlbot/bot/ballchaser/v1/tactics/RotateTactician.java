@@ -24,50 +24,47 @@ public class RotateTactician extends Tactician {
     moveTowardTarget(input, output, tactic);
   }
 
+  private boolean locked;
+  @Override
+  public boolean isLocked() {
+    return locked;
+  }
+
   private void moveTowardTarget(DataPacket input, ControlsOutput output, Tactic tactic) {
-    Vector3 nextTargetPoint = tactic.targetMoment.position;
+    bot.botRenderer.setBranchInfo("Rotating for %s", tactic.subjectType);
 
+    Vector3 nextTargetPoint = tactic.subject.position;
 
-    double correctionDirection = getTargetOffset(input, nextTargetPoint, tactic);
+    double correctionDirection = Angles.flatCorrectionAngle(input.car, nextTargetPoint);
 
-    output.withSteer(correctionDirection * STEERING_SENSITIVITY);
+    output.withSteer(correctionDirection);
 
     // TODO: Perhaps slow down...
     output.withThrottle(1);
     double distanceToTarget = input.car.position.distance(nextTargetPoint);
 
-    if (input.car.hasWheelContact && input.car.groundSpeed < Constants.SUPER_SONIC && (input.car.boost > 50 || Angles.isRotatingBack(input))) {
+    if (input.car.hasWheelContact
+        && !input.car.isSupersonic
+        && (input.car.boost > 20 || Angles.isRotatingBack(input))) {
       output.withBoost();
     }
 
-    if (distanceToTarget < 100) {
-      tacticManager.setTacticComplete(tactic);
+    if (!input.car.hasWheelContact) {
+      Angles3.setControlsForFlatLanding(input.car, output);
     }
-  }
 
-  private static final double P_GAIN = .4d;
-  private static final double D_GAIN = -.0001d;
-  private static final double STEERING_SENSITIVITY = 15d;
-  private double getTargetOffset(DataPacket input, Vector3 target, Tactic tactic) {
-    double targetNoseBall = Angles.flatCorrectionAngle(
-        tactic.targetMoment.position, input.car.orientation.getNoseVector(), input.ball.position);
-
-    double carTargetCorrection = Angles.flatCorrectionDirection(input.car, target);
-
-    double xCorrection = -targetNoseBall * P_GAIN;
-
-    Vector3 carTargetVector = tactic.targetMoment.position.minus(input.car.position);
-    double carTargetBallCorrection =
-        Angles.flatCorrectionAngle(tactic.targetMoment.position, carTargetVector, input.ball.position);
-    double projectedCorrection = carTargetBallCorrection + carTargetCorrection;
-
-    double attackVelocity = Math.sin(Math.abs(projectedCorrection)) * input.car.groundSpeed;
-
-    double xDampeningCorrection = attackVelocity * D_GAIN;
-
-    double correctionAngle = carTargetCorrection + xCorrection + xDampeningCorrection;
-
-    bot.botRenderer.setBranchInfo(Math.signum(targetNoseBall) != Math.signum(correctionAngle) ? "Swing out" : "Sweep through");
-    return correctionAngle;
+    if (distanceToTarget < 50) {
+      tacticManager.setTacticComplete(tactic);
+    } else if (distanceToTarget < 500 && Math.abs(correctionDirection) > 1) {
+      output.withSlide();
+    } else if (((distanceToTarget > 1500 && nextTargetPoint.z < 150) || distanceToTarget > 2500) // Distance
+        && ((input.car.groundSpeed > 1300 && input.car.boost < 20) || input.car.groundSpeed > 1500) // Speed
+        && !input.car.isSupersonic // Excess Speed
+        && Math.abs(correctionDirection) < .25) { // Angle
+      tacticManager.preemptTactic(Tactic.builder()
+          .setSubject(nextTargetPoint)
+          .setTacticType(Tactic.TacticType.FLIP)
+          .build());
+    }
   }
 }

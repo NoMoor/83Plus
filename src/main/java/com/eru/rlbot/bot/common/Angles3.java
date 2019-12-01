@@ -1,6 +1,7 @@
 package com.eru.rlbot.bot.common;
 
 import com.eru.rlbot.common.input.CarData;
+import com.eru.rlbot.common.input.CarOrientation;
 import com.eru.rlbot.common.output.ControlsOutput;
 import com.eru.rlbot.common.vector.Vector3;
 
@@ -19,13 +20,17 @@ public class Angles3 {
   private static final double SCALE = 10.5f;
 
   // TODO: Some of these values may need to be inverted. Particularly the x vector.
-  private static final Vector3 ANGULAR_ACCELERATION = Vector3.of(-400.0f, -130.0f, 95.0f).scaled(1/SCALE);
-  private static final Vector3 ANGULAR_DAMPING = Vector3.of(-50.0f, -30.0f, -20.0f).scaled(1/SCALE);
+  private static final Vector3 ANGULAR_ACCELERATION = Vector3.of(-400.0f, -130.0f, 95.0f).multiply(1/SCALE);
+  private static final Vector3 ANGULAR_DAMPING = Vector3.of(-50.0f, -30.0f, -20.0f).multiply(1/SCALE);
 
   // How far ahead to look.
   private static final float HORIZON_TIME = .05f;
 
-  /** Returns controls to optimally rotate toward the targetMoment orientation. */
+  public static void setControlsForFlatLanding(CarData car, ControlsOutput output) {
+    setControlsFor(car, CarOrientation.convertFromFlatVelocity(car), output);
+  }
+
+  /** Returns controls to optimally rotate toward the subject orientation. */
   public static boolean setControlsFor(CarData car, Matrix3 target, ControlsOutput controls) {
     // Omega = Velocity
     Vector3 omega = target.transpose().dot(car.angularVelocity);
@@ -63,18 +68,18 @@ public class Angles3 {
 
       // TODO: Choose an implementation.
 //      Vector3 df_j0 = f0
-//          .minus(f(alpha.plus(Matrix3.IDENTITY.row(0).scaled(eps)), horizon_time, theta, omega, z0, phi))
-//          .scaled(1 / eps);
+//          .minus(f(alpha.plus(Matrix3.IDENTITY.row(0).multiply(eps)), horizon_time, theta, omega, z0, phi))
+//          .multiply(1 / eps);
 //      df_j0 = Vector3.of(df_j0.x + offset, df_j0.y, df_j0.z);
 //
 //      Vector3 df_j1 = f0
-//          .minus(f(alpha.plus(Matrix3.IDENTITY.row(1).scaled(eps)), horizon_time, theta, omega, z0, phi))
-//          .scaled(1 / eps);
+//          .minus(f(alpha.plus(Matrix3.IDENTITY.row(1).multiply(eps)), horizon_time, theta, omega, z0, phi))
+//          .multiply(1 / eps);
 //      df_j1 = Vector3.of(df_j1.x, df_j1.y + offset, df_j1.z);
 //
 //      Vector3 df_j2 = f0
-//          .minus(f(alpha.plus(Matrix3.IDENTITY.row(2).scaled(eps)), horizon_time, theta, omega, z0, phi))
-//          .scaled(1 / eps);
+//          .minus(f(alpha.plus(Matrix3.IDENTITY.row(2).multiply(eps)), horizon_time, theta, omega, z0, phi))
+//          .multiply(1 / eps);
 //      df_j2 = Vector3.of(df_j2.x, df_j2.y, df_j2.z + offset);
 //
 //      Matrix3 J = Matrix3.of(df_j0, df_j1, df_j2);
@@ -82,11 +87,11 @@ public class Angles3 {
       List<Vector3> vector3List = new ArrayList<>(3);
       for (int j = 0; j < 3; j++) {
 
-        Vector3 epsIdentity = Matrix3.IDENTITY.row(j).scaled(eps);
+        Vector3 epsIdentity = Matrix3.IDENTITY.row(j).multiply(eps);
 
         Vector3 diff = f(alpha.plus(epsIdentity), horizon_time, theta, omega, z0, phi);
 
-        Vector3 v = f0.minus(diff).scaled(1 / eps);
+        Vector3 v = f0.minus(diff).multiply(1 / eps);
         v = (i == 0) ? v.addX(offset) : (i == 1) ? v.addY(offset) : v.addZ(offset);
         vector3List.add(v);
       }
@@ -180,13 +185,13 @@ public class Angles3 {
   // the error between the predicted state and the precomputed return trajectories
   private static Vector3 f(Vector3 alpha_local, float dt, Matrix3 theta, Vector3 omega, Matrix3 z0, Vector3 phi) {
     Vector3 alpha_world = theta.dot(alpha_local);
-    Vector3 omega_pred = omega.plus(alpha_world.scaled(dt));
+    Vector3 omega_pred = omega.plus(alpha_world.multiply(dt));
     Vector3 phi_pred = phi.plus(
         z0.dot(
-            omega.plus(alpha_world.scaled(0.5f * dt)))
-            .scaled(dt));
+            omega.plus(alpha_world.multiply(0.5f * dt)))
+            .multiply(dt));
     Vector3 dphi_dt_pred = z0.dot(omega_pred);
-    return phi_pred.scaled(-1.0d).minus(g(phi_pred, dphi_dt_pred));
+    return phi_pred.multiply(-1.0d).minus(g(phi_pred, dphi_dt_pred));
   }
 
   // Let g(x) be the continuous piecewise linear function
@@ -254,7 +259,7 @@ public class Angles3 {
         R.row(2).get(1) - R.row(1).get(2),
         R.row(0).get(2) - R.row(2).get(0),
         R.row(1).get(0) - R.row(0).get(1))
-        .scaled(scale);
+        .multiply(scale);
   }
 
   private static float clip(float value, float min, float max) {

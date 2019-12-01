@@ -6,8 +6,6 @@ import com.eru.rlbot.bot.common.*;
 import com.eru.rlbot.common.Moment;
 import com.eru.rlbot.common.input.DataPacket;
 import com.eru.rlbot.common.vector.Vector3;
-import rlbot.flat.BallPrediction;
-import java.util.Optional;
 
 /** Responsible for dribbling, shooting, and passing. */
 public class AttackStrategist extends Strategist {
@@ -37,27 +35,40 @@ public class AttackStrategist extends Strategist {
       return true;
     }
 
+    PathPlanner planner = new PathPlanner(input);
+
     if (KickoffTactician.isKickOff(input)) {
-      tacticManager.setTactic(new Tactic(input.ball.position, Tactic.Type.KICKOFF));
+      tacticManager.setTactic(
+          Tactic.builder()
+              .setSubject(input.ball.position)
+              .setTacticType(Tactic.TacticType.KICKOFF)
+              .plan(planner::plan));
       return true;
     }
 
     if (TakeTheShotTactician.takeTheShot(input)) {
       Moment targetMoment = TakeTheShotTactician.shotTarget(input);
-      tacticManager.setTactic(new Tactic(targetMoment, Tactic.Type.STRIKE));
+      tacticManager.setTactic(
+          Tactic.builder()
+              .setSubject(targetMoment)
+              .setTacticType(Tactic.TacticType.STRIKE)
+              .plan(planner::plan));
       return true;
     }
 //    else if (DribbleTactician.canDribble(input)) {
-//      tacticManager.setTactic(new Tactic(input.ball.position, Tactic.Type.DRIBBLE));
+//      tacticManager.setTactic(new Tactic(input.ball.position, Tactic.TacticType.DRIBBLE));
 //    } else if (PickUpTactician.canPickUp(input)) {
-//      tacticManager.setTactic(new Tactic(input.ball.position, Tactic.Type.PICK_UP));
+//      tacticManager.setTactic(new Tactic(input.ball.position, Tactic.TacticType.PICK_UP));
 //    } else if (CatchTactician.canCatch(input)) {
-//      tacticManager.setTactic(new Tactic(input.ball.position, Tactic.Type.CATCH));
+//      tacticManager.setTactic(new Tactic(input.ball.position, Tactic.TacticType.CATCH));
 //    } else {
-//      tacticManager.setTactic(new Tactic(input.ball.position, Tactic.Type.HIT_BALL));
+//      tacticManager.setTactic(new Tactic(input.ball.position, Tactic.TacticType.HIT_BALL));
 //    }
 
-    tacticManager.setTactic(new Tactic(PredictionUtils.getFirstHittableBall(input), Tactic.Type.HIT_BALL));
+    tacticManager.setTactic(Tactic.builder()
+        .setSubject(PredictionUtils.getFirstHittableBall(input))
+        .setTacticType(Tactic.TacticType.HIT_BALL)
+        .plan(planner::plan));
     return true;
   }
 

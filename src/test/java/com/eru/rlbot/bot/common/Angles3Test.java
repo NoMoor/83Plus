@@ -158,14 +158,6 @@ public class Angles3Test {
     assertThat("Yaw", (double) output.getYaw(), is(closeTo(.42, .01)));
   }
 
-  @Test
-  public void test_convert() {
-    CarOrientation orientation = CarOrientation.convert(1, -1, 2);
-    CarOrientation orientation2 = CarOrientation.convertFull(1, -1, 2);
-
-    assertEquals(orientation, orientation2);
-  }
-
   public static void print(String s, Object... args) {
     System.out.println(String.format(s, args));
   }

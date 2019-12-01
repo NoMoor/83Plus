@@ -44,6 +44,9 @@ public class Constants {
   public static final int GOAL_WIDTH = 1785; // 892.755 * 2
   public static final int GOAL_HEIGH = 643; // Technically 642.775
 
+  public static final float SMALL_BOOST_PICKUP_RADIUS = 140; // Actual 144
+  public static final float LARGE_BOOST_PICKUP_RADIUS = 208; // Actual 208
+
   /**
    * Maximum Car Angular Acceleration:
    * Yaw: 9.11 radians/s^2

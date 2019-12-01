@@ -21,7 +21,13 @@ public class PredictionUtils {
     for (int i = 0 ; i < ballPrediction.slicesLength() ; i++) {
       PredictionSlice predictionSlice = ballPrediction.slices(i);
 
-      double distance = Vector3.of(predictionSlice.physics().location()).distance(input.car.position);
+      Vector3 ballLocation = Vector3.of(predictionSlice.physics().location());
+
+      if (ballLocation.z > 200) {
+        continue;
+      }
+
+      double distance = ballLocation.flatten().distance(input.car.position.flatten());
 
       float timeToBall = Accels.minTimeToDistance(input.car, distance);
       float timeToPrediction = predictionSlice.gameSeconds() - input.car.elapsedSeconds;

@@ -2,7 +2,6 @@ package com.eru.rlbot.bot.ballchaser.v1.tactics;
 
 import com.eru.rlbot.bot.EruBot;
 import com.eru.rlbot.bot.common.*;
-import com.eru.rlbot.common.input.CarData;
 import com.eru.rlbot.common.input.DataPacket;
 import com.eru.rlbot.common.output.ControlsOutput;
 import com.eru.rlbot.common.vector.Vector3;
@@ -17,8 +16,8 @@ public class ShadowTactician extends Tactician {
 
   @Override
   public void execute(DataPacket input, ControlsOutput output, Tactic tactic) {
-    double minCorrection = Locations.minCarTargetNotGoalCorrection(input, tactic.targetMoment);
-    double targetCorrectionAngle = Angles.flatCorrectionDirection(input.car, tactic.targetMoment.position);
+    double minCorrection = Locations.minCarTargetNotGoalCorrection(input, tactic.subject);
+    double targetCorrectionAngle = Angles.flatCorrectionAngle(input.car, tactic.subject.position);
 
     bot.botRenderer.setBranchInfo("Get along side");
     if (Math.abs(minCorrection) > 0) {
@@ -26,8 +25,8 @@ public class ShadowTactician extends Tactician {
     } else {
       bot.botRenderer.setBranchInfo("Sweep");
       // TODO: Make this better
-      float ballToTargetTime = tactic.targetMoment.time - input.car.elapsedSeconds;
-      float carToTargetTime = Accels.timeToDistance(input.car.velocity.norm(), input.car.position.distance(tactic.targetMoment.position));
+      float ballToTargetTime = tactic.subject.time - input.car.elapsedSeconds;
+      float carToTargetTime = Accels.timeToDistance(input.car.velocity.norm(), input.car.position.distance(tactic.subject.position));
 
       output
           .withSteer(targetCorrectionAngle * 5)
@@ -47,9 +46,9 @@ public class ShadowTactician extends Tactician {
     } else {
       output.withThrottle(.02f);
 
-      double correctionAngle = Angles.flatCorrectionDirection(input.car, tactic.targetMoment.position);
+      double correctionAngle = Angles.flatCorrectionAngle(input.car, tactic.subject.position);
       if (Math.abs(correctionAngle) < .5) {
-        output.withSteer(Locations.minCarTargetNotGoalCorrection(input, tactic.targetMoment));
+        output.withSteer(Locations.minCarTargetNotGoalCorrection(input, tactic.subject));
       }
     }
   }

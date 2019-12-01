@@ -184,7 +184,7 @@ public class BotRenderer {
 
   private void renderControl() {
     renderText(Color.PINK, 0, 300,"%s", strategist == null ? "NONE" : strategist.getType());
-    renderText(Color.CYAN, 150, 300,"%s", tactic == null ? "NONE" : tactic.type);
+    renderText(Color.CYAN, 150, 300,"%s", tactic == null ? "NONE" : tactic.tacticType);
     renderText(Color.PINK, 400, 300,"%s",
         tactician == null ? "NONE" : tactician.getClass().getSimpleName().replace("Tactician", ""));
     renderText(Color.CYAN,700, 300,"%s", branch);

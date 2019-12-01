@@ -15,12 +15,12 @@ public class BoostPad {
     private final boolean isFullBoost;
     private boolean isActive;
 
-    public BoostPad(Vector3 location, boolean isFullBoost) {
+    BoostPad(Vector3 location, boolean isFullBoost) {
         this.location = location;
         this.isFullBoost = isFullBoost;
     }
 
-    public void setActive(boolean active) {
+    void setActive(boolean active) {
         isActive = active;
     }
 
@@ -28,7 +28,8 @@ public class BoostPad {
         return location;
     }
 
-    public boolean isFullBoost() {
+    /** True if this is a large boost pad. False if this is a small boost pad. */
+    public boolean isLargeBoost() {
         return isFullBoost;
     }
 

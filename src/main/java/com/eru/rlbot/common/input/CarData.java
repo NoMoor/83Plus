@@ -1,6 +1,7 @@
 package com.eru.rlbot.common.input;
 
 
+import com.eru.rlbot.bot.common.Constants;
 import com.eru.rlbot.common.vector.Vector3;
 
 /**
@@ -48,6 +49,8 @@ public class CarData {
      * so you don't need to pass around DataPacket everywhere.
      */
     public final float elapsedSeconds;
+    public final boolean jumped;
+    public final boolean doubleJumped;
 
     public CarData(rlbot.flat.PlayerInfo playerInfo, float elapsedSeconds) {
         this.position = Vector3.of(playerInfo.physics().location());
@@ -62,6 +65,9 @@ public class CarData {
         this.team = playerInfo.team();
         this.hasWheelContact = playerInfo.hasWheelContact();
         this.elapsedSeconds = elapsedSeconds;
+
+        this.jumped = playerInfo.jumped();
+        this.doubleJumped = playerInfo.doubleJumped();
     }
 
     private CarData(Builder builder) {
@@ -73,9 +79,11 @@ public class CarData {
         this.orientation = builder.orientation;
         this.angularVelocity = builder.angularVelocity;
         this.boost = builder.boost;
-        this.isSupersonic = groundSpeed > 2200;
+        this.isSupersonic = groundSpeed > Constants.SUPER_SONIC;
         this.team = 1;
         this.hasWheelContact = false;
+        this.jumped = false;
+        this.doubleJumped = false;
         this.elapsedSeconds = builder.time;
     }
 

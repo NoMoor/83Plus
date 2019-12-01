@@ -15,7 +15,6 @@ import rlbot.flat.BallPrediction;
 import rlbot.flat.PredictionSlice;
 import java.util.Optional;
 
-// TODO: Needs to know where the ball is and where the goal is
 // Relies on other low level tactical units to do the movement but this tactician is responsible for planning a shot on
 // goal.
 public class TakeTheShotTactician extends Tactician {
@@ -41,11 +40,6 @@ public class TakeTheShotTactician extends Tactician {
     }
 
     BallData relativeBallData = NormalUtils.noseRelativeBall(input);
-
-    // The ball must mostly be in front of the car.
-    if (Math.abs(relativeBallData.position.x) > relativeBallData.position.y) {
-      return false;
-    }
 
     // TODO: Replace this with another time to ball equation.
     float timeToBall = timeToBall(relativeBallData, input.car);
@@ -84,9 +78,8 @@ public class TakeTheShotTactician extends Tactician {
 
         Vector3 slicePosition = Vector3.of(slice.physics().location());
 
-        // TODO: Update to include boost status.
-        float timeToLocation = Accels.boostedTimeToDistance(
-            input.car.velocity.flatten().norm(),
+        float timeToLocation = Accels.minTimeToDistance(
+            input.car,
             flatCarPosition.distance(slicePosition.flatten()) - Constants.BALL_RADIUS - Constants.CAR_LENGTH);
 
         // TODO: Account for more time to swing out.
@@ -102,7 +95,7 @@ public class TakeTheShotTactician extends Tactician {
 
   private static float timeToBall(BallData relativeBallData, CarData carData) {
     return carData.boost > 40
-        ? Accels.boostedTimeToDistance(carData.velocity.flatten().norm(), relativeBallData.position.flatten().norm())
+        ? Accels.minTimeToDistance(carData, relativeBallData.position.flatten().norm())
         : Accels.timeToDistance(carData.velocity.flatten().norm(), relativeBallData.position.flatten().norm());
   }
 
@@ -111,7 +104,11 @@ public class TakeTheShotTactician extends Tactician {
     bot.botRenderer.setIntersectionTarget(tactic.getTargetPosition());
 
     // TODO: We should only do this if we have an open goal.
-    if (Locations.isOpponentSideOfBall(input)) {
+
+//    if (true) {
+//      test(input, output, tactic);
+//    } else
+      if (Locations.isOpponentSideOfBall(input)) {
       getGoalSide(input, output, tactic);
     } else if (tactic.getTargetPosition().z < 200) {
       rollingBall(input, output, tactic);
@@ -120,17 +117,38 @@ public class TakeTheShotTactician extends Tactician {
     }
   }
 
+//  private void test(DataPacket input, ControlsOutput output, Tactic tactic) {
+//    BallData noseRelativeBall = NormalUtils.noseRelativeBall(input);
+//
+//    float noseVelocity = noseRelativeBall.velocity.y == 0 ? -1 : noseRelativeBall.velocity.y;
+//    float nosePosition = noseRelativeBall.position.y;
+//
+//    float timeToBall = noseVelocity > 0 ? Float.MAX_VALUE : (nosePosition / -noseVelocity);
+//    bot.botRenderer.setBranchInfo("Time to ball %f", timeToBall);
+//
+//    if (timeToBall > .25) {
+//      output.withThrottle(1.0f);
+//    }
+//
+//    if (Math.abs(noseRelativeBall.position.x) > 200) {
+//      output.withSteer(-noseRelativeBall.position.x);
+//    } else {
+//      double minCorrection = Locations.minCarTargetGoalCorrection(input, tactic.subject);
+//      output.withSteer(minCorrection);
+//    }
+//  }
+
   private void getGoalSide(DataPacket input, ControlsOutput output, Tactic tactic) {
     bot.botRenderer.setBranchInfo("Get goal side.");
     Vector3 rotationPost = Goal.ownGoal(bot.team).getSameSidePost(input.car);
     Vector3 carToGoal = rotationPost.minus(input.car.position);
 
     double rotationNorm = Math.min(carToGoal.flatten().norm(), NormalUtils.noseRelativeBall(input).position.y + 2000);
-    Vector3 rotationDirection = carToGoal.scaledToMagnitude(rotationNorm);
+    Vector3 rotationDirection = carToGoal.toMagnitude(rotationNorm);
 
     Vector3 rotationTarget = input.car.position.plus(rotationDirection);
 
-    double steeringAngle = Angles.flatCorrectionDirection(input.car, rotationTarget);
+    double steeringAngle = Angles.flatCorrectionAngle(input.car, rotationTarget);
 
     output
         .withSteer(steeringAngle)
@@ -152,7 +170,7 @@ public class TakeTheShotTactician extends Tactician {
     double timeToTarget = distanceToTarget / velocity;
 
     if (input.car.hasWheelContact) {
-      output.withSteer(Angles.flatCorrectionDirection(input.car, input.ball.position));
+      output.withSteer(Angles.flatCorrectionAngle(input.car, input.ball.position));
       output.withThrottle(1.0f);
 
       if (input.car.velocity.flatten().norm() < Constants.BOOSTED_MAX_SPEED) {
@@ -163,7 +181,7 @@ public class TakeTheShotTactician extends Tactician {
 //      double shotDistance = tactic.getTargetPosition().distance(goalTarget);
 //      double shotYOffset = goalTarget.z - tactic.getTargetPosition().z;
 //
-//      // TODO: Update 5000 this to be distance from tactic targetMoment to 'shot' targetMoment.
+//      // TODO: Update 5000 this to be distance from tactic subject to 'shot' subject.
 ////      double zOffset = getRoughUnderCut(shotDistance, shotYOffset, input.car.velocity.flatten().norm());
       double zOffset = 0;
       double targetHeight = tactic.getTargetPosition().z - zOffset;
@@ -206,7 +224,7 @@ public class TakeTheShotTactician extends Tactician {
       }
 
       if (!secondJumping || !JumpManager.canFlip()) {
-        // Pitch to targetMoment the ball
+        // Pitch to subject the ball
         Vector3 noseVector = input.ball.position.minus(input.car.position).normalized();
 
         float carNoseZ = input.car.orientation.getNoseVector().z;
@@ -234,15 +252,16 @@ public class TakeTheShotTactician extends Tactician {
     double targetSpeed = getTargetSpeed(input.team, tactic.getTargetPosition());
 
     // Determine where to aim the car
-    double shotCorrectionAngle = Locations.minCarTargetGoalCorrection(input, tactic.targetMoment);
+    double minTurnToGoal = Locations.minCarTargetGoalCorrection(input, tactic.subject);
+    double minTurnFromGoal = Locations.minCarTargetNotGoalCorrection(input, tactic.subject);
     // TODO: Adjust the correction Angle based on ball speed.
 
-    bot.botRenderer.setBranchInfo("Shoot %f", shotCorrectionAngle);
+    bot.botRenderer.setBranchInfo("Shoot %f", minTurnToGoal);
 
-    Vector3 targetOffset = getTargetOffset(input.car, tactic.targetMoment, shotCorrectionAngle);
-    Vector3 correctedTarget = tactic.targetMoment.position.plus(targetOffset);
+    Vector3 targetOffset = getTargetOffset(input.car, tactic.subject, minTurnToGoal);
+    Vector3 correctedTarget = tactic.subject.position.plus(targetOffset);
 
-    double correctionDirection = Angles.flatCorrectionDirection(input.car, correctedTarget);
+    double correctionDirection = Angles.flatCorrectionAngle(input.car, correctedTarget);
 
     // TODO: Scale the steering angle with how close you are to the ball
     output.withSteer(correctionDirection * STEERING_SENSITIVITY);
@@ -281,7 +300,7 @@ public class TakeTheShotTactician extends Tactician {
   private static final double D_GAIN = .2d;
   private static final double STEERING_SENSITIVITY = 15d;
   private Vector3 getTargetOffset(CarData car, Moment target, double correctionAngle) {
-    // TODO: Account for targetMoment speed.
+    // TODO: Account for subject speed.
     double xCorrection = Math.sin(correctionAngle) * P_GAIN;
     double xDampeningCorrection = -Math.sin(correctionAngle) * car.velocity.flatten().norm() * D_GAIN;
 

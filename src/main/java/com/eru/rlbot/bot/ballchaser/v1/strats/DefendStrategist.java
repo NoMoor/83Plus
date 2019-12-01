@@ -21,7 +21,7 @@ public class DefendStrategist extends Strategist {
   }
 
   static boolean shouldDefend(DataPacket input) {
-    return lastManBack(input) || shotOnGoal(input);
+    return lastManBack(input) || ballNearGoal(input) || canClear(input);
   }
 
   private static boolean lastManBack(DataPacket input) {
@@ -62,6 +62,80 @@ public class DefendStrategist extends Strategist {
     return false;
   }
 
+  private boolean shadow(DataPacket input) {
+    Optional<PredictionSlice> ballInGoalOptional = PredictionUtils.getBallInGoalSlice();
+    if (!ballInGoalOptional.isPresent()) {
+      // TODO: Return true if the ball is being dribbled at the goal.
+      return false;
+    }
+
+    Vector3 scoreLocation = Vector3.of(ballInGoalOptional.get().physics().location());
+    return scoreLocation.distance(input.ball.position) < scoreLocation.distance(input.car.position);
+  }
+
+  @Override
+  public boolean assign(DataPacket input) {
+    if (tacticManager.isTacticLocked()) {
+      // Let the tactic finish it's motion.
+      bot.botRenderer.addAlertText("Keep tactic");
+      return true;
+    }
+
+    PathPlanner pathPlanner = new PathPlanner(input);
+
+    // TODO: Update to include the opponent hitting the ball
+    if (shotOnGoal(input)) {
+      if (shadow(input)) {
+        tacticManager.setTactic(Tactic.builder()
+            .setSubject(PredictionUtils.getFirstHittableBall(input))
+            .setTacticType(Tactic.TacticType.SHADOW)
+            .build());
+      } else {
+        tacticManager.setTactic(Tactic.builder()
+            .setSubject(input.ball.position)
+            .setTacticType(Tactic.TacticType.DEFEND)
+            .build());
+      }
+    } else if (canClear(input)) {
+      if (Locations.carToBall(input).norm() > 2000) {
+        bot.botRenderer.addAlertText("Rotate clear");
+        tacticManager.setTactic(Tactic.ballTactic()
+          .setSubject(PredictionUtils.getFirstHittableBall(input))
+          .setTacticType(Tactic.TacticType.ROTATE)
+          .build());
+      } else {
+        tacticManager.setTactic(Tactic.ballTactic()
+            .setSubject(input.ball.position)
+            .setTacticType(Tactic.TacticType.DEFEND)
+            .build());
+      }
+    } else if (RotateTactician.shouldRotateBack(input)) {
+      // Rotate far post
+      Vector3 farPost = Locations.farPost(input);
+      farPost = farPost.addY(-Math.signum(farPost.y) * 500);
+      tacticManager.setTactic(Tactic.builder()
+          .setSubject(farPost)
+          .setTacticType(Tactic.TacticType.ROTATE)
+          .plan(pathPlanner::plan));
+    } else {
+      tacticManager.setTactic(Tactic.builder()
+          .setSubject(input.ball.position)
+          .setTacticType(Tactic.TacticType.DEFEND)
+          .build());
+    }
+
+    return true;
+  }
+
+  private static boolean canClear(DataPacket input) {
+    boolean ballIsInFrontOfCar = Math.abs(Angles.flatCorrectionAngle(input.car, input.ball.position)) < .75;
+    boolean ballNearGoal = ballNearGoal(input);
+    boolean isPointedAwayFromGoal =
+        Math.abs(Locations.minCarTargetNotGoalCorrection(input, new Moment(input.ball, input.car.elapsedSeconds))) < .2;
+
+    return ballIsInFrontOfCar && ballNearGoal && isPointedAwayFromGoal;
+  }
+
   private static double GOAL_NEARNESS_THRESHOLD = Constants.GOAL_WIDTH * 2;
   private static boolean ballNearGoal(DataPacket input) {
     Vector3 ownGoal = Goal.ownGoal(input.car.team).center;
@@ -85,57 +159,6 @@ public class DefendStrategist extends Strategist {
     }
 
     return false;
-  }
-
-  private boolean shadow(DataPacket input) {
-    Optional<PredictionSlice> ballInGoalOptional = PredictionUtils.getBallInGoalSlice();
-    if (!ballInGoalOptional.isPresent()) {
-      // TODO: Return true if the ball is being dribbled at the goal.
-      return false;
-    }
-
-    Vector3 scoreLocation = Vector3.of(ballInGoalOptional.get().physics().location());
-    return scoreLocation.distance(input.ball.position) < scoreLocation.distance(input.car.position);
-  }
-
-  private int rotateCounter;
-  @Override
-  public boolean assign(DataPacket input) {
-    if (tacticManager.isTacticLocked()) {
-      // Let the tactic finish it's motion.
-      bot.botRenderer.addAlertText("Keep tactic");
-      return true;
-    }
-
-    // TODO: Update this to go after the ball if needed...
-    if (shotOnGoal(input)) {
-      if (shadow(input)) {
-        tacticManager.setTactic(new Tactic(PredictionUtils.getFirstHittableBall(input), Tactic.Type.SHADOW));
-      } else {
-        tacticManager.setTactic(new Tactic(input.car.position, Tactic.Type.DEFEND));
-      }
-      rotateCounter = 0;
-    } else if (canClear(input)) {
-      tacticManager.setTactic(new Tactic(input.ball.position, Tactic.Type.DEFEND));
-    } else if (RotateTactician.shouldRotateBack(input)) {
-      // Rotate far post
-      Vector3 farPost = Locations.farPost(input);
-      farPost = farPost.addY(-Math.signum(farPost.y) * 500);
-      tacticManager.setTactic(new Tactic(farPost, Tactic.Type.ROTATE));
-    } else {
-      tacticManager.setTactic(new Tactic(input.car.position, Tactic.Type.DEFEND));
-      rotateCounter = 0;
-    }
-
-    return true;
-  }
-
-  private boolean canClear(DataPacket input) {
-    boolean ballIsInFrontOfCar = Math.abs(Angles.flatCorrectionDirection(input.car, input.ball.position)) < .75;
-    boolean ballNearGoal = ballNearGoal(input);
-    boolean isPointedAwayFromGoal = Math.abs(Locations.minCarTargetNotGoalCorrection(input, new Moment(input.ball, input.car.elapsedSeconds))) < .2;
-
-    return ballIsInFrontOfCar && ballNearGoal && isPointedAwayFromGoal;
   }
 
   @Override

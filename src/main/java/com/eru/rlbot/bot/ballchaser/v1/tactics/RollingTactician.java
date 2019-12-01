@@ -26,7 +26,7 @@ public class RollingTactician extends Tactician {
     // TODO: Fix this
 
     Vector2 carDirection = input.car.orientation.getNoseVector().flatten();
-    Vector3 targetPosition = tactic.targetMoment.position;
+    Vector3 targetPosition = tactic.subject.position;
 
     // Subtract the two positions to get a vector pointing from the car to the ball.
     Vector3 carToTarget = targetPosition.minus(input.car.position);
@@ -44,15 +44,25 @@ public class RollingTactician extends Tactician {
 
       // How far does the car need to rotate before it's pointing exactly at the ball?
       bot.botRenderer.setBranchInfo("Flat correction angle.");
-      flatCorrectionAngle = Angles.flatCorrectionDirection(input.car, targetPosition);
+      flatCorrectionAngle = Angles.flatCorrectionAngle(input.car, targetPosition);
     }
 
     output
-        .withSteer(flatCorrectionAngle)
+        .withSteer(flatCorrectionAngle * 2)
         .withThrottle(1)
-        .withSlide(Math.abs(flatCorrectionAngle) > 1.2);
+        .withSlide(Math.abs(flatCorrectionAngle) > 1);
 
     boostToShoot(input, output, flatCorrectionAngle);
+
+    if (carToTarget.norm() > 1500
+        && Math.abs(flatCorrectionAngle) < .25
+        && input.car.hasWheelContact
+        && ((input.car.groundSpeed > 1300 && input.car.boost < 20) || input.car.groundSpeed > 1500)) {
+      tacticManager.preemptTactic(Tactic.builder()
+          .setSubject(tactic.subject)
+          .setTacticType(Tactic.TacticType.FLIP)
+          .build());
+    }
 
     checkComplete(tactic);
   }
@@ -75,7 +85,7 @@ public class RollingTactician extends Tactician {
 
   private double wallRideCorrectionAngle(DataPacket input, Tactic nextTactic) {
     Vector2 carDirection = input.car.orientation.getNoseVector().flatten();
-    Vector3 targetPosition = nextTactic.targetMoment.position;
+    Vector3 targetPosition = nextTactic.subject.position;
     Vector3 carToTarget = targetPosition.minus(input.car.position);
 
     Vector2 targetVector = targetPosition.flatten();

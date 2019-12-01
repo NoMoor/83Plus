@@ -1,10 +1,7 @@
 package com.eru.rlbot.bot.ballchaser.v1.tactics;
 
 import com.eru.rlbot.bot.EruBot;
-import com.eru.rlbot.bot.common.Accels;
-import com.eru.rlbot.bot.common.Angles;
-import com.eru.rlbot.bot.common.Constants;
-import com.eru.rlbot.bot.common.DllHelper;
+import com.eru.rlbot.bot.common.*;
 import com.eru.rlbot.common.Moment;
 import com.eru.rlbot.common.input.DataPacket;
 import com.eru.rlbot.common.output.ControlsOutput;
@@ -25,10 +22,13 @@ public class GoalLineTactician extends Tactician {
   public void execute(DataPacket input, ControlsOutput output, Tactic tactic) {
     Moment target = getFirstHittableLocation(input);
 
+    // Adjust location to push it away from the center of the goal.
+    target = adjustTarget(target);
+
     bot.botRenderer.setCarTarget(target.position);
 
     // Stay between the ball and the goal.
-    double correctionAngle = Angles.flatCorrectionDirection(input.car, target.position);
+    double correctionAngle = Angles.flatCorrectionAngle(input.car, target.position);
 
     double carTimeToTarget = Accels.timeToDistance(input.car.groundSpeed, input.car.position.distance(target.position));
     double ballTimeToTarget = target.time - input.car.elapsedSeconds;
@@ -40,7 +40,7 @@ public class GoalLineTactician extends Tactician {
     Optional<Float> zTimeToTarget = Accels.jumpTimeToHeight(target.position.z - Constants.BALL_RADIUS);
 
     if (zTimeToTarget.isPresent() && zTimeToTarget.get() > carTimeToTarget) {
-      bot.botRenderer.setBranchInfo("Time to Z %f", zTimeToTarget.get());
+//      bot.botRenderer.setBranchInfo("Time to Z %f", zTimeToTarget.get());
       // TODO: Adjust this jump better.
       output.withJump();
     } else if (Math.abs(correctionAngle) > 1.5) {
@@ -52,6 +52,11 @@ public class GoalLineTactician extends Tactician {
     } else {
       sliding = false;
     }
+  }
+
+  private Moment adjustTarget(Moment target) {
+    Vector3 adjustedTarget = target.position.addX(-Math.signum(target.position.x) * Constants.BALL_RADIUS / 2);
+    return new Moment(adjustedTarget, target.velocity, target.time);
   }
 
   private Moment getFirstHittableLocation(DataPacket input) {

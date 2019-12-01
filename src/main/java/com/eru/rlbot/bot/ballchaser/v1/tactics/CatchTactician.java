@@ -44,7 +44,7 @@ public class CatchTactician extends Tactician {
         output.withSteer(steerAngle);
       }
     } else {
-      double correctionAngle = Angles.flatCorrectionDirection(input.car, input.ball.position);
+      double correctionAngle = Angles.flatCorrectionAngle(input.car, input.ball.position);
 
       bot.botRenderer.addDebugText("Catch 2 Turn");
       output.withSteer(correctionAngle);

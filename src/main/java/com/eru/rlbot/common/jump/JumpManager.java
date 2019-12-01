@@ -19,6 +19,7 @@ public class JumpManager {
   private static DataPacket input;
 
   public static void loadDataPacket(DataPacket dataPacket) {
+    // TODO: Update to use single / double jump bits...
     input = dataPacket;
 
     if (!input.car.hasWheelContact && !jumpPressed) {
@@ -74,5 +75,9 @@ public class JumpManager {
 
   public static int getJumpCount() {
     return jumpInAirReleased;
+  }
+
+  public static boolean jumpPressedLastFrame() {
+    return jumpPressed;
   }
 }

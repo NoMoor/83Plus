@@ -2,6 +2,7 @@ from dataclasses import dataclass, field
 from math import pi
 
 from rlbot.utils.game_state_util import GameState, BoostState, BallState, CarState, Physics, Vector3, Rotator
+from rlbottraining.common_exercises.common_base_exercises import StrikerExercise
 
 from rlbottraining.common_graders.goal_grader import StrikerGrader
 from rlbottraining.rng import SeededRandomNumberGenerator
@@ -40,9 +41,30 @@ class StoneShotOnGoal(TrainingExercise):
             boosts={i: BoostState(0) for i in range(34)}, # Is this needed.
         )
 
+@dataclass
+class RollingTowardsGoalShot(StrikerExercise):
+    def make_game_state(self, rng: SeededRandomNumberGenerator) -> GameState:
+        return GameState(
+            ball=BallState(physics=Physics(
+                # location=Vector3(1000 * rng.n11(), rng.uniform(0, 1500), 100),
+                location=Vector3(400, 1100, 100),
+                velocity=Vector3(0, 550, 0),
+                angular_velocity=Vector3(0, 0, 0))),
+            cars={
+                0: CarState(
+                    physics=Physics(
+                        location=Vector3(0, -2500, 18),
+                        rotation=Rotator(0, pi / 2, 0),
+                        velocity=Vector3(0, 0, 0),
+                        angular_velocity=Vector3(0, 0, 0)),
+                    boost_amount=87),
+                1: CarState(physics=Physics(location=Vector3(10000, 10000, 10000)))
+            },
+        )
 
 def make_default_playlist() -> Playlist:
     return [
+        RollingTowardsGoalShot("Rolling shot"),
         # StoneShotOnGoal('Straight', ball_start_x=0, ball_start_y=3500, car_start_x=0, car_start_y=0),
         # StoneShotOnGoal('Close Angle Left 5', ball_start_x=500, ball_start_y=3500, car_start_x=0, car_start_y=0),
         # StoneShotOnGoal('Close Angle Right 5', ball_start_x=-500, ball_start_y=3500, car_start_x=0, car_start_y=0),

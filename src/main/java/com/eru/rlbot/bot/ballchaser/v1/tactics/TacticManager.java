@@ -5,29 +5,29 @@ import com.eru.rlbot.bot.common.BotRenderer;
 import com.eru.rlbot.bot.common.Pair;
 import com.eru.rlbot.common.input.DataPacket;
 import com.eru.rlbot.common.output.ControlsOutput;
+import com.google.common.collect.ImmutableList;
 
 import java.util.*;
 
 public class TacticManager {
 
-
-  private static final Map<Tactic.Type, Class<? extends Tactician>> DEFAULT_TACTICIAN_MAP = new HashMap<>();
+  private static final Map<Tactic.TacticType, Class<? extends Tactician>> DEFAULT_TACTICIAN_MAP = new HashMap<>();
 
   static {
-    DEFAULT_TACTICIAN_MAP.put(Tactic.Type.AERIAL, AerialTactician.class);
-    DEFAULT_TACTICIAN_MAP.put(Tactic.Type.CATCH, CatchTactician.class);
-    DEFAULT_TACTICIAN_MAP.put(Tactic.Type.DEFEND, GoalLineTactician.class);
-    DEFAULT_TACTICIAN_MAP.put(Tactic.Type.DRIBBLE, DribbleTactician.class);
-    DEFAULT_TACTICIAN_MAP.put(Tactic.Type.FRONT_FLIP, FlipTactician.class);
-    DEFAULT_TACTICIAN_MAP.put(Tactic.Type.FLICK, FlickTactician.class);
-    DEFAULT_TACTICIAN_MAP.put(Tactic.Type.HIT_BALL, RollingTactician.class);
-    DEFAULT_TACTICIAN_MAP.put(Tactic.Type.KICKOFF, KickoffTactician.class);
-    DEFAULT_TACTICIAN_MAP.put(Tactic.Type.PICK_UP, PickUpTactician.class);
-    DEFAULT_TACTICIAN_MAP.put(Tactic.Type.ROTATE, RotateTactician.class);
-    DEFAULT_TACTICIAN_MAP.put(Tactic.Type.SHADOW, ShadowTactician.class);
-    DEFAULT_TACTICIAN_MAP.put(Tactic.Type.STRIKE, TakeTheShotTactician.class);
-    DEFAULT_TACTICIAN_MAP.put(Tactic.Type.WALL_RIDE, SideWallTactician.class);
-    DEFAULT_TACTICIAN_MAP.put(Tactic.Type.WAVE_DASH, WaveDashTactician.class);
+    DEFAULT_TACTICIAN_MAP.put(Tactic.TacticType.AERIAL, AerialTactician.class);
+    DEFAULT_TACTICIAN_MAP.put(Tactic.TacticType.CATCH, CatchTactician.class);
+    DEFAULT_TACTICIAN_MAP.put(Tactic.TacticType.DEFEND, GoalLineTactician.class);
+    DEFAULT_TACTICIAN_MAP.put(Tactic.TacticType.DRIBBLE, DribbleTactician.class);
+    DEFAULT_TACTICIAN_MAP.put(Tactic.TacticType.FLIP, FlipTactician.class);
+    DEFAULT_TACTICIAN_MAP.put(Tactic.TacticType.FLICK, FlickTactician.class);
+    DEFAULT_TACTICIAN_MAP.put(Tactic.TacticType.HIT_BALL, RollingTactician.class);
+    DEFAULT_TACTICIAN_MAP.put(Tactic.TacticType.KICKOFF, KickoffTactician.class);
+    DEFAULT_TACTICIAN_MAP.put(Tactic.TacticType.PICK_UP, PickUpTactician.class);
+    DEFAULT_TACTICIAN_MAP.put(Tactic.TacticType.ROTATE, RotateTactician.class);
+    DEFAULT_TACTICIAN_MAP.put(Tactic.TacticType.SHADOW, ShadowTactician.class);
+    DEFAULT_TACTICIAN_MAP.put(Tactic.TacticType.STRIKE, TakeTheShotTactician.class);
+    DEFAULT_TACTICIAN_MAP.put(Tactic.TacticType.WALL_RIDE, SideWallTactician.class);
+    DEFAULT_TACTICIAN_MAP.put(Tactic.TacticType.WAVE_DASH, WaveDashTactician.class);
   }
 
   private final BotRenderer botRenderer;
@@ -35,7 +35,7 @@ public class TacticManager {
 
   private final EruBot bot;
   private final Set<Tactic> completedTactics = new HashSet<>();
-  private Pair<Tactic.Type, Tactician> controllingTactician;
+  private Pair<Tactic.TacticType, Tactician> controllingTactician;
 
   public TacticManager(EruBot bot) {
     this.bot = bot;
@@ -53,13 +53,17 @@ public class TacticManager {
   }
 
   public void setTactic(Tactic tactic) {
-    if (hasTactic() && tactic.equals(getTactic())) {
+    setTactic(ImmutableList.of(tactic));
+  }
+
+  public void setTactic(ImmutableList<Tactic> tactics) {
+    if (tactics.isEmpty() || (hasTactic() && tactics.get(0).equals(getTactic()))) {
       return;
     }
 
     controllingTactician = null;
     tacticList.clear();
-    tacticList.add(tactic);
+    tacticList.addAll(tactics);
   }
 
   public void execute(DataPacket input, ControlsOutput output) {
@@ -78,12 +82,18 @@ public class TacticManager {
     this.controllingTactician = null;
   }
 
-  public void changeTactic(Tactic tactic, Tactic.Type type) {
-    this.setTactic(new Tactic(tactic.targetMoment.position, type));
+  public void changeTactic(Tactic tactic, Tactic.TacticType tacticType) {
+    this.setTactic(tactic.withType(tacticType));
   }
 
   public void delegateTactic(Tactic tactic, Class<? extends Tactician> tactician) {
-    this.controllingTactician = Pair.of(tactic.type, newTactician(tactician));  }
+    this.controllingTactician = Pair.of(tactic.tacticType, newTactician(tactician));
+  }
+
+  public void preemptTactic(Tactic tactic) {
+    this.tacticList.addFirst(tactic);
+    this.controllingTactician = Pair.of(tactic.tacticType, getTactician(tactic));
+  }
 
   public boolean hasTactic() {
     return !tacticList.isEmpty();
@@ -98,15 +108,17 @@ public class TacticManager {
   }
 
   private Tactician getTactician() {
-    Tactic tactic = getTactic();
+    return getTactician(getTactic());
+  }
 
-    if (controllingTactician != null && controllingTactician.getFirst() == tactic.type) {
+  private Tactician getTactician(Tactic tactic) {
+    if (controllingTactician != null && controllingTactician.getFirst() == tactic.tacticType) {
       return controllingTactician.getSecond();
     } else {
       controllingTactician = null;
     }
 
-    controllingTactician = Pair.of(tactic.type, newTactician(DEFAULT_TACTICIAN_MAP.get(tactic.type)));
+    controllingTactician = Pair.of(tactic.tacticType, newTactician(DEFAULT_TACTICIAN_MAP.get(tactic.tacticType)));
     return controllingTactician.getSecond();
   }
 
@@ -121,6 +133,7 @@ public class TacticManager {
 
   public void clearTactics() {
     tacticList.clear();
+    controllingTactician = null;
   }
 
   public boolean isTacticLocked() {

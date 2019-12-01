@@ -1,13 +1,12 @@
 package com.eru.rlbot.common.boost;
 
 import com.eru.rlbot.common.vector.Vector3;
+import com.google.common.collect.ImmutableList;
 import rlbot.cppinterop.RLBotDll;
-import rlbot.flat.BoostPadState;
 import rlbot.flat.FieldInfo;
 import rlbot.flat.GameTickPacket;
 
 import java.io.IOException;
-import java.util.ArrayList;
 
 /**
  * Information about where boost pads are located on the field and what status they have.
@@ -17,45 +16,48 @@ import java.util.ArrayList;
  */
 public class BoostManager {
 
-    private static final ArrayList<BoostPad> orderedBoosts = new ArrayList<>();
-    private static final ArrayList<BoostPad> fullBoosts = new ArrayList<>();
-    private static final ArrayList<BoostPad> smallBoosts = new ArrayList<>();
+    private static final String lock = "boost-sync-lock";
 
-    public static ArrayList<BoostPad> getFullBoosts() {
-        return fullBoosts;
+    private static ImmutableList<BoostPad> orderedBoosts = ImmutableList.of();
+    private static ImmutableList<BoostPad> largeBoosts = ImmutableList.of();
+    private static ImmutableList<BoostPad> smallBoosts = ImmutableList.of();
+
+    public static ImmutableList<BoostPad> getLargeBoosts() {
+        return largeBoosts;
     }
-
-    public static ArrayList<BoostPad> getSmallBoosts() {
+    public static ImmutableList<BoostPad> getSmallBoosts() {
         return smallBoosts;
     }
-
-    public static ArrayList<BoostPad> allBoosts() {
+    public static ImmutableList<BoostPad> allBoosts() {
         return orderedBoosts;
     }
 
     private static void loadFieldInfo(FieldInfo fieldInfo) {
 
-        synchronized (orderedBoosts) {
-
-            orderedBoosts.clear();
-            fullBoosts.clear();
-            smallBoosts.clear();
+        synchronized (lock) {
+            ImmutableList.Builder<BoostPad> orderedBuilder = ImmutableList.builder();
+            ImmutableList.Builder<BoostPad> largeBuilder = ImmutableList.builder();
+            ImmutableList.Builder<BoostPad> smallBuilder = ImmutableList.builder();
 
             for (int i = 0; i < fieldInfo.boostPadsLength(); i++) {
                 rlbot.flat.BoostPad flatPad = fieldInfo.boostPads(i);
-                BoostPad ourPad = new BoostPad(Vector3.of(flatPad.location()), flatPad.isFullBoost());
-                orderedBoosts.add(ourPad);
-                if (ourPad.isFullBoost()) {
-                    fullBoosts.add(ourPad);
+                BoostPad pad = new BoostPad(Vector3.of(flatPad.location()), flatPad.isFullBoost());
+                orderedBuilder.add(pad);
+                if (pad.isLargeBoost()) {
+                    largeBuilder.add(pad);
                 } else {
-                    smallBoosts.add(ourPad);
+                    smallBuilder.add(pad);
                 }
             }
+
+            orderedBoosts = orderedBuilder.build();
+            largeBoosts = largeBuilder.build();
+            smallBoosts = smallBuilder.build();
         }
     }
 
     public static void loadGameTickPacket(GameTickPacket packet) {
-
+        // Create the boost pad objects.
         if (packet.boostPadStatesLength() > orderedBoosts.size()) {
             try {
                 loadFieldInfo(RLBotDll.getFieldInfo());
@@ -66,9 +68,7 @@ public class BoostManager {
         }
 
         for (int i = 0; i < packet.boostPadStatesLength(); i++) {
-            BoostPadState boost = packet.boostPadStates(i);
-            BoostPad existingPad = orderedBoosts.get(i); // existingPad is also referenced from the fullBoosts and smallBoosts lists
-            existingPad.setActive(boost.isActive());
+            orderedBoosts.get(i).setActive(packet.boostPadStates(i).isActive());
         }
     }
 

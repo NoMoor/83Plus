@@ -49,7 +49,6 @@ public class BallChaserV1 extends EruBot {
         // Translate the raw packet data (which is in an unpleasant format) into our custom DataPacket class.
         // The DataPacket might not include everything from GameTickPacket, so improve it if you need to!
         DataPacket input = new DataPacket(packet, playerIndex);
-
         JumpManager.loadDataPacket(input);
 
         botChatter.talk(input);
@@ -59,6 +58,7 @@ public class BallChaserV1 extends EruBot {
         botRenderer.renderInfo(input, output);
 
         JumpManager.processOutput(output, input);
+
         return output;
     }
 

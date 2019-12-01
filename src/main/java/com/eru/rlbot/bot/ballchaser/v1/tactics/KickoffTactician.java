@@ -2,6 +2,7 @@ package com.eru.rlbot.bot.ballchaser.v1.tactics;
 
 import com.eru.rlbot.bot.EruBot;
 import com.eru.rlbot.bot.common.Angles;
+import com.eru.rlbot.bot.common.Goal;
 import com.eru.rlbot.bot.common.NormalUtils;
 import com.eru.rlbot.bot.common.Constants;
 import com.eru.rlbot.common.input.BallData;
@@ -9,6 +10,7 @@ import com.eru.rlbot.common.input.CarData;
 import com.eru.rlbot.common.input.DataPacket;
 import com.eru.rlbot.common.jump.JumpManager;
 import com.eru.rlbot.common.output.ControlsOutput;
+import com.eru.rlbot.common.vector.Vector3;
 
 public class KickoffTactician extends Tactician {
 
@@ -75,45 +77,46 @@ public class KickoffTactician extends Tactician {
     // dumbKickoff(output, input);
   }
 
-  private static int flipTicks = 0;
   private void centerKickOff(DataPacket input, ControlsOutput output) {
-    if (flipLock) {
-      if (input.car.position.z < 25 && input.car.velocity.z >= 0) {
-        output
-            .withJump()
-            .withBoost();
-      } else if (!JumpManager.canFlip()) {
-        output.withBoost();
-      } else if (input.car.hasWheelContact) {
-        flipLock = false;
-        output.withThrottle(1.0f);
-      } else {
-        output
-            .withJump()
-            .withPitch(-1.0f);
-      }
-    } else if (input.car.groundSpeed > 1600) {
-      bot.botRenderer.setBranchInfo("Second flip.");
-      output
-          .withThrottle(1.0f)
-          .withBoost();
+    Vector3 targetContact = getTargetContact(input);
+    bot.botRenderer.setCarTarget(targetContact);
 
-      BallData relativeBall = NormalUtils.noseRelativeBall(input);
-      if (relativeBall.position.y < 600) {
-        flipLock = true;
-      }
-    } else if (input.car.groundSpeed < 1500) {
+    if (input.car.groundSpeed > 1800) {
+      bot.botRenderer.setBranchInfo("Second flip.");
       output
           .withBoost()
           .withThrottle(1.0f);
-    } else {
-      flipLock = true;
-      flipTicks = 0;
+
+      BallData relativeBall = NormalUtils.noseRelativeBall(input);
+      if (relativeBall.position.y < 600) {
+        tacticManager.preemptTactic(Tactic.builder()
+          .setSubject(targetContact)
+          .setTacticType(Tactic.TacticType.FLIP)
+          .setSubjectType(Tactic.SubjectType.BALL)
+          .build());
+      }
+    } else if (input.car.groundSpeed < 1400 && input.car.hasWheelContact) {
+      // Get Up to speed
       output
-          .withThrottle(1.0f)
-          .withBoost();
+          .withBoost()
+          .withThrottle(1.0f);
+    } else if (input.car.groundSpeed > 1400 && input.car.groundSpeed < 1600) {
+      output
+          .withBoost()
+          .withThrottle(1.0f);
+      tacticManager.preemptTactic(Tactic.builder()
+          .setSubject(targetContact)
+          .setTacticType(Tactic.TacticType.FLIP)
+          .build());
     }
-    output.withSteer(Angles.flatCorrectionDirection(input.car, input.ball.position) * 10);
+    output.withSteer(Angles.flatCorrectionAngle(input.car, targetContact) * 10);
+  }
+
+  private Vector3 getTargetContact(DataPacket input) {
+    // TODO: Update this based on car / ball physics
+    Vector3 correction = input.ball.position.minus(Goal.opponentGoal(input.car.team).center)
+        .toMagnitude(Constants.BALL_RADIUS);
+    return input.ball.position.plus(correction);
   }
 
   private void mustyKicks(ControlsOutput output, DataPacket input) {
@@ -301,7 +304,7 @@ public class KickoffTactician extends Tactician {
   }
 
   private void correctTowardBall(DataPacket input, ControlsOutput output) {
-    double steer = Angles.flatCorrectionDirection(input.car, input.ball.position);
+    double steer = Angles.flatCorrectionAngle(input.car, input.ball.position);
     if (Math.abs(steer) > .05 && Math.abs(steer) < .1) {
       steer = .1 * steer < 0 ? -1 : 1;
     } else if (Math.abs(steer) < .05) {

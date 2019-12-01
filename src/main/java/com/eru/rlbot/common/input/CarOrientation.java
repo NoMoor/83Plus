@@ -2,6 +2,7 @@ package com.eru.rlbot.common.input;
 
 
 import com.eru.rlbot.bot.common.Matrix3;
+import com.eru.rlbot.common.vector.Vector2;
 import com.eru.rlbot.common.vector.Vector3;
 import rlbot.flat.PlayerInfo;
 
@@ -20,7 +21,7 @@ public class CarOrientation {
     }
 
     public CarOrientation(Vector3 noseVector, Vector3 roofVector) {
-        this(noseVector, noseVector.cross(roofVector).scaled(-1), roofVector);
+        this(noseVector, noseVector.cross(roofVector).multiply(-1), roofVector);
     }
 
     public static CarOrientation fromFlatbuffer(PlayerInfo playerInfo) {
@@ -30,7 +31,11 @@ public class CarOrientation {
             playerInfo.physics().rotation().roll());
     }
 
-    /** The direction that the front of the car is facing */
+  public static Matrix3 convertFromFlatVelocity(CarData car) {
+    return convert(0, Vector2.WEST.correctionAngle(car.velocity.flatten()), 0).getOrientationMatrix();
+  }
+
+  /** The direction that the front of the car is facing */
     public Vector3 getNoseVector() {
         return orientation.row(0);
     }
@@ -52,35 +57,22 @@ public class CarOrientation {
 
     /** All params are in radians. */
     public static CarOrientation convert(double pitch, double yaw, double roll) {
-//        double noseX = Math.cos(pitch) * Math.cos(yaw);
-////        double noseY = Math.cos(pitch) * Math.sin(yaw);
-////        double noseZ = Math.sin(pitch);
-////
-////        double roofX = -Math.cos(roll) * Math.cos(yaw) * Math.sin(pitch) - Math.sin(roll) * Math.sin(yaw);
-////        double roofY = Math.cos(yaw) * Math.sin(roll) - Math.cos(roll) * Math.sin(pitch) * Math.sin(yaw);
-////        double roofZ = Math.cos(roll) * Math.cos(pitch);
-////
-////        return new CarOrientation(Vector3.of(noseX, noseY, noseZ), Vector3.of(roofX, roofY, roofZ));
-        return convertFull(pitch, yaw, roll);
-    }
+      double noseX = Math.cos(pitch) * Math.cos(yaw);
+      double noseY = Math.cos(pitch) * Math.sin(yaw);
+      double noseZ = Math.sin(pitch);
 
-    public static CarOrientation convertFull(double pitch, double yaw, double roll) {
-        double noseX = Math.cos(pitch) * Math.cos(yaw);
-        double noseY = Math.cos(pitch) * Math.sin(yaw);
-        double noseZ = Math.sin(pitch);
+      double leftX = Math.cos(yaw) * Math.sin(pitch) * Math.sin(roll) - Math.cos(roll) * Math.sin(yaw);
+      double leftY = Math.sin(yaw) * Math.sin(pitch) * Math.sin(roll) + Math.cos(roll) * Math.cos(yaw);
+      double leftZ = -Math.cos(pitch) * Math.sin(roll);
 
-        double leftX = Math.cos(yaw) * Math.sin(pitch) * Math.sin(roll) - Math.cos(roll) * Math.sin(yaw);
-        double leftY = Math.sin(yaw) * Math.sin(pitch) * Math.sin(roll) + Math.cos(roll) * Math.cos(yaw);
-        double leftZ = -Math.cos(pitch) * Math.sin(roll);
+      double roofX = -Math.cos(roll) * Math.cos(yaw) * Math.sin(pitch) - Math.sin(roll) * Math.sin(yaw);
+      double roofY = Math.cos(yaw) * Math.sin(roll) - Math.cos(roll) * Math.sin(pitch) * Math.sin(yaw);
+      double roofZ = Math.cos(roll) * Math.cos(pitch);
 
-        double roofX = -Math.cos(roll) * Math.cos(yaw) * Math.sin(pitch) - Math.sin(roll) * Math.sin(yaw);
-        double roofY = Math.cos(yaw) * Math.sin(roll) - Math.cos(roll) * Math.sin(pitch) * Math.sin(yaw);
-        double roofZ = Math.cos(roll) * Math.cos(pitch);
-
-        return new CarOrientation(
-            Vector3.of(noseX, noseY, noseZ),
-            Vector3.of(leftX, leftY, leftZ),
-            Vector3.of(roofX, roofY, roofZ));
+      return new CarOrientation(
+          Vector3.of(noseX, noseY, noseZ),
+          Vector3.of(leftX, leftY, leftZ),
+          Vector3.of(roofX, roofY, roofZ));
     }
 
     @Override

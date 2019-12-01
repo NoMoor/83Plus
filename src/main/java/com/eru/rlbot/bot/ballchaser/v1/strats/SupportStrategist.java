@@ -2,10 +2,10 @@ package com.eru.rlbot.bot.ballchaser.v1.strats;
 
 import com.eru.rlbot.bot.EruBot;
 import com.eru.rlbot.bot.ballchaser.v1.tactics.Tactic;
+import com.eru.rlbot.bot.common.Goal;
+import com.eru.rlbot.common.Moment;
 import com.eru.rlbot.common.input.DataPacket;
-import com.eru.rlbot.common.output.ControlsOutput;
 import com.eru.rlbot.common.vector.Vector3;
-import rlbot.Bot;
 
 /** Strategy responsible for patience. */
 public class SupportStrategist extends Strategist {
@@ -21,11 +21,25 @@ public class SupportStrategist extends Strategist {
   public boolean assign(DataPacket input) {
     // TODO: If we are supporting, pick up boost nearby.
 
+    PathPlanner pathPlanner = new PathPlanner(input);
+
     if (input.car.boost < 50) {
-      tacticManager.setTactic(new Tactic(input.car.position.x > 0 ? LEFT_MID : RIGHT_MID, Tactic.Type.ROTATE));
+      Vector3 boostLocation = input.car.position.x > 0 ? LEFT_MID : RIGHT_MID;
+      tacticManager.setTactic(Tactic.builder()
+          .setSubject(boostLocation)
+          .setTacticType(Tactic.TacticType.ROTATE)
+          .plan(pathPlanner::plan));
     } else {
       // TODO: Update to work with both teams.
-      tacticManager.setTactic(new Tactic(input.ball.position.minus(Vector3.of(0, 1500, 0)), Tactic.Type.ROTATE));
+      Vector3 ballGoal = Goal.ownGoal(input.team).center.minus(input.ball.position);
+      Vector3 rotationOffSet = ballGoal.multiply(Math.min(2000, .75 * ballGoal.norm()));
+      Vector3 rotationPoint = input.ball.position.plus(rotationOffSet);
+      Vector3 rotationPointToBall = input.ball.position.minus(rotationPoint);
+
+      tacticManager.setTactic(Tactic.builder()
+          .setSubject(new Moment(rotationPoint, rotationPointToBall))
+          .setTacticType(Tactic.TacticType.ROTATE)
+          .plan(pathPlanner::plan));
     }
 
     return true;
