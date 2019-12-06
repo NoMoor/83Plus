@@ -19,20 +19,20 @@ public class Accels {
     }
   }
 
-  public static float minTimeToDistance(CarData carData, double distance) {
-    double velocity = carData.velocity.flatten().norm();
+  public static AccelResult minTimeToDistance(CarData car, double distance) {
+    double velocity = car.velocity.flatten().norm();
 
-    return boostedTimeToDistance(carData.boost, velocity, distance);
+    return boostedTimeToDistance(car.boost, velocity, distance);
   }
 
-  public static float minTimeToDistance(CarData carData, double distance, double targetSpeed) {
-    double velocity = carData.velocity.flatten().norm();
+  public static AccelResult minTimeToDistance(CarData car, double distance, double targetSpeed) {
+    double velocity = car.velocity.flatten().norm();
 
-    return boostedTimeToDistance(carData.boost, velocity, targetSpeed, distance);
+    return boostedTimeToDistance(car.boost, velocity, targetSpeed, distance);
   }
 
   private static final double STEP_SIZE = 1.0/120;
-  public static float timeToDistance(double velocity, double distance) {
+  public static AccelResult timeToDistance(double velocity, double distance) {
     float t = 0;
     while (distance > 0) {
       float nextAcceleration = acceleration(velocity);
@@ -42,10 +42,10 @@ public class Accels {
       velocity = newVelocity;
       t += STEP_SIZE;
     }
-    return t;
+    return new AccelResult(velocity, t);
   }
 
-  public static float boostedTimeToDistance(double velocity, double distance) {
+  public static AccelResult boostedTimeToDistance(double velocity, double distance) {
     float t = 0;
     while (distance > 0) {
       double nextAcceleration = acceleration(velocity) + Constants.BOOSTED_ACCELERATION;
@@ -55,10 +55,10 @@ public class Accels {
       velocity = newVelocity;
       t += STEP_SIZE;
     }
-    return t;
+    return new AccelResult(velocity, t);
   }
 
-  public static float boostedTimeToDistance(double boost, double velocity, double distance) {
+  public static AccelResult boostedTimeToDistance(double boost, double velocity, double distance) {
     float t = 0;
     while (distance > 0) {
       double nextAcceleration = acceleration(velocity) + ((boost > 0) ? Constants.BOOSTED_ACCELERATION : 0);
@@ -72,11 +72,11 @@ public class Accels {
         boost -= STEP_SIZE * 33;
       }
     }
-    return t;
+    return new AccelResult(velocity, t);
   }
 
   // TODO: Make more sophisticated. For now. Assume the we wont' exceed Max(velocity, targetVelocity)
-  public static float boostedTimeToDistance(double boost, double velocity, double targetVelocity, double distance) {
+  public static AccelResult boostedTimeToDistance(double boost, double velocity, double targetVelocity, double distance) {
     float t = 0;
     while (distance > 0) {
       double nextAcceleration = 0;
@@ -93,7 +93,7 @@ public class Accels {
         boost -= STEP_SIZE * 33;
       }
     }
-    return t;
+    return new AccelResult(velocity, t);
   }
 
   public static Optional<Float> jumpTimeToHeight(double distance) {
@@ -147,6 +147,20 @@ public class Accels {
       return Constants.NEG_GRAVITY;
     } else {
       return Constants.JUMP_ACCELERATION_HELD + Constants.NEG_GRAVITY;
+    }
+  }
+
+  public static double speedAt(double groundSpeed, double norm) {
+    return 0;
+  }
+
+  public static class AccelResult {
+    public final double speed;
+    public final double time;
+
+    private AccelResult(double speed, double time) {
+      this.speed = speed;
+      this.time = time;
     }
   }
 }

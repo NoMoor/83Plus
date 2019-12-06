@@ -17,21 +17,27 @@ class StoneShotOnGoal(TrainingExercise):
     grader: Grader = field(default_factory=make_grader)
     ball_start_x: float = 0
     ball_start_y: float = 4000
+    ball_start_z: float = 100
+    ball_vx: float = 0
+    ball_vy: float = 0
+    ball_vz: float = 0
     car_start_x: float = 0
     car_start_y: float = -5000
 
     def make_game_state(self, rng: SeededRandomNumberGenerator) -> GameState:
         return GameState(
             ball=BallState(physics=Physics(
-                location=Vector3(self.ball_start_x, self.ball_start_y, 100),
-                velocity=Vector3(0, 0, 0),
+                # location=Vector3(self.ball_start_x + rng.uniform(-10, 10), self.ball_start_y + rng.uniform(-10, 10), self.ball_start_z),
+                location=Vector3(self.ball_start_x, self.ball_start_y, self.ball_start_z),
+                velocity=Vector3(self.ball_vx, self.ball_vy, self.ball_vz),
                 angular_velocity=Vector3(0, 0, 0))),
             cars={
                 0: CarState(
                     physics=Physics(
-                        location=Vector3(self.car_start_x + rng.uniform(-1500, 1500), self.car_start_y, 0),
-                        # location=Vector3(0, -5000, 0),
+                        # location=Vector3(self.car_start_x + rng.uniform(-1500, 1500), self.car_start_y, 0),
+                        location=Vector3(self.car_start_x, self.car_start_y, 17),
                         rotation=Rotator(0, pi / 2, 0),
+                        # rotation=Rotator(0, rng.uniform(-3.14, 3.14), 0),
                         velocity=Vector3(0, 0, 0),
                         angular_velocity=Vector3(0, 0, 0)),
                     jumped=False,
@@ -58,13 +64,33 @@ class RollingTowardsGoalShot(StrikerExercise):
                         velocity=Vector3(0, 0, 0),
                         angular_velocity=Vector3(0, 0, 0)),
                     boost_amount=87),
-                1: CarState(physics=Physics(location=Vector3(10000, 10000, 10000)))
+            },
+        )
+
+@dataclass
+class RollingAcross(StrikerExercise):
+    def make_game_state(self, rng: SeededRandomNumberGenerator) -> GameState:
+        return GameState(
+            ball=BallState(physics=Physics(
+                # location=Vector3(1000 * rng.n11(), rng.uniform(0, 1500), 100),
+                location=Vector3(-1000, 1100, 100),
+                velocity=Vector3(rng.uniform(0, 1500), 0, 0),
+                angular_velocity=Vector3(0, 0, 0))),
+            cars={
+                0: CarState(
+                    physics=Physics(
+                        location=Vector3(0, -2500, 18),
+                        rotation=Rotator(0, pi / 2, 0),
+                        velocity=Vector3(0, 0, 0),
+                        angular_velocity=Vector3(0, 0, 0)),
+                    boost_amount=87),
             },
         )
 
 def make_default_playlist() -> Playlist:
     return [
-        RollingTowardsGoalShot("Rolling shot"),
+        RollingAcross("Rolling across"),
+        # RollingTowardsGoalShot("Rolling shot"),
         # StoneShotOnGoal('Straight', ball_start_x=0, ball_start_y=3500, car_start_x=0, car_start_y=0),
         # StoneShotOnGoal('Close Angle Left 5', ball_start_x=500, ball_start_y=3500, car_start_x=0, car_start_y=0),
         # StoneShotOnGoal('Close Angle Right 5', ball_start_x=-500, ball_start_y=3500, car_start_x=0, car_start_y=0),

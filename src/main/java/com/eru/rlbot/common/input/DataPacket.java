@@ -25,14 +25,14 @@ public class DataPacket {
     /** The index of your player */
     public final int playerIndex;
 
-    public DataPacket(GameTickPacket request, int playerIndex) {
+    public DataPacket(GameTickPacket packet, int playerIndex) {
 
         this.playerIndex = playerIndex;
-        this.ball = new BallData(request.ball());
+        this.ball = new BallData(packet.ball(), packet.gameInfo().secondsElapsed());
 
         allCars = new ArrayList<>();
-        for (int i = 0; i < request.playersLength(); i++) {
-            allCars.add(new CarData(request.players(i), request.gameInfo().secondsElapsed()));
+        for (int i = 0; i < packet.playersLength(); i++) {
+            allCars.add(new CarData(packet.players(i), packet.gameInfo().secondsElapsed(), i));
         }
 
         this.car = allCars.get(playerIndex);

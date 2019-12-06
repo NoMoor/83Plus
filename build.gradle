@@ -14,13 +14,13 @@ repositories {
     jcenter()
 }
 
-mainClassName = 'com.eru.rlbot.bot.BotLauncher'
+mainClassName = 'com.eru.rlbot.bot.main.BotLauncher'
 
 // This directory will be created and the interface dll copied into it at runtime.
 // The end result is that the interface dll will be available for loading.
 def dllDirectory = '\\build\\dll'
 
-applicationDefaultJvmArgs = ["-Djna.library.path=" + dllDirectory, "-Duser.dir=C:\\Users\\Andrew\\Code\\EruBot"]
+applicationDefaultJvmArgs = ["-Djna.library.path=" + dllDirectory, "-Duser.dir=<absolute_path>"]
 
 // https://www.mkyong.com/gradle/gradle-application-plugin-app_home-in-applicationdefaultjvmargs/
 startScripts {

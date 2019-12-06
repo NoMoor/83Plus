@@ -59,6 +59,11 @@ public class Vector3 extends rlbot.vector.Vector3 {
     return new Vector3(x * scale, y * scale, z * scale);
   }
 
+  /** Scales the vector by the inverse of the given value. */
+  public Vector3 divide(double scale) {
+    return this.multiply(1 / scale);
+  }
+
   /**
    * If norm is negative, we will return a vector facing the opposite direction.
    */
@@ -156,7 +161,7 @@ public class Vector3 extends rlbot.vector.Vector3 {
   }
 
   /** Returns a new vector with value added to the x component. */
-  public Vector3 addX(float value) {
+  public Vector3 addX(double value) {
     return new Vector3(this.x + value, y, z);
   }
 

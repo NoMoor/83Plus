@@ -136,4 +136,24 @@ public class Matrix3 {
   public float trace() {
     return a.x + b.y + c.z;
   }
+
+  /** Scales this matrix by the given scalar. */
+  public Matrix3 multiply(double scale) {
+    return Matrix3.of(a.multiply(scale), b.multiply(scale), c.multiply(scale));
+  }
+
+  /** Scales this matrix by the inverse of the given scalar. */
+  public Matrix3 divide(double scale) {
+    return this.multiply(1 / scale);
+  }
+
+  /** Subtracts the given matrix from this one. */
+  public Matrix3 minus(Matrix3 other) {
+    return Matrix3.of(a.minus(other.a), b.minus(other.b), c.minus(other.c));
+  }
+
+  /** Adds the given matrix from this one. */
+  public Matrix3 plus(Matrix3 other) {
+    return Matrix3.of(a.plus(other.a), b.plus(other.b), c.plus(other.c));
+  }
 }

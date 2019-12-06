@@ -9,12 +9,12 @@ import com.eru.rlbot.common.vector.Vector3;
 /** Utilities to get angles. */
 public final class Angles {
 
-  public static double flatCorrectionAngle(BallData ballData, Vector3 targetPoint) {
-    return flatCorrectionAngle(ballData.position, ballData.velocity, targetPoint);
+  public static double flatCorrectionAngle(BallData ball, Vector3 targetPoint) {
+    return flatCorrectionAngle(ball.position, ball.velocity, targetPoint);
   }
 
-  public static double flatCorrectionAngle(CarData carData, Vector3 targetPoint) {
-    return flatCorrectionAngle(carData.position, carData.orientation.getNoseVector(), targetPoint);
+  public static double flatCorrectionAngle(CarData car, Vector3 targetPoint) {
+    return flatCorrectionAngle(car.position, car.orientation.getNoseVector(), targetPoint);
   }
 
   public static double flatCorrectionAngle(Vector3 sourcePoint, Vector3 sourceOrientation, Vector3 targetPoint) {

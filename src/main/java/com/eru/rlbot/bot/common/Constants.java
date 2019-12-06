@@ -3,7 +3,10 @@ package com.eru.rlbot.bot.common;
 import com.eru.rlbot.common.vector.Vector3;
 
 /** RL Constants. */
-public class Constants {
+public final class Constants {
+
+  public static final int STEP_SIZE_COUNT = 120;
+  public static final float STEP_SIZE = 1f / STEP_SIZE_COUNT;
 
   // Reference: https://github.com/RLBot/RLBot/wiki/Useful-Game-Values
   // Field constants
@@ -17,14 +20,26 @@ public class Constants {
   public static final Vector3 RIGHT_SIDE_WALL = Vector3.of(-1 * HALF_WIDTH, 0, 1000);
 
   // Ball
-  public static final float BALL_RADIUS = 92.75f;
+  public static final float BALL_COLLISION_RADIUS = 93.15f;
+  public static final float BALL_RADIUS = 91.25f;
   public static final float COEFFICIENT_OF_RESITUTION = .6f; // it loses 40% of the component of its velocity that's toward the surface
+  public static final double BALL_MASS = 30f;
+  public static final double BALL_MOMENT_OF_INERTIA = 0.4f * BALL_MASS * Constants.BALL_RADIUS * Constants.BALL_RADIUS;
 
   // Car
   public static final float CAR_AT_REST = 16.99f; // Merc is 17.01
   public static final float CAR_HEIGHT = 36.16f;
   public static final float CAR_LENGTH = 118.01f;
   public static final float CAR_WIDTH = 84.2f;
+  public static final float CAR_MASS = 180.0f;
+
+  public static final Matrix3 CAR_MOMENT_OF_INERTIA = Matrix3.of(
+      Vector3.of(751.0, 0, 0),
+      Vector3.of(0, 1334, 0),
+      Vector3.of(0, 0, 1836))
+      .multiply(Constants.CAR_MASS);
+
+  public static final Matrix3 CAR_INVERSE_MOMENT_OF_INERTIA = CAR_MOMENT_OF_INERTIA.inverse();
 
   public static final float OCTANE_BALANCE_POINT = -1.6351f;
 
@@ -32,15 +47,12 @@ public class Constants {
   public static final double GRAVITY = 650;
   public static final double NEG_GRAVITY = -GRAVITY;
   public static final double BOOSTED_ACCELERATION = 991.666;
-  // TODO: Use the formula below.
-  public static final double ACCELERATION = 500; // Approximate: Acceleration at 1.0 throttle.
-  public static final double COASTING_ACCELERATION = -525;
-  public static final double BREAKING_ACCELERATION = -3500;
 
   public static final double JUMP_VELOCITY_INSTANT = 300; // Directed towards the roof of the car.
   public static final double JUMP_HOLD_TIME = .2; // 200ms
   public static final double JUMP_ACCELERATION_HELD = 1400; // Directed towards the roof of the car. Not including gravity.
 
+  // Goal
   public static final int GOAL_WIDTH = 1785; // 892.755 * 2
   public static final int GOAL_HEIGH = 643; // Technically 642.775
 
@@ -57,7 +69,7 @@ public class Constants {
   // Speed
   public static final double BOOSTED_MAX_SPEED = 2299;
   public static final double SUPER_SONIC = 2200;
-  public static final double MAX_SPEED = 1409;
+  public static final double MAX_UNBOOSTED_SPEED = 1409;
 
   public static double turnDepth(double velocity, double angle) {
     return radius(velocity) * Math.sin(angle);
@@ -71,7 +83,7 @@ public class Constants {
     return Math.abs(radius(velocity) * angle);
   }
 
-  private static double radius(double velocity) {
+  public static double radius(double velocity) {
     return velocity == 0 ? 0 : (1 / curvature(velocity));
   }
 
@@ -93,4 +105,6 @@ public class Constants {
 
   /** The distance an object can normally move. */
   public static final double NORMAL_EXPECTED = 200;
+
+  private Constants() {}
 }

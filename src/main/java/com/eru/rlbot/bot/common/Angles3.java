@@ -1,7 +1,7 @@
 package com.eru.rlbot.bot.common;
 
 import com.eru.rlbot.common.input.CarData;
-import com.eru.rlbot.common.input.CarOrientation;
+import com.eru.rlbot.common.input.Orientation;
 import com.eru.rlbot.common.output.ControlsOutput;
 import com.eru.rlbot.common.vector.Vector3;
 
@@ -19,7 +19,6 @@ public class Angles3 {
 
   private static final double SCALE = 10.5f;
 
-  // TODO: Some of these values may need to be inverted. Particularly the x vector.
   private static final Vector3 ANGULAR_ACCELERATION = Vector3.of(-400.0f, -130.0f, 95.0f).multiply(1/SCALE);
   private static final Vector3 ANGULAR_DAMPING = Vector3.of(-50.0f, -30.0f, -20.0f).multiply(1/SCALE);
 
@@ -27,7 +26,7 @@ public class Angles3 {
   private static final float HORIZON_TIME = .05f;
 
   public static void setControlsForFlatLanding(CarData car, ControlsOutput output) {
-    setControlsFor(car, CarOrientation.convertFromFlatVelocity(car), output);
+    setControlsFor(car, Orientation.convertFromFlatVelocity(car), output);
   }
 
   /** Returns controls to optimally rotate toward the subject orientation. */
@@ -262,8 +261,21 @@ public class Angles3 {
         .multiply(scale);
   }
 
-  private static float clip(float value, float min, float max) {
+  // TODO: Move these utils.
+  public static double clip(double value, double min, double max) {
     return Math.min(max, Math.max(min, value));
+  }
+
+  public static float clip(float value, float min, float max) {
+    return Math.min(max, Math.max(min, value));
+  }
+
+  public static double lerp(double a, double b, double lerpAmount) {
+    return a + ((b - a) * lerpAmount);
+  }
+
+  public static float lerp(float a, float b, float lerpAmount) {
+    return a + ((b - a) * lerpAmount);
   }
 
   private Angles3() {}

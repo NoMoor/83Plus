@@ -1,6 +1,6 @@
 package com.eru.rlbot.bot.common;
 
-import com.eru.rlbot.bot.EruBot;
+import com.eru.rlbot.bot.main.EruBot;
 import com.eru.rlbot.common.input.BallData;
 import com.eru.rlbot.common.input.CarData;
 import com.eru.rlbot.common.input.DataPacket;
@@ -10,7 +10,7 @@ import java.util.Map;
 
 public class NormalUtils {
 
-  private static final Vector3 NOSE_NORTH = Vector3.of(0, 1, 0);
+  public static final Vector3 NOSE_NORTH = Vector3.of(0, 1, 0);
 
   private DataPacket cacheKey;
   private BallData cacheBall;
@@ -73,25 +73,31 @@ public class NormalUtils {
   }
 
   private void update(DataPacket input) {
-    CarData carData = input.allCars.get(index);
+    CarData car = input.allCars.get(index);
 
     cacheKey = input;
-    cacheBall = new BallData(
-        translateRelative(carData.position, input.ball.position, carData.orientation.getNoseVector()),
-        translateRelative(carData.velocity, input.ball.velocity, carData.orientation.getNoseVector()));
+    cacheBall = BallData.builder()
+        .setPosition(translateRelative(car.position, input.ball.position, car.orientation.getNoseVector()))
+        .setVelocity(translateRelative(car.velocity, input.ball.velocity, car.orientation.getNoseVector()))
+        .setTime(input.car.elapsedSeconds)
+        .isLive()
+        .isRelative()
+        .build();
 
     Vector3 ballRoll = input.ball.velocity;
     if (ballRoll.norm() < 10) {
       // The ball is stationary enough. Normalize to the car.
-      ballRoll = carData.position.minus(input.ball.position).normalized();
+      ballRoll = car.position.minus(input.ball.position).normalized();
     }
 
+    // TODO: Set other car values.
     cacheCar = new CarData.Builder()
-        .setPosition(translateRelative(input.ball.position, carData.position, ballRoll))
-        .setVelocity(translateRelative(input.ball.velocity, carData.velocity, ballRoll))
+        .setPosition(translateRelative(input.ball.position, car.position, ballRoll))
+        .setVelocity(translateRelative(input.ball.velocity, car.velocity, ballRoll))
         .build();
   }
 
+  // TODO: Update this to use dot products...
   private static Vector3 translateRelative(Vector3 source, Vector3 target, Vector3 referenceOrientation) {
     Vector3 relativeVector = target.minus(source);
 

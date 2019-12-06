@@ -111,4 +111,8 @@ public class Vector2 {
     public Vector3 asVector3() {
         return Vector3.of(x, y, 0);
     }
+
+  public Vector2 perpendicular() {
+    return new Vector2(-y, x);
+  }
 }

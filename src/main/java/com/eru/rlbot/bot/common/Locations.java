@@ -2,6 +2,7 @@ package com.eru.rlbot.bot.common;
 
 import com.eru.rlbot.common.Moment;
 import com.eru.rlbot.common.input.BallData;
+import com.eru.rlbot.common.input.CarData;
 import com.eru.rlbot.common.input.DataPacket;
 import com.eru.rlbot.common.vector.Vector2;
 import com.eru.rlbot.common.vector.Vector3;
@@ -11,20 +12,20 @@ import java.util.Optional;
 
 public class Locations {
 
-  public static Vector3 toInsideLeftGoal(DataPacket input, Vector3 target) {
-    return Vector3.from(target, Goal.opponentGoal(input.car.team).leftInside);
+  public static Vector3 toInsideLeftGoal(CarData car, Vector3 target) {
+    return Vector3.from(target, Goal.opponentGoal(car.team).leftInside);
   }
 
-  public static Vector3 toInsideRightGoal(DataPacket input, Vector3 target) {
-    return Vector3.from(target, Goal.opponentGoal(input.car.team).rightInside);
+  public static Vector3 toInsideRightGoal(CarData car, Vector3 target) {
+    return Vector3.from(target, Goal.opponentGoal(car.team).rightInside);
   }
 
-  private static Vector3 toOutsideLeftGoal(DataPacket input, Vector3 target) {
-    return Vector3.from(target, Goal.ownGoal(input.car.team).leftOutside);
+  private static Vector3 toOutsideLeftGoal(CarData car, Vector3 target) {
+    return Vector3.from(target, Goal.ownGoal(car.team).leftOutside);
   }
 
-  private static Vector3 toOutsideRightGoal(DataPacket input, Vector3 position) {
-    return Vector3.from(position, Goal.ownGoal(input.car.team).rightOutside);
+  private static Vector3 toOutsideRightGoal(CarData car, Vector3 position) {
+    return Vector3.from(position, Goal.ownGoal(car.team).rightOutside);
   }
 
   public static Vector3 ballToOppGoalCenter(DataPacket input) {
@@ -50,8 +51,8 @@ public class Locations {
   }
 
   public static double minCarTargetGoalCorrection(DataPacket input, Moment targetContactPoint) {
-    Vector2 ballToGoalRight = toInsideRightGoal(input, targetContactPoint.position).flatten();
-    Vector2 ballToGoalLeft = toInsideLeftGoal(input, targetContactPoint.position).flatten();
+    Vector2 ballToGoalRight = toInsideRightGoal(input.car, targetContactPoint.position).flatten();
+    Vector2 ballToGoalLeft = toInsideLeftGoal(input.car, targetContactPoint.position).flatten();
 
     Vector2 carToBall = carToBall(input).flatten();
 
@@ -66,8 +67,8 @@ public class Locations {
   }
 
   public static double minCarTargetNotGoalCorrection(DataPacket input, Moment targetContactPoint) {
-    Vector2 ballToGoalRight = toOutsideRightGoal(input, targetContactPoint.position).flatten();
-    Vector2 ballToGoalLeft = toOutsideLeftGoal(input, targetContactPoint.position).flatten();
+    Vector2 ballToGoalRight = toOutsideRightGoal(input.car, targetContactPoint.position).flatten();
+    Vector2 ballToGoalLeft = toOutsideLeftGoal(input.car, targetContactPoint.position).flatten();
 
     Vector2 carToBall = carToBall(input).flatten();
 
@@ -90,10 +91,14 @@ public class Locations {
   }
 
   public static double minBallGoalCorrection(DataPacket input) {
-    Vector2 ballToGoalRight = toOutsideRightGoal(input, input.ball.position).flatten();
-    Vector2 ballToGoalLeft = toOutsideLeftGoal(input, input.ball.position).flatten();
+    return minBallGoalCorrection(input.car, input.ball);
+  }
 
-    Vector2 ballRoll = input.ball.velocity.flatten();
+  public static double minBallGoalCorrection(CarData car, BallData ball) {
+    Vector2 ballToGoalRight = toOutsideRightGoal(car, ball.position).flatten();
+    Vector2 ballToGoalLeft = toOutsideLeftGoal(car, ball.position).flatten();
+
+    Vector2 ballRoll = ball.velocity.flatten();
 
     double leftCorrectAngle = ballToGoalLeft.correctionAngle(ballRoll);
     double rightCorrectAngle = ballToGoalRight.correctionAngle(ballRoll);
@@ -119,7 +124,7 @@ public class Locations {
 
         Vector3 slicePosition = Vector3.of(slice.physics().location());
 
-        float timeToLocation = Accels.minTimeToDistance(input.car, flatCarPosition.distance(slicePosition.flatten()));
+        double timeToLocation = Accels.minTimeToDistance(input.car, flatCarPosition.distance(slicePosition.flatten())).time;
         if (timeToLocation < slice.gameSeconds() - input.car.elapsedSeconds) {
           // Target Acquired.
           return slicePosition;

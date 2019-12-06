@@ -6,7 +6,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 
 import com.eru.rlbot.common.input.CarData;
-import com.eru.rlbot.common.input.CarOrientation;
+import com.eru.rlbot.common.input.Orientation;
 import com.eru.rlbot.common.output.ControlsOutput;
 import com.eru.rlbot.common.vector.Vector3;
 import org.junit.Test;
@@ -25,7 +25,7 @@ public class Angles3Test {
     cBuidler.position = Vector3.of(0, 0, 0);
     cBuidler.velocity = Vector3.of(0, 0, 0);
     cBuidler.angularVelocity = Vector3.of(0, 0, 0);
-    cBuidler.orientation = CarOrientation.convert(1, 0, 0);
+    cBuidler.orientation = Orientation.convert(1, 0, 0);
     CarData car = cBuidler.build();
 
     Matrix3 target = Matrix3.of(
@@ -49,7 +49,7 @@ public class Angles3Test {
     cbuidler.position = Vector3.of(0, 0, 0);
     cbuidler.velocity = Vector3.of(0, 0, 0);
     cbuidler.angularVelocity = Vector3.of(0, 0, 0);
-    cbuidler.orientation = CarOrientation.convert(0, 1, 0);
+    cbuidler.orientation = Orientation.convert(0, 1, 0);
     CarData car = cbuidler.build();
 
     Matrix3 target = Matrix3.of(
@@ -73,7 +73,7 @@ public class Angles3Test {
     cbuidler.position = Vector3.of(0, 0, 500);
     cbuidler.velocity = Vector3.of(0, 0, 0);
     cbuidler.angularVelocity = Vector3.of(0, 0, 0);
-    cbuidler.orientation = CarOrientation.convert(0, 0, 1.65); // ???
+    cbuidler.orientation = Orientation.convert(0, 0, 1.65); // ???
     CarData car = cbuidler.build();
 
     Matrix3 target = Matrix3.of(
@@ -97,7 +97,7 @@ public class Angles3Test {
     cbuidler.position = Vector3.of(0, 0, 0);
     cbuidler.velocity = Vector3.of(0, 0, 0);
     cbuidler.angularVelocity = Vector3.of(15, 0, 0);
-    cbuidler.orientation = CarOrientation.convert(0, 0, 0);
+    cbuidler.orientation = Orientation.convert(0, 0, 0);
     CarData car = cbuidler.build();
 
     Matrix3 target = Matrix3.of(
@@ -122,10 +122,10 @@ public class Angles3Test {
     cBuidler.position = Vector3.of(0, 0, 0);
     cBuidler.velocity = Vector3.of(0, 0, 0);
     cBuidler.angularVelocity = Vector3.of(0, 0, 0);
-    cBuidler.orientation = CarOrientation.convert(0, 0, 0);
+    cBuidler.orientation = Orientation.convert(0, 0, 0);
     CarData car = cBuidler.build();
 
-    Matrix3 target = CarOrientation.convert(0, 1, 0).getOrientationMatrix();
+    Matrix3 target = Orientation.convert(0, 1, 0).getOrientationMatrix();
 
     ControlsOutput output = new ControlsOutput();
 
@@ -144,10 +144,10 @@ public class Angles3Test {
     cBuidler.position = Vector3.of(0, 0, 0);
     cBuidler.velocity = Vector3.of(0, 0, 0);
     cBuidler.angularVelocity = Vector3.of(0, 0, 0);
-    cBuidler.orientation = CarOrientation.convert(0, 0, 0);
+    cBuidler.orientation = Orientation.convert(0, 0, 0);
     CarData car = cBuidler.build();
 
-    Matrix3 target = CarOrientation.convert(1, 1, 1).getOrientationMatrix();
+    Matrix3 target = Orientation.convert(1, 1, 1).getOrientationMatrix();
 
     ControlsOutput output = new ControlsOutput();
 
