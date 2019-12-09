@@ -1,10 +1,10 @@
 package com.eru.rlbot.bot.tactics;
 
-import com.eru.rlbot.bot.main.Acg;
 import com.eru.rlbot.bot.common.Angles;
+import com.eru.rlbot.bot.common.Constants;
 import com.eru.rlbot.bot.common.Goal;
 import com.eru.rlbot.bot.common.NormalUtils;
-import com.eru.rlbot.bot.common.Constants;
+import com.eru.rlbot.bot.main.Agc;
 import com.eru.rlbot.common.input.BallData;
 import com.eru.rlbot.common.input.CarData;
 import com.eru.rlbot.common.input.DataPacket;
@@ -25,7 +25,7 @@ public class KickoffTactician extends Tactician {
 
   private boolean hasFlipped; // Keeps track of the sequence
 
-  KickoffTactician(Acg bot, TacticManager tacticManager) {
+  KickoffTactician(Agc bot, TacticManager tacticManager) {
     super(bot, tacticManager);
   }
 
@@ -37,7 +37,7 @@ public class KickoffTactician extends Tactician {
   }
 
   private enum StartLocation {
-    LEFT, LEFT_CENTER, CENTER, RIGHT_CENTER, RIGHT;
+    LEFT, LEFT_CENTER, CENTER, RIGHT_CENTER, RIGHT
   }
 
   private void setStartLocation(CarData car) {

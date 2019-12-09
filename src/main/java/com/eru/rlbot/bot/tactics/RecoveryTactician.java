@@ -1,12 +1,12 @@
 package com.eru.rlbot.bot.tactics;
 
-import com.eru.rlbot.bot.main.Acg;
+import com.eru.rlbot.bot.main.Agc;
 import com.eru.rlbot.common.input.DataPacket;
 import com.eru.rlbot.common.output.ControlsOutput;
 
 public class RecoveryTactician extends Tactician {
 
-  RecoveryTactician(Acg bot, TacticManager tacticManager) {
+  RecoveryTactician(Agc bot, TacticManager tacticManager) {
     super(bot, tacticManager);
   }
 

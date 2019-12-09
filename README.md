@@ -1,13 +1,8 @@
 # What is in a name?
-A throw back to the days when things were easy. You just pull out that calculator, boot up 'fall-up', and pretend to
-solve quadratic equations while your 8th grade teacher stares longingly out the window counting down the minutes until
-7th period ends.
+A throw back to the days when things were easy... We weren't trying to make remote controlled rocket cars hit a ball into
+an opponents goal. It was all about sending a few dudes to that little rock that orbits our planet.
+
+Like this bot, Apollo was hand crafted over years. Unlike this bot, the AGC actually worked ... mostly.
 
 # How to build the bot?
-Update the areas of the repo that have '<absolute_path>' with the absolute path to the top level director of this git repo.
-
-Files should include:
-  - build.gradle
-    - Example: Replace '<absolue_path>' with 'C:\\Users\\Eru\\Code\\83Plus'
-  - dev_version.cfg
-    - Example: Replace '<absolue_path>' with 'C:/Users/Eru/Code/83Plus'
+If your repo is not at 'C:/Code/AGC', update build.gradle with the absolute path to the top level director of this git repo.

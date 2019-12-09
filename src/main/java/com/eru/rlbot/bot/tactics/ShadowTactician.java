@@ -1,7 +1,10 @@
 package com.eru.rlbot.bot.tactics;
 
-import com.eru.rlbot.bot.main.Acg;
-import com.eru.rlbot.bot.common.*;
+import com.eru.rlbot.bot.common.Accels;
+import com.eru.rlbot.bot.common.Angles;
+import com.eru.rlbot.bot.common.Locations;
+import com.eru.rlbot.bot.common.PredictionUtils;
+import com.eru.rlbot.bot.main.Agc;
 import com.eru.rlbot.common.input.DataPacket;
 import com.eru.rlbot.common.output.ControlsOutput;
 import com.eru.rlbot.common.vector.Vector3;
@@ -10,7 +13,7 @@ import java.util.Optional;
 
 public class ShadowTactician extends Tactician {
 
-  ShadowTactician(Acg bot, TacticManager tacticManager) {
+  ShadowTactician(Agc bot, TacticManager tacticManager) {
     super(bot, tacticManager);
   }
 

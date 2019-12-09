@@ -1,8 +1,8 @@
 package com.eru.rlbot.bot.tactics;
 
-import com.eru.rlbot.bot.main.Acg;
 import com.eru.rlbot.bot.common.Angles;
 import com.eru.rlbot.bot.common.NormalUtils;
+import com.eru.rlbot.bot.main.Agc;
 import com.eru.rlbot.common.input.BallData;
 import com.eru.rlbot.common.input.CarData;
 import com.eru.rlbot.common.input.DataPacket;
@@ -14,7 +14,7 @@ public class PickUpTactician extends Tactician {
 
   private static final float PICK_UP_Y_OFFSET = 170f;
 
-  public PickUpTactician(Acg bot, TacticManager tacticManager) {
+  public PickUpTactician(Agc bot, TacticManager tacticManager) {
     super(bot, tacticManager);
   }
 

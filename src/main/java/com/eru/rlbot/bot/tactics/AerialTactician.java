@@ -1,11 +1,11 @@
 package com.eru.rlbot.bot.tactics;
 
-import com.eru.rlbot.bot.main.Acg;
 import com.eru.rlbot.bot.common.Angles3;
 import com.eru.rlbot.bot.common.Constants;
 import com.eru.rlbot.bot.common.Matrix3;
-import com.eru.rlbot.common.input.Orientation;
+import com.eru.rlbot.bot.main.Agc;
 import com.eru.rlbot.common.input.DataPacket;
+import com.eru.rlbot.common.input.Orientation;
 import com.eru.rlbot.common.jump.JumpManager;
 import com.eru.rlbot.common.output.ControlsOutput;
 import com.google.common.collect.ImmutableList;
@@ -23,7 +23,7 @@ public class AerialTactician extends Tactician {
   private static final ImmutableList<Float> HEIGHTS = ImmutableList.of(200f, 500f);
   private static final ImmutableList<Float> XS = ImmutableList.of(0f, 1000f);
 
-  AerialTactician(Acg bot, TacticManager tacticManager) {
+  AerialTactician(Agc bot, TacticManager tacticManager) {
     super(bot, tacticManager);
   }
 
@@ -33,10 +33,7 @@ public class AerialTactician extends Tactician {
   public void execute(DataPacket input, ControlsOutput output, Tactic nextTactic) {
     if (input.car.hasWheelContact || jumpLock) {
       output.withJump();
-      jumpLock = true;
-      if (JumpManager.hasMaxJumpHeight()) {
-        jumpLock = false;
-      }
+      jumpLock = !JumpManager.hasMaxJumpHeight();
     }
 
     // Positive if we need to go up.

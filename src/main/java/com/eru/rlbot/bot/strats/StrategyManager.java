@@ -1,17 +1,16 @@
 package com.eru.rlbot.bot.strats;
 
-import com.eru.rlbot.bot.main.Acg;
+import static com.eru.rlbot.bot.common.Constants.NORMAL_EXPECTED;
+
+import com.eru.rlbot.bot.main.Agc;
 import com.eru.rlbot.common.boost.BoostPad;
 import com.eru.rlbot.common.input.DataPacket;
 import com.eru.rlbot.common.output.ControlsOutput;
 import com.eru.rlbot.common.vector.Vector2;
 import com.eru.rlbot.common.vector.Vector3;
-
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
-
-import static com.eru.rlbot.bot.common.Constants.*;
 
 public class StrategyManager {
 
@@ -29,14 +28,14 @@ public class StrategyManager {
 
   private Strategist active;
 
-  private Acg bot;
+  private Agc bot;
 
   private Vector3 lastBallPosition;
   private Vector3 lastCarPosition;
   private float resetTime;
   private float lastStrategyUpdateTime;
 
-  public StrategyManager(Acg bot) {
+  public StrategyManager(Agc bot) {
     this.bot = bot;
     for(Strategy.Type type : Strategy.Type.values()) {
       strategists.put(type, Strategy.strategistForBot(type, bot));

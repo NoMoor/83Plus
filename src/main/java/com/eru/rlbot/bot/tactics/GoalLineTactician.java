@@ -1,7 +1,10 @@
 package com.eru.rlbot.bot.tactics;
 
-import com.eru.rlbot.bot.main.Acg;
-import com.eru.rlbot.bot.common.*;
+import com.eru.rlbot.bot.common.Accels;
+import com.eru.rlbot.bot.common.Angles;
+import com.eru.rlbot.bot.common.Constants;
+import com.eru.rlbot.bot.common.DllHelper;
+import com.eru.rlbot.bot.main.Agc;
 import com.eru.rlbot.common.Moment;
 import com.eru.rlbot.common.input.DataPacket;
 import com.eru.rlbot.common.output.ControlsOutput;
@@ -14,7 +17,7 @@ public class GoalLineTactician extends Tactician {
 
   private boolean sliding;
 
-  GoalLineTactician(Acg bot, TacticManager tacticManager) {
+  GoalLineTactician(Agc bot, TacticManager tacticManager) {
     super(bot, tacticManager);
   }
 

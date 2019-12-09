@@ -1,5 +1,8 @@
 package com.eru.rlbot.bot.main;
 
+import static com.eru.rlbot.bot.common.Goal.opponentGoal;
+import static com.eru.rlbot.bot.common.Goal.ownGoal;
+
 import com.eru.rlbot.bot.CarBallContactManager;
 import com.eru.rlbot.bot.common.BotChatter;
 import com.eru.rlbot.bot.common.BotRenderer;
@@ -15,10 +18,7 @@ import rlbot.Bot;
 import rlbot.ControllerState;
 import rlbot.flat.GameTickPacket;
 
-import static com.eru.rlbot.bot.common.Goal.opponentGoal;
-import static com.eru.rlbot.bot.common.Goal.ownGoal;
-
-public final class Acg implements Bot {
+public final class Agc implements Bot {
 
   public final Goal opponentsGoal;
   public final Goal ownGoal;
@@ -28,7 +28,7 @@ public final class Acg implements Bot {
   protected final BotChatter botChatter;
   private final StrategyManager strategyManager;
 
-  public Acg(int playerIndex, int team) {
+  public Agc(int playerIndex, int team) {
     this.playerIndex = playerIndex;
     this.team = team;
 

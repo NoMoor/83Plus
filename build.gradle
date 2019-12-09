@@ -20,7 +20,7 @@ mainClassName = 'com.eru.rlbot.bot.main.BotLauncher'
 // The end result is that the interface dll will be available for loading.
 def dllDirectory = '\\build\\dll'
 
-applicationDefaultJvmArgs = ["-Djna.library.path=" + dllDirectory, "-Duser.dir=C:\\Code\\ACG"]
+applicationDefaultJvmArgs = ["-Djna.library.path=" + dllDirectory, "-Duser.dir=C:\\Code\\AGC"]
 
 // https://www.mkyong.com/gradle/gradle-application-plugin-app_home-in-applicationdefaultjvmargs/
 startScripts {

@@ -4,7 +4,9 @@ import rlbot.Bot;
 import rlbot.manager.BotManager;
 import rlbot.pyinterop.DefaultPythonInterface;
 
-/** Factor for creating {@link Acg}s. */
+/**
+ * Factor for creating {@link Agc}s.
+ */
 public final class BotFactory extends DefaultPythonInterface {
 
   BotFactory(BotManager botManager) {
@@ -12,6 +14,6 @@ public final class BotFactory extends DefaultPythonInterface {
   }
 
   protected Bot initBot(int playerIndex, String botType, int team) {
-    return new Acg(playerIndex, team);
+    return new Agc(playerIndex, team);
   }
 }

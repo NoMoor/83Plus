@@ -2,8 +2,11 @@ package com.eru.rlbot.bot.tactics;
 
 import static com.eru.rlbot.bot.common.Constants.*;
 
-import com.eru.rlbot.bot.main.Acg;
-import com.eru.rlbot.bot.common.*;
+import com.eru.rlbot.bot.common.Accels;
+import com.eru.rlbot.bot.common.Angles;
+import com.eru.rlbot.bot.common.Goal;
+import com.eru.rlbot.bot.common.NormalUtils;
+import com.eru.rlbot.bot.main.Agc;
 import com.eru.rlbot.common.input.BallData;
 import com.eru.rlbot.common.input.CarData;
 import com.eru.rlbot.common.input.DataPacket;
@@ -21,7 +24,7 @@ public class DribbleTactician extends Tactician {
   private static final Vector3 target_right = Goal.opponentGoal(0).rightInside;
   private static final Vector3 ownGoal = Goal.ownGoal(0).center;
 
-  DribbleTactician(Acg bot, TacticManager tacticManager) {
+  DribbleTactician(Agc bot, TacticManager tacticManager) {
     super(bot, tacticManager);
   }
 

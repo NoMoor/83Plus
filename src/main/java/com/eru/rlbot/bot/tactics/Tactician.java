@@ -1,15 +1,15 @@
 package com.eru.rlbot.bot.tactics;
 
-import com.eru.rlbot.bot.main.Acg;
+import com.eru.rlbot.bot.main.Agc;
 import com.eru.rlbot.common.input.DataPacket;
 import com.eru.rlbot.common.output.ControlsOutput;
 
 public abstract class Tactician {
 
-  protected final Acg bot;
+  protected final Agc bot;
   protected final TacticManager tacticManager;
 
-  Tactician(Acg bot, TacticManager tacticManager) {
+  Tactician(Agc bot, TacticManager tacticManager) {
     this.bot = bot;
     this.tacticManager = tacticManager;
   }

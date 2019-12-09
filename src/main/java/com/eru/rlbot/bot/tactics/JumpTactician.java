@@ -1,6 +1,6 @@
 package com.eru.rlbot.bot.tactics;
 
-import com.eru.rlbot.bot.main.Acg;
+import com.eru.rlbot.bot.main.Agc;
 import com.eru.rlbot.common.input.DataPacket;
 import com.eru.rlbot.common.output.ControlsOutput;
 import com.eru.rlbot.common.vector.Vector3;
@@ -9,7 +9,7 @@ public class JumpTactician extends Tactician {
 
   private Vector3 targetPosition;
 
-  JumpTactician(Acg bot, TacticManager tacticManager) {
+  JumpTactician(Agc bot, TacticManager tacticManager) {
     super(bot, tacticManager);
   }
 

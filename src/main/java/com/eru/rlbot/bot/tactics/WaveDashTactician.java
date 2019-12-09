@@ -1,10 +1,10 @@
 package com.eru.rlbot.bot.tactics;
 
-import com.eru.rlbot.bot.main.Acg;
 import com.eru.rlbot.bot.common.Angles3;
 import com.eru.rlbot.bot.common.Matrix3;
-import com.eru.rlbot.common.input.Orientation;
+import com.eru.rlbot.bot.main.Agc;
 import com.eru.rlbot.common.input.DataPacket;
+import com.eru.rlbot.common.input.Orientation;
 import com.eru.rlbot.common.output.ControlsOutput;
 
 public class WaveDashTactician extends Tactician {
@@ -20,7 +20,7 @@ public class WaveDashTactician extends Tactician {
 
   private Stage currentStage = Stage.PRE_JUMP;
 
-  WaveDashTactician(Acg bot, TacticManager tacticManager) {
+  WaveDashTactician(Agc bot, TacticManager tacticManager) {
     super(bot, tacticManager);
   }
 

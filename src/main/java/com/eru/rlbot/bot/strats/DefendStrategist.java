@@ -1,22 +1,21 @@
 package com.eru.rlbot.bot.strats;
 
-import com.eru.rlbot.bot.main.Acg;
+import com.eru.rlbot.bot.common.*;
+import com.eru.rlbot.bot.main.Agc;
 import com.eru.rlbot.bot.tactics.RotateTactician;
 import com.eru.rlbot.bot.tactics.Tactic;
-import com.eru.rlbot.bot.common.*;
 import com.eru.rlbot.common.Moment;
 import com.eru.rlbot.common.input.DataPacket;
 import com.eru.rlbot.common.vector.Vector3;
 import rlbot.flat.BallPrediction;
 import rlbot.flat.Physics;
 import rlbot.flat.PredictionSlice;
-
 import java.util.Optional;
 
 /** Responsible for shadowing, blocking, shots, and clearing. */
 public class DefendStrategist extends Strategist {
 
-  DefendStrategist(Acg bot) {
+  DefendStrategist(Agc bot) {
     super(bot);
   }
 

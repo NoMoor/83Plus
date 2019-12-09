@@ -1,23 +1,23 @@
 package com.eru.rlbot.bot.tactics;
 
-import com.eru.rlbot.bot.main.Acg;
-import com.eru.rlbot.bot.common.*;
+import static com.eru.rlbot.bot.common.Constants.HALF_LENGTH;
+
+import com.eru.rlbot.bot.common.Angles;
+import com.eru.rlbot.bot.common.DllHelper;
+import com.eru.rlbot.bot.main.Agc;
 import com.eru.rlbot.common.input.DataPacket;
 import com.eru.rlbot.common.output.ControlsOutput;
 import com.eru.rlbot.common.vector.Vector2;
 import com.eru.rlbot.common.vector.Vector3;
 import rlbot.flat.BallPrediction;
 import rlbot.flat.PredictionSlice;
-
-import static com.eru.rlbot.bot.common.Constants.HALF_LENGTH;
-
 import java.util.Optional;
 
 public class RollingTactician extends Tactician {
 
   private boolean amBoosting;
 
-  RollingTactician(Acg bot, TacticManager tacticManager) {
+  RollingTactician(Agc bot, TacticManager tacticManager) {
     super(bot, tacticManager);
   }
 
