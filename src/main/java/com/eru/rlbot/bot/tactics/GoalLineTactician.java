@@ -1,6 +1,6 @@
 package com.eru.rlbot.bot.tactics;
 
-import com.eru.rlbot.bot.main.EruBot;
+import com.eru.rlbot.bot.main.Acg;
 import com.eru.rlbot.bot.common.*;
 import com.eru.rlbot.common.Moment;
 import com.eru.rlbot.common.input.DataPacket;
@@ -14,7 +14,7 @@ public class GoalLineTactician extends Tactician {
 
   private boolean sliding;
 
-  GoalLineTactician(EruBot bot, TacticManager tacticManager) {
+  GoalLineTactician(Acg bot, TacticManager tacticManager) {
     super(bot, tacticManager);
   }
 

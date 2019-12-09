@@ -1,6 +1,6 @@
 package com.eru.rlbot.bot.tactics;
 
-import com.eru.rlbot.bot.main.EruBot;
+import com.eru.rlbot.bot.main.Acg;
 import com.eru.rlbot.bot.common.Angles;
 import com.eru.rlbot.bot.common.Angles3;
 import com.eru.rlbot.common.input.Orientation;
@@ -17,7 +17,7 @@ public class FlipTactician extends Tactician {
   private boolean isLocked = true;
   private boolean flipComplete;
 
-  public FlipTactician(EruBot bot, TacticManager tacticManager) {
+  public FlipTactician(Acg bot, TacticManager tacticManager) {
     super(bot, tacticManager);
   }
 

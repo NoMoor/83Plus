@@ -2,7 +2,7 @@ package com.eru.rlbot.bot.tactics;
 
 import static com.eru.rlbot.bot.common.Constants.*;
 
-import com.eru.rlbot.bot.main.EruBot;
+import com.eru.rlbot.bot.main.Acg;
 import com.eru.rlbot.bot.common.Angles;
 import com.eru.rlbot.bot.common.NormalUtils;
 import com.eru.rlbot.common.input.BallData;
@@ -15,7 +15,7 @@ public class CatchTactician extends Tactician {
   private static final float CATCH_BALL_POINT = OCTANE_BALANCE_POINT;
   private static final float BALL_DIAMETER = BALL_RADIUS;
 
-  CatchTactician(EruBot bot, TacticManager tacticManager) {
+  CatchTactician(Acg bot, TacticManager tacticManager) {
     super(bot, tacticManager);
   }
 

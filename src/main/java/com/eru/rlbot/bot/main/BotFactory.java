@@ -4,10 +4,7 @@ import rlbot.Bot;
 import rlbot.manager.BotManager;
 import rlbot.pyinterop.DefaultPythonInterface;
 
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
-/** Factor for creating {@link EruBot}s. */
+/** Factor for creating {@link Acg}s. */
 public final class BotFactory extends DefaultPythonInterface {
 
   BotFactory(BotManager botManager) {
@@ -15,6 +12,6 @@ public final class BotFactory extends DefaultPythonInterface {
   }
 
   protected Bot initBot(int playerIndex, String botType, int team) {
-    return new EruBot(playerIndex, team);
+    return new Acg(playerIndex, team);
   }
 }

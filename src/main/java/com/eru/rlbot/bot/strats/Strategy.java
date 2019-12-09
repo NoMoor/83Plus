@@ -1,6 +1,6 @@
 package com.eru.rlbot.bot.strats;
 
-import com.eru.rlbot.bot.main.EruBot;
+import com.eru.rlbot.bot.main.Acg;
 
 class Strategy {
 
@@ -27,7 +27,7 @@ class Strategy {
 //    DRIBBLE
   }
 
-  static Strategist strategistForBot(Strategy.Type type, EruBot bot) {
+  static Strategist strategistForBot(Strategy.Type type, Acg bot) {
     switch (type) {
       case ATTACK:
         return new AttackStrategist(bot);

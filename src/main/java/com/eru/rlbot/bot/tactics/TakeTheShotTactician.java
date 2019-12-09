@@ -1,6 +1,6 @@
 package com.eru.rlbot.bot.tactics;
 
-import com.eru.rlbot.bot.main.EruBot;
+import com.eru.rlbot.bot.main.Acg;
 import com.eru.rlbot.bot.common.*;
 import com.eru.rlbot.bot.prediction.CarBallCollision;
 import com.eru.rlbot.common.Moment;
@@ -31,7 +31,7 @@ public class TakeTheShotTactician extends Tactician {
       .put(7000.0, 2300.0)
       .build();
 
-  TakeTheShotTactician(EruBot bot, TacticManager tacticManager) {
+  TakeTheShotTactician(Acg bot, TacticManager tacticManager) {
     super(bot, tacticManager);
   }
 

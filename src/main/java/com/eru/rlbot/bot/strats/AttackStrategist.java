@@ -1,6 +1,6 @@
 package com.eru.rlbot.bot.strats;
 
-import com.eru.rlbot.bot.main.EruBot;
+import com.eru.rlbot.bot.main.Acg;
 import com.eru.rlbot.bot.tactics.*;
 import com.eru.rlbot.bot.common.*;
 import com.eru.rlbot.common.Moment;
@@ -10,7 +10,7 @@ import com.eru.rlbot.common.vector.Vector3;
 /** Responsible for dribbling, shooting, and passing. */
 public class AttackStrategist extends Strategist {
 
-  AttackStrategist(EruBot bot) {
+  AttackStrategist(Acg bot) {
     super(bot);
   }
 

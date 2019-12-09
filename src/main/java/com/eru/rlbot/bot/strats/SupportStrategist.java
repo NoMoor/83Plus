@@ -1,6 +1,6 @@
 package com.eru.rlbot.bot.strats;
 
-import com.eru.rlbot.bot.main.EruBot;
+import com.eru.rlbot.bot.main.Acg;
 import com.eru.rlbot.bot.tactics.Tactic;
 import com.eru.rlbot.bot.common.Goal;
 import com.eru.rlbot.common.Moment;
@@ -13,7 +13,7 @@ public class SupportStrategist extends Strategist {
   private static final Vector3 LEFT_MID = Vector3.of(3584, 0, 73);
   private static final Vector3 RIGHT_MID = Vector3.of(-3584, 0, 73);
 
-  public SupportStrategist(EruBot bot) {
+  public SupportStrategist(Acg bot) {
     super(bot);
   }
 

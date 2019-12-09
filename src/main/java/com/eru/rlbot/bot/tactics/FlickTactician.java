@@ -1,6 +1,6 @@
 package com.eru.rlbot.bot.tactics;
 
-import com.eru.rlbot.bot.main.EruBot;
+import com.eru.rlbot.bot.main.Acg;
 import com.eru.rlbot.bot.common.Angles;
 import com.eru.rlbot.bot.common.Goal;
 import com.eru.rlbot.bot.common.NormalUtils;
@@ -10,7 +10,7 @@ import com.eru.rlbot.common.output.ControlsOutput;
 
 public class FlickTactician extends Tactician {
 
-  FlickTactician(EruBot bot, TacticManager tacticManager) {
+  FlickTactician(Acg bot, TacticManager tacticManager) {
     super(bot, tacticManager);
   }
 

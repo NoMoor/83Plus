@@ -1,6 +1,6 @@
 package com.eru.rlbot.bot.tactics;
 
-import com.eru.rlbot.bot.main.EruBot;
+import com.eru.rlbot.bot.main.Acg;
 import com.eru.rlbot.bot.common.BotRenderer;
 import com.eru.rlbot.bot.common.Pair;
 import com.eru.rlbot.common.input.DataPacket;
@@ -33,11 +33,11 @@ public class TacticManager {
   private final BotRenderer botRenderer;
   private LinkedList<Tactic> tacticList = new LinkedList<>();
 
-  private final EruBot bot;
+  private final Acg bot;
   private final Set<Tactic> completedTactics = new HashSet<>();
   private Pair<Tactic.TacticType, Tactician> controllingTactician;
 
-  public TacticManager(EruBot bot) {
+  public TacticManager(Acg bot) {
     this.bot = bot;
     this.botRenderer = BotRenderer.forBot(bot);
   }
@@ -124,7 +124,7 @@ public class TacticManager {
 
   private Tactician newTactician(Class<? extends Tactician> t) {
     try {
-      return t.getDeclaredConstructor(EruBot.class, TacticManager.class)
+      return t.getDeclaredConstructor(Acg.class, TacticManager.class)
           .newInstance(bot, this);
     } catch (Throwable e) {
       throw new IllegalStateException(String.format("Cannot create tactician %s", t), e);

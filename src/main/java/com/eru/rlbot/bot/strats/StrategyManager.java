@@ -1,6 +1,6 @@
 package com.eru.rlbot.bot.strats;
 
-import com.eru.rlbot.bot.main.EruBot;
+import com.eru.rlbot.bot.main.Acg;
 import com.eru.rlbot.common.boost.BoostPad;
 import com.eru.rlbot.common.input.DataPacket;
 import com.eru.rlbot.common.output.ControlsOutput;
@@ -29,14 +29,14 @@ public class StrategyManager {
 
   private Strategist active;
 
-  private EruBot bot;
+  private Acg bot;
 
   private Vector3 lastBallPosition;
   private Vector3 lastCarPosition;
   private float resetTime;
   private float lastStrategyUpdateTime;
 
-  public StrategyManager(EruBot bot) {
+  public StrategyManager(Acg bot) {
     this.bot = bot;
     for(Strategy.Type type : Strategy.Type.values()) {
       strategists.put(type, Strategy.strategistForBot(type, bot));

@@ -1,6 +1,6 @@
 package com.eru.rlbot.bot.strats;
 
-import com.eru.rlbot.bot.main.EruBot;
+import com.eru.rlbot.bot.main.Acg;
 import com.eru.rlbot.bot.tactics.RotateTactician;
 import com.eru.rlbot.bot.tactics.Tactic;
 import com.eru.rlbot.bot.common.*;
@@ -16,7 +16,7 @@ import java.util.Optional;
 /** Responsible for shadowing, blocking, shots, and clearing. */
 public class DefendStrategist extends Strategist {
 
-  DefendStrategist(EruBot bot) {
+  DefendStrategist(Acg bot) {
     super(bot);
   }
 

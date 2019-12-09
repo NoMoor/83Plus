@@ -1,6 +1,6 @@
 package com.eru.rlbot.bot.common;
 
-import com.eru.rlbot.bot.main.EruBot;
+import com.eru.rlbot.bot.main.Acg;
 import com.eru.rlbot.common.input.BallData;
 import com.eru.rlbot.common.input.CarData;
 import com.eru.rlbot.common.input.DataPacket;
@@ -27,7 +27,7 @@ public class NormalUtils {
     return CACHE.get(index);
   }
 
-  public static NormalUtils from(EruBot bot) {
+  public static NormalUtils from(Acg bot) {
     return from(bot.getIndex());
   }
 

@@ -1,6 +1,6 @@
 package com.eru.rlbot.bot.tactics;
 
-import com.eru.rlbot.bot.main.EruBot;
+import com.eru.rlbot.bot.main.Acg;
 import com.eru.rlbot.bot.common.Angles3;
 import com.eru.rlbot.bot.common.Constants;
 import com.eru.rlbot.bot.common.Matrix3;
@@ -23,7 +23,7 @@ public class AerialTactician extends Tactician {
   private static final ImmutableList<Float> HEIGHTS = ImmutableList.of(200f, 500f);
   private static final ImmutableList<Float> XS = ImmutableList.of(0f, 1000f);
 
-  AerialTactician(EruBot bot, TacticManager tacticManager) {
+  AerialTactician(Acg bot, TacticManager tacticManager) {
     super(bot, tacticManager);
   }
 

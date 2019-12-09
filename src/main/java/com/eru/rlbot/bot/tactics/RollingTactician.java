@@ -1,6 +1,6 @@
 package com.eru.rlbot.bot.tactics;
 
-import com.eru.rlbot.bot.main.EruBot;
+import com.eru.rlbot.bot.main.Acg;
 import com.eru.rlbot.bot.common.*;
 import com.eru.rlbot.common.input.DataPacket;
 import com.eru.rlbot.common.output.ControlsOutput;
@@ -17,7 +17,7 @@ public class RollingTactician extends Tactician {
 
   private boolean amBoosting;
 
-  RollingTactician(EruBot bot, TacticManager tacticManager) {
+  RollingTactician(Acg bot, TacticManager tacticManager) {
     super(bot, tacticManager);
   }
 

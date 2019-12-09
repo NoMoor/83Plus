@@ -18,7 +18,7 @@ import rlbot.flat.GameTickPacket;
 import static com.eru.rlbot.bot.common.Goal.opponentGoal;
 import static com.eru.rlbot.bot.common.Goal.ownGoal;
 
-public final class EruBot implements Bot {
+public final class Acg implements Bot {
 
   public final Goal opponentsGoal;
   public final Goal ownGoal;
@@ -28,7 +28,7 @@ public final class EruBot implements Bot {
   protected final BotChatter botChatter;
   private final StrategyManager strategyManager;
 
-  public EruBot(int playerIndex, int team) {
+  public Acg(int playerIndex, int team) {
     this.playerIndex = playerIndex;
     this.team = team;
 

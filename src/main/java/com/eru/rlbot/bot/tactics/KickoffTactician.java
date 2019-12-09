@@ -1,6 +1,6 @@
 package com.eru.rlbot.bot.tactics;
 
-import com.eru.rlbot.bot.main.EruBot;
+import com.eru.rlbot.bot.main.Acg;
 import com.eru.rlbot.bot.common.Angles;
 import com.eru.rlbot.bot.common.Goal;
 import com.eru.rlbot.bot.common.NormalUtils;
@@ -25,7 +25,7 @@ public class KickoffTactician extends Tactician {
 
   private boolean hasFlipped; // Keeps track of the sequence
 
-  KickoffTactician(EruBot bot, TacticManager tacticManager) {
+  KickoffTactician(Acg bot, TacticManager tacticManager) {
     super(bot, tacticManager);
   }
 

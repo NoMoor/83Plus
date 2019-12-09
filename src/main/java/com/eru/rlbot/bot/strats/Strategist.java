@@ -1,16 +1,16 @@
 package com.eru.rlbot.bot.strats;
 
-import com.eru.rlbot.bot.main.EruBot;
+import com.eru.rlbot.bot.main.Acg;
 import com.eru.rlbot.bot.tactics.TacticManager;
 import com.eru.rlbot.common.input.DataPacket;
 import com.eru.rlbot.common.output.ControlsOutput;
 
 public abstract class Strategist {
 
-  protected final EruBot bot;
+  protected final Acg bot;
   protected final TacticManager tacticManager;
 
-  protected Strategist(EruBot bot) {
+  protected Strategist(Acg bot) {
     this.bot = bot;
     this.tacticManager = new TacticManager(bot);
   }
