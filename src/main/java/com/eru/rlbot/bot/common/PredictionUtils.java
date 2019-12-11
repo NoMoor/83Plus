@@ -13,8 +13,7 @@ public class PredictionUtils {
     Optional<BallPrediction> ballPredictionOptional = DllHelper.getBallPrediction();
 
     if (!ballPredictionOptional.isPresent()) {
-      // TODO: This should likely include time.
-      return new Moment(input.ball);
+      return new Moment(input.ball, input.ball.elapsedSeconds);
     }
 
     BallPrediction ballPrediction = ballPredictionOptional.get();

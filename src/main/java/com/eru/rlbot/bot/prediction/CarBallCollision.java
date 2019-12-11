@@ -4,6 +4,9 @@ import com.eru.rlbot.bot.common.*;
 import com.eru.rlbot.common.input.BallData;
 import com.eru.rlbot.common.input.CarData;
 import com.eru.rlbot.common.vector.Vector3;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import java.awt.*;
 
 /**
@@ -13,10 +16,18 @@ import java.awt.*;
  */
 public class CarBallCollision {
 
+  private static final Logger logger = LogManager.getLogger("CollisionTimer");
+
   private static final double MU = 2.0f;
 
   /** Calculates the expected next BallData based on the given ball and car. */
   public static BallData calculateCollision(BallData ball, CarData car) {
+    return calculateCollision(ball, car, false);
+  }
+
+  public static BallData calculateCollision(BallData ball, CarData car, boolean renderComponents) {
+    long nanoStartTime = System.nanoTime();
+
     Vector3 touchPoint = CarBall.nearestPointOnHitBox(ball.position, car);
 
     double distanceToHitbox = touchPoint.minus(ball.position).norm();
@@ -59,12 +70,15 @@ public class CarBallCollision {
     Vector3 physicsVelocity = scaledPhysicsImpulse.divide(Constants.BALL_MASS);
     Vector3 psyonixVelocity = getPsyonixVelocity(car, ball);
 
-    // Render the component velocity vectors.
-    BotRenderer.forIndex(car.playerIndex).renderProjection(ball.position, ball.position.plus(physicsVelocity), Color.RED, 0, "Physics");
-    BotRenderer.forIndex(car.playerIndex).renderProjection(ball.position, ball.position.plus(psyonixVelocity), Color.MAGENTA, 0, "Psyonix");
+    if (renderComponents) {
+      BotRenderer.forIndex(car.playerIndex).renderProjection(ball.position, ball.position.plus(physicsVelocity), Color.RED, 0, "Physics");
+      BotRenderer.forIndex(car.playerIndex).renderProjection(ball.position, ball.position.plus(psyonixVelocity), Color.MAGENTA, 0, "Psyonix");
+    }
 
     Vector3 deltaSpin = ballLever.dot(scaledPhysicsImpulse).divide(Constants.BALL_MOMENT_OF_INERTIA);
     Vector3 deltaVelocity = physicsVelocity.plus(psyonixVelocity);
+
+    logger.log(Level.DEBUG, "Time nanos: " + (System.nanoTime() - nanoStartTime));
 
     return BallData.builder()
         .setPosition(ball.position) // TODO: Determine where the ball will be.
@@ -81,9 +95,15 @@ public class CarBallCollision {
     Vector3 carBall = ball.position.minus(car.position);
     carBall = Vector3.of(carBall.x, carBall.y, carBall.z * .35f); // Damp the z for easier dribbling
 
+    double carBallNose = carBall.dot(carNose);
+
+    if (carBallNose == 0) {
+      return Vector3.zero();
+    }
+
     Vector3 impulseDirection = carBall
         .minus(carNose
-            .multiply(carBall.dot(carNose))
+            .multiply(carBallNose)
             .multiply(.35f))
         .normalized();
 

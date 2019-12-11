@@ -73,10 +73,9 @@ public final class Agc implements Bot {
     JumpManager.processOutput(output, input);
 
     // Uncomment to force car to stay still
-//    if (false)
-//     output = new ControlsOutput()
-//         .withThrottle(1.0f)
-//         .withBoost(input.car.groundSpeed < 2000);
+    if (true)
+      output = new ControlsOutput()
+          .withThrottle(0.0f);
 
     return output;
   }

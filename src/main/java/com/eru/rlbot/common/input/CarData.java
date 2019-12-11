@@ -3,6 +3,8 @@ package com.eru.rlbot.common.input;
 
 import com.eru.rlbot.bot.common.Constants;
 import com.eru.rlbot.common.vector.Vector3;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Basic information about the car.
@@ -95,6 +97,10 @@ public class CarData {
     this.playerIndex = 0;
   }
 
+  public static Builder builder() {
+    return new Builder();
+  }
+
   public CarData.Builder toBuilder() {
     Builder builder = new Builder()
         .setPosition(position)
@@ -107,13 +113,29 @@ public class CarData {
     return builder;
   }
 
+  public static String csvHeader(String label) {
+    return Stream.of("x", "y", "z", "vx", "vy", "vz")
+        .collect(Collectors.joining(String.format("%s,", label))) + label + ",";
+  }
+
+  public String toCsv() {
+    return String.format(
+        "%f,%f,%f,%f,%f,%f,",
+        position.x,
+        position.y,
+        position.z,
+        velocity.x,
+        velocity.y,
+        velocity.z);
+  }
+
   public static class Builder {
     private float time;
     public double boost;
     public Orientation orientation = Orientation.convert(0, 0, 0);
-    public Vector3 velocity;
-    public Vector3 position;
-    public Vector3 angularVelocity;
+    public Vector3 velocity = Vector3.zero();
+    public Vector3 position = Vector3.zero();
+    public Vector3 angularVelocity = Vector3.zero();
 
     private boolean builderCalled = false;
     public CarData build() {
@@ -137,6 +159,11 @@ public class CarData {
 
     public Builder setTime(double time) {
       this.time = (float) time;
+      return this;
+    }
+
+    public Builder setOrientation(Orientation orientation) {
+      this.orientation = orientation;
       return this;
     }
   }

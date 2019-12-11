@@ -29,18 +29,19 @@ public class BallPredictor {
     return predictionBuilder.build();
   }
 
+  // TODO: Update with https://samuelpmish.github.io/notes/RocketLeague/ball_bouncing/
   private static BallData generateNextStep(BallData currentBall) {
     double vX = currentBall.velocity.x;
-    if (Math.abs(currentBall.position.x) + Constants.BALL_RADIUS > Constants.HALF_WIDTH) {
+    if (Math.abs(currentBall.position.x) + Constants.BALL_COLLISION_RADIUS > Constants.HALF_WIDTH) {
       vX *= -Constants.COEFFICIENT_OF_RESITUTION;
     }
 
     double vY = currentBall.velocity.y;
-    if (Math.abs(currentBall.position.y) + Constants.BALL_RADIUS > Constants.HALF_LENGTH) {
+    if (Math.abs(currentBall.position.y) + Constants.BALL_COLLISION_RADIUS > Constants.HALF_LENGTH) {
       vY *= -Constants.COEFFICIENT_OF_RESITUTION;
     }
     double vZ = currentBall.velocity.z - (Constants.GRAVITY / Constants.STEP_SIZE_COUNT);
-    if (currentBall.position.z < Constants.BALL_RADIUS) {
+    if (currentBall.position.z < Constants.BALL_COLLISION_RADIUS && currentBall.velocity.z < 0) {
       vZ *= -Constants.COEFFICIENT_OF_RESITUTION;
     }
 

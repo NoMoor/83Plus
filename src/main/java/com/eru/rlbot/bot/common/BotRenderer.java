@@ -6,10 +6,16 @@ import com.eru.rlbot.bot.prediction.BallPredictor;
 import com.eru.rlbot.bot.strats.Strategist;
 import com.eru.rlbot.bot.tactics.Tactic;
 import com.eru.rlbot.bot.tactics.Tactician;
+import com.eru.rlbot.common.dropshot.DropshotTile;
+import com.eru.rlbot.common.dropshot.DropshotTileManager;
+import com.eru.rlbot.common.dropshot.DropshotTileState;
 import com.eru.rlbot.common.input.BallData;
 import com.eru.rlbot.common.input.BoundingBox;
+import com.eru.rlbot.common.input.CarData;
+import com.eru.rlbot.common.input.DataPacket;
 import com.eru.rlbot.common.output.ControlsOutput;
 import com.eru.rlbot.common.vector.Vector2;
+import com.eru.rlbot.common.vector.Vector3;
 import com.google.common.collect.ImmutableList;
 import rlbot.Bot;
 import rlbot.cppinterop.RLBotDll;
@@ -17,17 +23,9 @@ import rlbot.flat.BallPrediction;
 import rlbot.flat.PredictionSlice;
 import rlbot.manager.BotLoopRenderer;
 import rlbot.render.Renderer;
-import com.eru.rlbot.common.dropshot.DropshotTile;
-import com.eru.rlbot.common.dropshot.DropshotTileManager;
-import com.eru.rlbot.common.dropshot.DropshotTileState;
-import com.eru.rlbot.common.input.CarData;
-import com.eru.rlbot.common.input.DataPacket;
-import com.eru.rlbot.common.vector.Vector3;
-
 import java.awt.*;
 import java.io.IOException;
 import java.util.*;
-import java.util.stream.DoubleStream;
 import java.util.stream.IntStream;
 
 /** Renders extra information for the bot such as car path, ball path, etc. */
@@ -157,7 +155,7 @@ public class BotRenderer {
     renderCircle(carPosition.plus(perpVelocity.asVector3().toMagnitude(-radius)), radius, Color.orange);
   }
 
-  private void renderHitBox(CarData car) {
+  public void renderHitBox(CarData car) {
     BoundingBox hitbox = car.boundingBox;
 
     // Draw front box.
@@ -284,24 +282,30 @@ public class BotRenderer {
     renderText(0, 640, "%% %.2f", (prediction.velocity.minus(actual.velocity).norm() * 100
         / prediction.velocity.norm()));
 
-    if (true) {
-      BallData previousPrediction = null;
-      for (BallData nextPrediction : predictionTrace) {
-        if (previousPrediction == null) {
-          previousPrediction = nextPrediction;
-        } else if (nextPrediction.elapsedSeconds - previousPrediction.elapsedSeconds > .1) {
-          render3DLine(Color.white, previousPrediction.position, nextPrediction.position);
-          previousPrediction = nextPrediction;
-        }
-      }
-      getRenderer().drawString3d("Eru", Color.white, previousPrediction.position, 2, 2);
-    }
+    renderPrediction(predictionTrace);
 
     if (prediction.elapsedSeconds + BALL_PREDICTION_TIME < input.car.elapsedSeconds) {
       prediction = null;
       actual = null;
       predictionTrace = null;
     }
+  }
+
+  public void renderPrediction(BallData projectedBallData) {
+    renderPrediction(BallPredictor.makePrediction(projectedBallData));
+  }
+
+  private void renderPrediction(ImmutableList<BallData> trace) {
+    BallData previousPrediction = null;
+    for (BallData nextPrediction : trace) {
+      if (previousPrediction == null) {
+        previousPrediction = nextPrediction;
+      } else if (nextPrediction.elapsedSeconds - previousPrediction.elapsedSeconds > .1) {
+        render3DLine(Color.white, previousPrediction.position, nextPrediction.position);
+        previousPrediction = nextPrediction;
+      }
+    }
+    getRenderer().drawString3d("Eru", Color.white, previousPrediction.position, 2, 2);
   }
 
   private BallPrediction gamePrediction;

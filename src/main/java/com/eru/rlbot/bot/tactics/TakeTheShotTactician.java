@@ -2,6 +2,7 @@ package com.eru.rlbot.bot.tactics;
 
 import com.eru.rlbot.bot.common.*;
 import com.eru.rlbot.bot.main.Agc;
+import com.eru.rlbot.bot.optimizer.CarBallOptimizer;
 import com.eru.rlbot.bot.prediction.CarBallCollision;
 import com.eru.rlbot.common.Moment;
 import com.eru.rlbot.common.input.BallData;
@@ -120,35 +121,41 @@ public class TakeTheShotTactician extends Tactician {
   }
 
   private void test(DataPacket input, ControlsOutput output, Tactic tactic) {
-    // Where will the ball go if I go straight to it and hit the ball?
-    Vector3 carBall = Angles.carBall(input);
-    Accels.AccelResult result = Accels.minTimeToDistance(input.car, carBall.norm());
+//    // Where will the ball go if I go straight to it and hit the ball?
+//    Vector2 carBall = Angles.carBall(input).flatten();
+//    Accels.AccelResult result = Accels.minTimeToDistance(input.car, carBall.norm());
+//
+//    // Move the car so that it's hitting the ball...
+//
+//    Vector3 nearestPoint = CarBall.nearestPointOnHitBox(input.ball.position, input.car);
+//    double hitBoxDistance = input.car.position.minus(nearestPoint).flatten().norm();
+//    Vector3 ballCarCollisionDistance =
+//        carBall.norm() == 0
+//        ? carBall.asVector3()
+//        : carBall.scaledToMagnitude(Constants.BALL_RADIUS / 1.5  + hitBoxDistance).asVector3(); // TODO: Ball radius needs to be smaller.
+//
+//    CarData projectedCarData = input.car.toBuilder()
+//        .setPosition(input.ball.position.minus(ballCarCollisionDistance))
+//        .setVelocity(input.car.velocity.toMagnitude(result.speed))
+//        .setTime(input.car.elapsedSeconds + result.time)
+//        .build();
+//
+//    BallData resultingBallData = CarBallCollision.calculateCollision(input.ball, projectedCarData);
+//    double minCorrection = Locations.minBallGoalCorrection(input.car, resultingBallData);
+//    double steeringAngle = Math.abs(minCorrection) > 0
+//        ? minCorrection
+//        : Angles.flatCorrectionAngle(input.car, input.ball.position) * 10;
 
-    // Move the car so that it's hitting the ball...
-
-    Vector3 nearestPoint = CarBall.nearestPointOnHitBox(input.ball.position, input.car);
-    double hitBoxDistance = input.car.position.minus(nearestPoint).flatten().norm();
-    Vector3 ballCarCollisionDistance =
-        carBall.flatten().scaledToMagnitude(Constants.BALL_RADIUS / 1.5  + hitBoxDistance).asVector3(); // TODO: Ball radius needs to be smaller.
-
-    CarData projectedCarData = input.car.toBuilder()
-        .setPosition(input.ball.position.minus(ballCarCollisionDistance))
-        .setVelocity(input.car.velocity.toMagnitude(result.speed))
-        .setTime(input.car.elapsedSeconds + result.time)
-        .build();
-
-    BallData resultingBallData = CarBallCollision.calculateCollision(input.ball, projectedCarData);
-    double minCorrection = Locations.minBallGoalCorrection(input.car, resultingBallData);
-    double steeringAngle = Math.abs(minCorrection) > 0
-        ? minCorrection
-        : Angles.flatCorrectionAngle(input.car, input.ball.position) * 10;
+    CarData optimalCar = CarBallOptimizer.getOptimalApproach(input.ball, bot.opponentsGoal.center);
+    bot.botRenderer.renderHitBox(optimalCar);
+    bot.botRenderer.renderPrediction(CarBallCollision.calculateCollision(input.ball, optimalCar));
 
     // TODO: Get the car/ball angle after turning back to the ball.
 
     bot.botRenderer.setBranchInfo("Test");
 
     output
-        .withSteer(steeringAngle)
+        .withSteer(Angles.flatCorrectionAngle(input.car, input.ball.position))
         .withThrottle(1.0f)
         .withBoost();
   }

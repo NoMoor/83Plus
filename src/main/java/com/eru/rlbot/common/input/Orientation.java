@@ -20,8 +20,8 @@ public class Orientation {
     orientation = Matrix3.of(noseVector, leftVector, roofVector);
   }
 
-  public Orientation(Vector3 noseVector, Vector3 roofVector) {
-    this(noseVector, noseVector.cross(roofVector).multiply(-1), roofVector);
+  public static Orientation noseRoof(Vector3 noseVector, Vector3 roofVector) {
+    return new Orientation(noseVector, noseVector.cross(roofVector).multiply(-1), roofVector);
   }
 
   public static Orientation fromFlatbuffer(PlayerInfo playerInfo) {

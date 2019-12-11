@@ -2,6 +2,8 @@ package com.eru.rlbot.common.input;
 
 import com.eru.rlbot.common.vector.Vector3;
 import rlbot.flat.BallInfo;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Immutable information about the ball data.
@@ -42,6 +44,22 @@ public class BallData {
     public static Builder builder() {
         return new Builder();
     }
+
+  public static String csvHeader(String label) {
+    return Stream.of("x", "y", "z", "vx", "vy", "vz")
+        .collect(Collectors.joining(String.format("%s,", label))) + label + ",";
+  }
+
+  public String toCsv() {
+    return String.format(
+        "%f,%f,%f,%f,%f,%f,",
+        position.x,
+        position.y,
+        position.z,
+        velocity.x,
+        velocity.y,
+        velocity.z);
+  }
 
     /** A builder for {@link BallData}. */
     public final static class Builder {

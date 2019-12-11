@@ -20,7 +20,7 @@ public final class Constants {
   public static final Vector3 RIGHT_SIDE_WALL = Vector3.of(-1 * HALF_WIDTH, 0, 1000);
 
   // Ball
-  public static final float BALL_COLLISION_RADIUS = 93.15f;
+  public static final float BALL_COLLISION_RADIUS = 94f;
   public static final float BALL_RADIUS = 91.25f;
   public static final float COEFFICIENT_OF_RESITUTION = .6f; // it loses 40% of the component of its velocity that's toward the surface
   public static final double BALL_MASS = 30f;

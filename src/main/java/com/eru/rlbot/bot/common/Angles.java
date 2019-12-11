@@ -64,4 +64,8 @@ public final class Angles {
 
     return Math.abs(correction) < Math.PI / 4;
   }
+
+  public static double flatCorrectionAngle(Vector3 current, Vector3 ideal) {
+    return current.flatten().correctionAngle(ideal.flatten());
+  }
 }

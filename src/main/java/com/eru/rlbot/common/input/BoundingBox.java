@@ -5,14 +5,15 @@ import com.eru.rlbot.common.vector.Vector3;
 
 public class BoundingBox {
 
-  public final Vector3 RJ_OFFSET = Vector3.of(13.88, 0, 20.75);
+  public static final Vector3 RJ_OFFSET = Vector3.of(13.88, 0, 20.75);
 
-  public final float width = 84.2f;
-  public final float halfWidth = width / 2;
-  public final float length = 118.01f;
-  public final float halfLength = length / 2;
-  public final float height = 36.16f;
-  public final float halfHeight = height / 2;
+  public static final float width = 84.2f;
+  public static final float halfWidth = width / 2;
+  public static final float length = 118.01f;
+  public static final float halfLength = length / 2;
+  public static final float height = 36.16f;
+  public static final float halfHeight = height / 2;
+  public static final float frontToRj = RJ_OFFSET.x + halfLength;
 
   public final Orientation orientation;
   public final Vector3 center;
