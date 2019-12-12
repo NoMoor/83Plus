@@ -9,48 +9,65 @@ import com.eru.rlbot.common.input.BoundingBox;
 import com.eru.rlbot.common.input.CarData;
 import com.eru.rlbot.common.input.Orientation;
 import com.eru.rlbot.common.vector.Vector3;
+import com.google.common.collect.ImmutableList;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public class CarBallOptimizer {
 
-  private static final float AVERAGE_SPEED = 1800;
+  private static final Logger logger = LogManager.getLogger();
 
-  // .1 Radian rotation
-  private static final double ROTATION_STEP = .05d;
-  private static final Matrix3 ROTATION_TRANSFORM = Matrix3.of(
-      Vector3.of(Math.cos(ROTATION_STEP), Math.sin(ROTATION_STEP), 0),
-      Vector3.of(-Math.sin(ROTATION_STEP), Math.cos(ROTATION_STEP), 0),
-      Vector3.of(0, 0, 1));
-  private static final Matrix3 ANTI_ROTATION_TRANSFORM = ROTATION_TRANSFORM.inverse();
+  private static final float AVERAGE_SPEED = 1200;
 
+  private static final ImmutableList<Double> STEP_SIZES = ImmutableList.of(.25, .05, .01);
   public static CarData getOptimalApproach(BallData ball, Vector3 target) {
-    // Find a car contact that goes through the given target.
+    long startTime = System.nanoTime();
+    Vector3 workingAngle = target.minus(ball.position).normalized();
+    for (double nextStepSize : STEP_SIZES) {
+      workingAngle = refineApproach(ball, target, workingAngle, nextStepSize);
+    }
+    logger.log(Level.WARN, "Optimization time: " + (System.nanoTime() - startTime));
+    return makeCar(ball.position, workingAngle);
+  }
 
+  private static Vector3 refineApproach(BallData ball, Vector3 target, Vector3 previousAngle, double granularity) {
     // TODO: Find the best vertical angle as well...
     final Vector3 targetAngle = target.minus(ball.position).normalized();
-    final CarData firstCar = makeCar(ball.position, targetAngle);
-    final BallData firstResult = CarBallCollision.calculateCollision(ball, firstCar);
-    final double firstOffset = Angles.flatCorrectionAngle(firstResult.velocity, targetAngle);
 
-    // Copy over to variables that will be used for searching.
-    Vector3 nextAngle = targetAngle;
-    CarData nextCar = firstCar;
-    BallData nextResult = firstResult;
-    double nextOffset = firstOffset;
+    Vector3 nextAngle = previousAngle;
 
-    // TODO: Reduce the number of operations here.
-    while (Math.signum(firstOffset) == Math.signum(nextOffset)) {
+    BallData prevResult = CarBallCollision.calculateCollision(ball, makeCar(ball.position, previousAngle));
+    double previousOffset = Angles.flatCorrectionAngle(prevResult.velocity, previousAngle);
+    double nextOffset = previousOffset;
+
+    Matrix3 rotationMatrix = rotationMatrix(granularity);
+    Matrix3 rotationMatrixInverse = rotationMatrix.inverse();
+
+    while (Math.signum(previousOffset) == Math.signum(nextOffset)) {
+      // Advance the previous values forward one step.
+      previousOffset = nextOffset;
+      previousAngle = nextAngle;
+
+      // Move the next values forward one step.
       if (nextOffset < 0) {
-        nextAngle = ROTATION_TRANSFORM.dot(nextAngle);
+        nextAngle = rotationMatrix.dot(nextAngle);
       } else {
-        nextAngle = ANTI_ROTATION_TRANSFORM.dot(nextAngle);
+        nextAngle = rotationMatrixInverse.dot(nextAngle);
       }
 
-      nextCar = makeCar(ball.position, nextAngle);
-      nextResult = CarBallCollision.calculateCollision(ball, nextCar);
+      BallData nextResult = CarBallCollision.calculateCollision(ball, makeCar(ball.position, nextAngle));
       nextOffset = Angles.flatCorrectionAngle(nextResult.velocity, targetAngle);
     }
 
-    return nextCar;
+    return Math.abs(previousOffset) < Math.abs(nextOffset) ? previousAngle : nextAngle;
+  }
+
+  private static Matrix3 rotationMatrix(double radians) {
+    return Matrix3.of(
+        Vector3.of(Math.cos(radians), Math.sin(radians), 0),
+        Vector3.of(-Math.sin(radians), Math.cos(radians), 0),
+        Vector3.of(0, 0, 1));
   }
 
   private static CarData makeCar(Vector3 position, Vector3 noseOrientation) {
