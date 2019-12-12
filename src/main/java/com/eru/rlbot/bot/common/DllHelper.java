@@ -7,8 +7,6 @@ import rlbot.cppinterop.RLBotInterfaceException;
 import rlbot.flat.BallPrediction;
 import rlbot.flat.FieldInfo;
 import rlbot.flat.PredictionSlice;
-
-import java.util.Iterator;
 import java.util.Optional;
 
 public class DllHelper {
@@ -40,19 +38,19 @@ public class DllHelper {
 
   private DllHelper() {}
 
-  public static Vector3 getProjectedBallPositionAtTime(BallData ball, float gameTime) {
+  public static BallData getPredictedBallAtTime(BallData ball, float gameTime) {
     Optional<BallPrediction> predictionOptional = getBallPrediction();
     if (!predictionOptional.isPresent()) {
-      return ball.position;
+      return ball;
     }
 
     BallPrediction ballPrediction = predictionOptional.get();
     for (int i = 0 ; i < ballPrediction.slicesLength() ; i++) {
       PredictionSlice predictionSlice = ballPrediction.slices(i);
       if (predictionSlice.gameSeconds() > gameTime) {
-        return Vector3.of(predictionSlice.physics().location());
+        return new BallData(predictionSlice);
       }
     }
-    return Vector3.of(ballPrediction.slices(ballPrediction.slicesLength() - 1).physics().location());
+    return new BallData(ballPrediction.slices(ballPrediction.slicesLength() - 1));
   }
 }

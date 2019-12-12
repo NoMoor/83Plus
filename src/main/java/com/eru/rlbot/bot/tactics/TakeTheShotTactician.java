@@ -146,9 +146,14 @@ public class TakeTheShotTactician extends Tactician {
 //        ? minCorrection
 //        : Angles.flatCorrectionAngle(input.car, input.ball.position) * 10;
 
-    CarData optimalCar = CarBallOptimizer.getOptimalApproach(input.ball, bot.opponentsGoal.center);
+    BallData nextBallLocation = DllHelper.getPredictedBallAtTime(input.ball, input.ball.elapsedSeconds + Constants.STEP_SIZE);
+
+    CarData optimalCar = CarBallOptimizer.getOptimalApproach(nextBallLocation, bot.opponentsGoal.center);
     bot.botRenderer.renderHitBox(optimalCar);
-    bot.botRenderer.renderPrediction(CarBallCollision.calculateCollision(input.ball, optimalCar));
+    bot.botRenderer.renderPrediction(CarBallCollision.calculateCollision(nextBallLocation, optimalCar));
+
+    // Sets the state if the button has been clicked.
+    bot.setState(optimalCar);
 
     // TODO: Get the car/ball angle after turning back to the ball.
 

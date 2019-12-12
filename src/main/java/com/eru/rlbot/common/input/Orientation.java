@@ -5,6 +5,7 @@ import com.eru.rlbot.bot.common.Matrix3;
 import com.eru.rlbot.common.vector.Vector2;
 import com.eru.rlbot.common.vector.Vector3;
 import rlbot.flat.PlayerInfo;
+import rlbot.gamestate.DesiredRotation;
 
 /**
  * The car's orientation in space, a.k.a. what direction it's pointing.
@@ -73,6 +74,28 @@ public class Orientation {
         Vector3.of(noseX, noseY, noseZ),
         Vector3.of(leftX, leftY, leftZ),
         Vector3.of(roofX, roofY, roofZ));
+  }
+
+  public DesiredRotation toEuclidianVector() {
+    Matrix3 orientationMatrix = this.getOrientationMatrix();
+
+    double pitch = -Math.asin(orientationMatrix.row(2).x);  //Pitch
+    double yaw, roll;
+
+    if (pitch == 1) {
+      // Gimbal lock: pitch = -90
+      yaw = 0.0;
+      roll = Math.atan2(-orientationMatrix.row(0).y, -orientationMatrix.row(0).z);
+    } else if (pitch == -1) {
+      // Gimbal lock: pitch = 90
+      yaw = 0.0;
+      roll = Math.atan2(orientationMatrix.row(0).y, orientationMatrix.row(0).z);
+    } else {
+      // General solution
+      yaw = Math.atan2(orientationMatrix.row(1).x, orientationMatrix.row(0).x);
+      roll = Math.atan2(orientationMatrix.row(2).y, orientationMatrix.row(2).z);
+    }
+    return new DesiredRotation((float) pitch, (float) yaw, (float) roll);
   }
 
   @Override

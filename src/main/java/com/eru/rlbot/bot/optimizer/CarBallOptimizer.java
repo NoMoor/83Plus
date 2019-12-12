@@ -15,7 +15,7 @@ public class CarBallOptimizer {
   private static final float AVERAGE_SPEED = 1800;
 
   // .1 Radian rotation
-  private static final double ROTATION_STEP = .01d;
+  private static final double ROTATION_STEP = .05d;
   private static final Matrix3 ROTATION_TRANSFORM = Matrix3.of(
       Vector3.of(Math.cos(ROTATION_STEP), Math.sin(ROTATION_STEP), 0),
       Vector3.of(-Math.sin(ROTATION_STEP), Math.cos(ROTATION_STEP), 0),
@@ -38,24 +38,25 @@ public class CarBallOptimizer {
     double nextOffset = firstOffset;
 
     // TODO: Reduce the number of operations here.
-    while (Math.signum(firstOffset) != Math.signum(nextOffset)) {
+    while (Math.signum(firstOffset) == Math.signum(nextOffset)) {
       if (nextOffset < 0) {
         nextAngle = ROTATION_TRANSFORM.dot(nextAngle);
       } else {
         nextAngle = ANTI_ROTATION_TRANSFORM.dot(nextAngle);
       }
 
-      nextCar = makeCar(ball.position, targetAngle);
-      nextResult = CarBallCollision.calculateCollision(ball, firstCar);
-      nextOffset = Angles.flatCorrectionAngle(firstResult.velocity, targetAngle);
+      nextCar = makeCar(ball.position, nextAngle);
+      nextResult = CarBallCollision.calculateCollision(ball, nextCar);
+      nextOffset = Angles.flatCorrectionAngle(nextResult.velocity, targetAngle);
     }
 
     return nextCar;
   }
 
   private static CarData makeCar(Vector3 position, Vector3 noseOrientation) {
-    Vector3 sideDoor = noseOrientation.cross(Vector3.of(0, 0, noseOrientation.z)).normalized();
-    Vector3 roofOrientation = noseOrientation.cross(sideDoor);
+    // TODO: Fix these multiply by -1 issues...
+    Vector3 sideDoor = noseOrientation.cross(Vector3.of(0, 0, noseOrientation.z)).normalized().multiply(-1);
+    Vector3 roofOrientation = noseOrientation.cross(sideDoor).multiply(-1);
     Orientation carOrientation = Orientation.noseRoof(noseOrientation, roofOrientation);
     Vector3 carPosition = position.minus(noseOrientation.toMagnitude(Constants.BALL_RADIUS + BoundingBox.frontToRj));
 

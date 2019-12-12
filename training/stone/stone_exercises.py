@@ -16,7 +16,9 @@ stone_exercises = [
     # StoneShotOnGoal('Testing', ball_x=80, ball_y=10, ball_z=92, car_start_x=0, car_start_y=-1800),
     # StoneShotOnGoal('Testing', ball_x=110, ball_y=10, ball_z=92, car_start_x=0, car_start_y=-1800),
 
-    StoneShotOnGoal('Testing', ball_x=-1000, ball_y=3500, ball_z=100, ball_vx=1500, car_start_x=1000, car_start_y=-0),
+    StoneShotOnGoal('Testing', ball_x=-1000, ball_y=3500, ball_z=100, ball_vx=2000, car_start_x=1000, car_start_y=-0),
+    StoneShotOnGoal('Testing', ball_x=-2500, ball_y=2000, ball_z=100, ball_vx=200, ball_vy=1500, car_start_x=1000,
+                    car_start_y=-0),
 
     # StoneShotOnGoal('Testing', ball_x=1000, ball_y=0, ball_z=2107, car_start_x=1000, car_start_y=-0),
     # StoneShotOnGoal('Testing', ball_x=1000, ball_y=0, ball_z=2108, car_start_x=1000, car_start_y=-0),

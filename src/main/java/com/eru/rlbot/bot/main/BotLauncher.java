@@ -35,11 +35,44 @@ public class BotLauncher {
     panel.add(new JLabel("I'm the thing controlling the Java bot, keep me open :)"));
     JLabel botsRunning = new JLabel("Bots running: ");
     panel.add(botsRunning);
+
+    panel.add(stateSettingButtons(botManager, botMaker));
+
     frame.add(panel);
 
     frame.pack();
     frame.setVisible(true);
 
+    registerBotRunningListener(botsRunning, botManager);
+  }
+
+  private static JPanel stateSettingButtons(BotManager botManager, BotFactory factory) {
+    JPanel stateSettingPanel = new JPanel();
+    stateSettingPanel.setBorder(new EmptyBorder(10, 10, 10, 10));
+    stateSettingPanel.setLayout(new BoxLayout(stateSettingPanel, BoxLayout.Y_AXIS));
+
+    ActionListener myListener = e -> {
+      for (Integer botIndex : botManager.getRunningBotIndices()) {
+        Agc bot = factory.getBot(botIndex);
+        if (bot == null) {
+          continue;
+        }
+
+        // TODO: Disable based on flag.
+        JButton stateSettingButton = new JButton(String.format("Trigger state: %d", botIndex));
+        stateSettingButton.addActionListener((event) -> {
+          bot.enableStateSetting();
+        });
+        stateSettingPanel.add(stateSettingButton);
+      }
+    };
+
+    new Timer(1000, myListener).start();
+
+    return stateSettingPanel;
+  }
+
+  private static void registerBotRunningListener(JLabel label, BotManager botManager) {
     ActionListener myListener = e -> {
       Set<Integer> runningBotIndices = botManager.getRunningBotIndices();
       OptionalInt maxIndex = runningBotIndices.stream().mapToInt(k -> k).max();
@@ -51,7 +84,7 @@ public class BotLauncher {
         }
         botsStr = botsStrBuilder.toString();
       }
-      botsRunning.setText("Bots running: " + botsStr);
+      label.setText("Bots running: " + botsStr);
     };
 
     new Timer(1000, myListener).start();

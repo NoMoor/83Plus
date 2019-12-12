@@ -2,6 +2,7 @@ package com.eru.rlbot.common.input;
 
 import com.eru.rlbot.common.vector.Vector3;
 import rlbot.flat.BallInfo;
+import rlbot.flat.PredictionSlice;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -28,6 +29,15 @@ public class BallData {
         this.spin = Vector3.of(ball.physics().angularVelocity());
         this.elapsedSeconds = elapsedTime;
         this.isLiveData = true;
+        this.isAbsolute = true;
+    }
+
+    public BallData(PredictionSlice predictionSlice) {
+        this.position = Vector3.of(predictionSlice.physics().location());
+        this.velocity = Vector3.of(predictionSlice.physics().velocity());
+        this.spin = Vector3.of(predictionSlice.physics().angularVelocity());
+        this.elapsedSeconds = predictionSlice.gameSeconds();
+        this.isLiveData = false;
         this.isAbsolute = true;
     }
 

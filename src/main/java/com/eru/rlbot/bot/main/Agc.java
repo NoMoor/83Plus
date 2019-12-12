@@ -11,12 +11,16 @@ import com.eru.rlbot.bot.strats.StrategyManager;
 import com.eru.rlbot.common.boost.BoostManager;
 import com.eru.rlbot.common.boost.SpeedManager;
 import com.eru.rlbot.common.dropshot.DropshotTileManager;
+import com.eru.rlbot.common.input.CarData;
 import com.eru.rlbot.common.input.DataPacket;
 import com.eru.rlbot.common.jump.JumpManager;
 import com.eru.rlbot.common.output.ControlsOutput;
 import rlbot.Bot;
 import rlbot.ControllerState;
+import rlbot.cppinterop.RLBotDll;
 import rlbot.flat.GameTickPacket;
+import rlbot.gamestate.GameState;
+import rlbot.gamestate.GameStatePacket;
 
 public final class Agc implements Bot {
 
@@ -27,6 +31,7 @@ public final class Agc implements Bot {
   protected final int playerIndex;
   protected final BotChatter botChatter;
   private final StrategyManager strategyManager;
+  private boolean allowStateSetting;
 
   public Agc(int playerIndex, int team) {
     this.playerIndex = playerIndex;
@@ -87,5 +92,19 @@ public final class Agc implements Bot {
 
   public void retire() {
     System.out.println("Retiring BallChaser V1 bot " + playerIndex);
+  }
+
+  public void enableStateSetting() {
+    this.allowStateSetting = true;
+  }
+
+  public void setState(CarData carData) {
+    if (allowStateSetting) {
+      allowStateSetting = false;
+      GameStatePacket newState = new GameState()
+          .withCarState(this.playerIndex, carData.toCarState())
+          .buildPacket();
+      RLBotDll.setGameState(newState);
+    }
   }
 }

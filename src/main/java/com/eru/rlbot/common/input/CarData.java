@@ -3,6 +3,9 @@ package com.eru.rlbot.common.input;
 
 import com.eru.rlbot.bot.common.Constants;
 import com.eru.rlbot.common.vector.Vector3;
+import rlbot.gamestate.CarState;
+import rlbot.gamestate.DesiredVector3;
+import rlbot.gamestate.PhysicsState;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -127,6 +130,16 @@ public class CarData {
         velocity.x,
         velocity.y,
         velocity.z);
+  }
+
+  public CarState toCarState() {
+    return new CarState()
+        .withBoostAmount((float) this.boost)
+        .withPhysics(new PhysicsState()
+            .withLocation(new DesiredVector3(position.x, position.y, position.z))
+            .withVelocity(new DesiredVector3(velocity.x, velocity.y, velocity.z))
+            .withRotation(orientation.toEuclidianVector())
+            .withAngularVelocity(new DesiredVector3(angularVelocity.x, angularVelocity.y, angularVelocity.z)));
   }
 
   public static class Builder {
