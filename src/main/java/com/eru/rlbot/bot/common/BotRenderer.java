@@ -121,12 +121,12 @@ public class BotRenderer {
     if (skipRendering) return;
 
     renderControl();
-    renderTacticLines(input.car);
+//    renderTacticLines(input.car);
     renderRefreshRate(input);
-    renderBallPrediction();
-    renderTurningRadius(input);
+//    renderBallPrediction();
+//    renderTurningRadius(input);
     if (true) {
-      renderPredictionDiff(input);
+//      renderPredictionDiff(input);
     } else {
       renderRelativeBallData(input);
     }
@@ -379,7 +379,7 @@ public class BotRenderer {
     renderText(Color.CYAN, 150, 300,"%s", tactic == null ? "NONE" : tactic.tacticType);
     renderText(Color.PINK, 400, 300,"%s",
         tactician == null ? "NONE" : tactician.getClass().getSimpleName().replace("Tactician", ""));
-    renderText(Color.CYAN,700, 300,"%s", branch);
+    renderText(Color.CYAN, 0, 270, "%s", branch);
   }
 
   public void setStrategy(Strategist strategist) {
@@ -454,7 +454,11 @@ public class BotRenderer {
     renderText(0, 550, "dX: %d", (int) relativeBallData.velocity.x);
   }
 
-  private void renderCircle(Vector3 position, double radius, Color color) {
+  public void renderCircle(Circle circle, Color color) {
+    renderCircle(circle.center, circle.radius, color);
+  }
+
+  public void renderCircle(Vector3 position, double radius, Color color) {
     ImmutableList<Vector3> points = toCirclePoints(position, radius);
 
     Vector3 prevPoint = null;

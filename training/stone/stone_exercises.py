@@ -1,3 +1,5 @@
+from math import pi
+
 from stone.stone_shot_on_goal import StoneShotOnGoal
 
 stone_exercises = [
@@ -16,9 +18,17 @@ stone_exercises = [
     # StoneShotOnGoal('Testing', ball_x=80, ball_y=10, ball_z=92, car_start_x=0, car_start_y=-1800),
     # StoneShotOnGoal('Testing', ball_x=110, ball_y=10, ball_z=92, car_start_x=0, car_start_y=-1800),
 
-    StoneShotOnGoal('Testing', ball_x=-1000, ball_y=3500, ball_z=100, ball_vx=2000, car_start_x=1000, car_start_y=-0),
-    StoneShotOnGoal('Testing', ball_x=-2500, ball_y=2000, ball_z=100, ball_vx=200, ball_vy=1500, car_start_x=1000,
-                    car_start_y=-0),
+    # Pretend it's at 5500, 0
+    # Car starts at 1500, -4000
+    # StoneShotOnGoal('Wall shot', ball_x=4000, ball_y=0, ball_z=1500, car_start_x=1500, car_start_y=-4000, car_spin=pi/4),
+
+    # StoneShotOnGoal('Hook Shot', ball_x=-1000, ball_y=3500, ball_z=100, car_start_x=1000, car_start_y=-0),
+    # StoneShotOnGoal('Hook Shot', ball_x=-1000, ball_y=3500, ball_z=100, car_start_x=1000, car_start_y=-0, car_spin=pi),
+    StoneShotOnGoal('Hook Shot', ball_x=-2500, ball_y=2500, ball_z=100, car_start_x=-2000, car_start_y=-0, car_spin=pi),
+
+    # StoneShotOnGoal('Testing', ball_x=-1000, ball_y=3500, ball_z=100, ball_vx=2000, car_start_x=1000, car_start_y=-0),
+    # StoneShotOnGoal('Testing', ball_x=-2500, ball_y=2000, ball_z=100, ball_vx=200, ball_vy=1500, car_start_x=1000,
+    #                 car_start_y=-0),
 
     # StoneShotOnGoal('Testing', ball_x=1000, ball_y=0, ball_z=2107, car_start_x=1000, car_start_y=-0),
     # StoneShotOnGoal('Testing', ball_x=1000, ball_y=0, ball_z=2108, car_start_x=1000, car_start_y=-0),

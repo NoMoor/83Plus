@@ -7,6 +7,7 @@ import com.eru.rlbot.bot.CarBallContactManager;
 import com.eru.rlbot.bot.common.BotChatter;
 import com.eru.rlbot.bot.common.BotRenderer;
 import com.eru.rlbot.bot.common.Goal;
+import com.eru.rlbot.bot.common.TrailRenderer;
 import com.eru.rlbot.bot.strats.StrategyManager;
 import com.eru.rlbot.common.boost.BoostManager;
 import com.eru.rlbot.common.boost.SpeedManager;
@@ -15,6 +16,9 @@ import com.eru.rlbot.common.input.CarData;
 import com.eru.rlbot.common.input.DataPacket;
 import com.eru.rlbot.common.jump.JumpManager;
 import com.eru.rlbot.common.output.ControlsOutput;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import rlbot.Bot;
 import rlbot.ControllerState;
 import rlbot.cppinterop.RLBotDll;
@@ -23,6 +27,8 @@ import rlbot.gamestate.GameState;
 import rlbot.gamestate.GameStatePacket;
 
 public final class Agc implements Bot {
+
+  private static final Logger logger = LogManager.getLogger("CollisionTimer");
 
   public final Goal opponentsGoal;
   public final Goal ownGoal;
@@ -73,14 +79,19 @@ public final class Agc implements Bot {
 
     ControlsOutput output = strategyManager.executeStrategy(input);
 
+//    botRenderer.setBranchInfo("x-y %f y-z%f y%f", (input.car.velocity.x / input.car.velocity.y), (input.car.velocity.y / input.car.velocity.z), input.car.velocity.y);
+
+    logger.log(Level.DEBUG, String.format("%f, %f, %f, %f, %f, %f", input.car.position.x, input.car.position.y, input.car.position.z, input.car.angularVelocity.x, input.car.angularVelocity.y, input.car.angularVelocity.z));
     botRenderer.renderInfo(input, output);
 
     JumpManager.processOutput(output, input);
 
     // Uncomment to force car to stay still
-    if (true)
+    if (false)
       output = new ControlsOutput()
           .withThrottle(0.0f);
+
+    TrailRenderer.recordAndRender(input, output);
 
     return output;
   }

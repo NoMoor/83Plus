@@ -4,7 +4,6 @@ import com.eru.rlbot.common.input.CarData;
 import com.eru.rlbot.common.input.Orientation;
 import com.eru.rlbot.common.output.ControlsOutput;
 import com.eru.rlbot.common.vector.Vector3;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -259,6 +258,13 @@ public class Angles3 {
         R.row(0).get(2) - R.row(2).get(0),
         R.row(1).get(0) - R.row(0).get(1))
         .multiply(scale);
+  }
+
+  public static Matrix3 rotationMatrix(double radians) {
+    return Matrix3.of(
+        Vector3.of(Math.cos(radians), Math.sin(radians), 0),
+        Vector3.of(-Math.sin(radians), Math.cos(radians), 0),
+        Vector3.of(0, 0, 1));
   }
 
   // TODO: Move these utils.

@@ -55,7 +55,7 @@ public class AttackStrategist extends Strategist {
           Tactic.builder()
               .setSubject(targetMoment)
               .setTacticType(Tactic.TacticType.STRIKE)
-              .plan(planner::plan));
+              .build());
       return true;
     }
 //    else if (DribbleTactician.canDribble(input)) {

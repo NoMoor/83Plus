@@ -52,6 +52,7 @@ public class BotLauncher {
     stateSettingPanel.setLayout(new BoxLayout(stateSettingPanel, BoxLayout.Y_AXIS));
 
     ActionListener myListener = e -> {
+      stateSettingPanel.removeAll();
       for (Integer botIndex : botManager.getRunningBotIndices()) {
         Agc bot = factory.getBot(botIndex);
         if (bot == null) {
@@ -61,8 +62,11 @@ public class BotLauncher {
         // TODO: Disable based on flag.
         JButton stateSettingButton = new JButton(String.format("Trigger state: %d", botIndex));
         stateSettingButton.addActionListener((event) -> {
-          bot.enableStateSetting();
+          int index = Integer.valueOf(event.getActionCommand().substring(event.getActionCommand().length() - 1));
+          factory.getBot(index).enableStateSetting();
+          stateSettingButton.setEnabled(true);
         });
+        stateSettingButton.setEnabled(true);
         stateSettingPanel.add(stateSettingButton);
       }
     };

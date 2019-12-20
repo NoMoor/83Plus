@@ -8,6 +8,8 @@ public class Accels {
   private static final double SLOW_SLOPE = (1600.0 - 160) / (0 - 1400);
   private static final double FAST_SLOPE = (160.0 - 0) / (1400 - 1410);
 
+  public static final double MAX_ACCELERATION = acceleration(0) + Constants.BOOSTED_ACCELERATION;
+
   public static float acceleration(double carVelocity) {
     if (carVelocity < 1400) {
       return (float) (1600 + (SLOW_SLOPE * carVelocity));

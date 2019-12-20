@@ -1,6 +1,7 @@
 package com.eru.rlbot.bot.optimizer;
 
 import com.eru.rlbot.bot.common.Angles;
+import com.eru.rlbot.bot.common.Angles3;
 import com.eru.rlbot.bot.common.Constants;
 import com.eru.rlbot.bot.common.Matrix3;
 import com.eru.rlbot.bot.prediction.CarBallCollision;
@@ -22,12 +23,17 @@ public class CarBallOptimizer {
 
   private static final ImmutableList<Double> STEP_SIZES = ImmutableList.of(.25, .05, .01);
   public static CarData getOptimalApproach(BallData ball, Vector3 target) {
+    // The ball and target are close enough, just hit it toward the target.
+    if (ball.position.distance(target) < 1000) {
+      return makeCar(ball.position, target.minus(ball.position).normalized());
+    }
+
     long startTime = System.nanoTime();
     Vector3 workingAngle = target.minus(ball.position).normalized();
     for (double nextStepSize : STEP_SIZES) {
       workingAngle = refineApproach(ball, target, workingAngle, nextStepSize);
     }
-    logger.log(Level.WARN, "Optimization time: " + (System.nanoTime() - startTime));
+    logger.log(Level.DEBUG, "Optimization time: " + (System.nanoTime() - startTime));
     return makeCar(ball.position, workingAngle);
   }
 
@@ -41,7 +47,7 @@ public class CarBallOptimizer {
     double previousOffset = Angles.flatCorrectionAngle(prevResult.velocity, previousAngle);
     double nextOffset = previousOffset;
 
-    Matrix3 rotationMatrix = rotationMatrix(granularity);
+    Matrix3 rotationMatrix = Angles3.rotationMatrix(granularity);
     Matrix3 rotationMatrixInverse = rotationMatrix.inverse();
 
     while (Math.signum(previousOffset) == Math.signum(nextOffset)) {
@@ -61,13 +67,6 @@ public class CarBallOptimizer {
     }
 
     return Math.abs(previousOffset) < Math.abs(nextOffset) ? previousAngle : nextAngle;
-  }
-
-  private static Matrix3 rotationMatrix(double radians) {
-    return Matrix3.of(
-        Vector3.of(Math.cos(radians), Math.sin(radians), 0),
-        Vector3.of(-Math.sin(radians), Math.cos(radians), 0),
-        Vector3.of(0, 0, 1));
   }
 
   private static CarData makeCar(Vector3 position, Vector3 noseOrientation) {

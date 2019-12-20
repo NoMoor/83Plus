@@ -23,20 +23,22 @@ class StoneShotOnGoal(TrainingExercise):
     ball_vz: float = 0
     car_start_x: float = 0
     car_start_y: float = -5000
+    car_spin: float = pi / 2
 
     def make_game_state(self, rng: SeededRandomNumberGenerator) -> GameState:
         return GameState(
             ball=BallState(physics=Physics(
                 # location=Vector3(self.ball_x + rng.uniform(-10, 10), self.ball_y + rng.uniform(-10, 10), self.ball_z),
-                location=Vector3(self.ball_x, self.ball_y, self.ball_z),
+                location=Vector3(self.ball_x + rng.uniform(-500, 500), self.ball_y + rng.uniform(-500, 500),
+                                 self.ball_z),
                 velocity=Vector3(self.ball_vx, self.ball_vy, self.ball_vz),
-                angular_velocity=Vector3(0, 0, 1))),
+                angular_velocity=Vector3(0, 0, 0))),
             cars={
                 0: CarState(
                     physics=Physics(
                         # location=Vector3(self.car_start_x + rng.uniform(-1500, 1500), self.car_start_y, 0),
                         location=Vector3(self.car_start_x, self.car_start_y, 17),
-                        rotation=Rotator(0, pi / 2, 0),
+                        rotation=Rotator(0, self.car_spin, 0),
                         # rotation=Rotator(0, rng.uniform(-3.14, 3.14), 0),
                         velocity=Vector3(0, 0, 0),
                         angular_velocity=Vector3(0, 0, 0)),
@@ -104,6 +106,7 @@ class BallDrop(TrainingExercise):
     car_x: float = 0
     car_y: float = 10
     car_z: float = 17
+    car_spin: float = pi / 2
 
     def make_game_state(self, rng: SeededRandomNumberGenerator) -> GameState:
         return GameState(
@@ -115,7 +118,7 @@ class BallDrop(TrainingExercise):
                 0: CarState(
                     physics=Physics(
                         location=Vector3(self.car_x, self.car_y, self.car_z),
-                        rotation=Rotator(0, pi / 2, 0),
+                        rotation=Rotator(0, self.car_spin, 0),
                         velocity=Vector3(0, 0, 0),
                         angular_velocity=Vector3(0, 0, 0)),
                     jumped=False,
