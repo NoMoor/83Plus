@@ -16,7 +16,7 @@ import java.util.Map;
 public class TrailRenderer {
 
   // Max legnth of trail to render.
-  private static final int MAX_SIZE = (int) (Constants.STEP_SIZE_COUNT * 1.5);
+  private static final int MAX_SIZE = (Constants.STEP_SIZE_COUNT * 1);
   private static final int GROUPING_SIZE = 10;
 
   // Groupings of trail packets that are rendered together.
@@ -80,7 +80,7 @@ public class TrailRenderer {
     Vector3 nextPosition = next.getFirst().car.position;
 
     Vector3 prevToNext = nextPosition.minus(prevPosition);
-    double distance = next.getFirst().car.velocity.norm() / Constants.STEP_SIZE_COUNT;
+    double distance = next.getFirst().car.velocity.magnitude() / Constants.STEP_SIZE_COUNT;
     if (prevToNext.isZero() || distance == 0) {
       return;
     }
@@ -101,23 +101,26 @@ public class TrailRenderer {
     Vector3 speedDiff = nextVel.minus(prevVel);
     Vector3 speedDirection = speedDiff.isZero()
         ? previous.car.orientation.getNoseVector()
-        : speedDiff.normalized();
+        : speedDiff.uncheckedNormalize();
 
     // Have a length of the total speed.
-    double speed = previous.car.velocity.norm();
+    double speed = previous.car.velocity.magnitude();
     double speedVectorHeight = (speed / Constants.BOOSTED_MAX_SPEED) * MAX_VEL_HEIGHT;
 
-    Vector3 speedVector = previous.car.orientation.getRoofVector().plus(speedDirection).normalized()
+    Vector3 speedVector = previous.car.orientation.getRoofVector().plus(speedDirection).uncheckedNormalize()
         .toMagnitude(speedVectorHeight);
     renderer.drawLine3d(getSpeedColor(prevVel, nextVel), prevPosition, prevPosition.plus(speedVector));
   }
 
   private static Color getSpeedColor(Vector3 prevVel, Vector3 nextVel) {
-    double totalDiff = nextVel.norm() - prevVel.norm();
+    double totalDiff = nextVel.magnitude() - prevVel.magnitude();
     if (totalDiff == 0) {
       return Color.WHITE;
     } else {
       double relativeAcceleration = totalDiff / (Constants.BOOSTED_ACCELERATION / 120);
+      if (relativeAcceleration < Constants.BREAKING_DECELERATION / 120) {
+        relativeAcceleration = 0.1;
+      }
       float shift = (float) Angles3.clip(1 - Math.abs(relativeAcceleration), 0, 1);
       return relativeAcceleration > 0
           ? new Color(shift, 1, shift)

@@ -32,7 +32,7 @@ public class KickoffTactician extends Tactician {
   public static boolean isKickOff(DataPacket input) {
     return Math.abs(input.ball.position.x) < .1
         && Math.abs(input.ball.position.y) < .1
-        && input.ball.velocity.norm() < .1
+        && input.ball.velocity.magnitude() < .1
         && input.ball.position.z < 120;
   }
 
@@ -223,7 +223,7 @@ public class KickoffTactician extends Tactician {
       }
     } else {
       if (!input.car.hasWheelContact) {
-        if (input.car.orientation.getNoseVector().z > .1) { // Nose vector is normalized
+        if (input.car.orientation.getNoseVector().z > .1) { // Nose vector is normalize
           output.withPitch(NOSE_DOWN);
         }
       } else if (input.car.groundSpeed < 200) {

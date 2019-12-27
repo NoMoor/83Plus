@@ -32,7 +32,7 @@ public class SupportStrategist extends Strategist {
     } else {
       // TODO: Update to work with both teams.
       Vector3 ballGoal = Goal.ownGoal(input.team).center.minus(input.ball.position);
-      Vector3 rotationOffSet = ballGoal.multiply(Math.min(2000, .75 * ballGoal.norm()));
+      Vector3 rotationOffSet = ballGoal.multiply(Math.min(2000, .75 * ballGoal.magnitude()));
       Vector3 rotationPoint = input.ball.position.plus(rotationOffSet);
       Vector3 rotationPointToBall = input.ball.position.minus(rotationPoint);
 

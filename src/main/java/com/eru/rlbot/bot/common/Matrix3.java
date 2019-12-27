@@ -58,38 +58,46 @@ public class Matrix3 {
   }
 
   /** Transposes the matrix across the diagonal indexes. */
+  private Matrix3 transpose;
   public Matrix3 transpose() {
-    return new Matrix3(
-        Vector3.of(a.x, b.x, c.x),
-        Vector3.of(a.y, b.y, c.y),
-        Vector3.of(a.z, b.z, c.z));
+    if (transpose == null) {
+      transpose = new Matrix3(
+          Vector3.of(a.x, b.x, c.x),
+          Vector3.of(a.y, b.y, c.y),
+          Vector3.of(a.z, b.z, c.z));
+    }
+    return transpose;
   }
 
   /** Returns the inverse of the matrix. */
+  private Matrix3 inverse;
   public Matrix3 inverse() {
-    float determinant = determinant();
+    if (inverse == null) {
+      float determinant = determinant();
 
-    if (determinant() == 0) {
-      throw new IllegalArgumentException("There is no inverse for this matrix");
+      if (determinant() == 0) {
+        throw new IllegalArgumentException("There is no inverse for this matrix");
+      }
+
+      Matrix3 transposition = transpose();
+
+      float inv_determinant = 1 / determinant;
+
+      inverse = Matrix3.of(
+          Vector3.of(
+              transposition.minorDeterminant(0, 0) * inv_determinant,
+              transposition.minorDeterminant(0, 1) * -inv_determinant,
+              transposition.minorDeterminant(0, 2) * inv_determinant),
+          Vector3.of(
+              transposition.minorDeterminant(1, 0) * -inv_determinant,
+              transposition.minorDeterminant(1, 1) * inv_determinant,
+              transposition.minorDeterminant(1, 2) * -inv_determinant),
+          Vector3.of(
+              transposition.minorDeterminant(2, 0) * inv_determinant,
+              transposition.minorDeterminant(2, 1) * -inv_determinant,
+              transposition.minorDeterminant(2, 2) * inv_determinant));
     }
-
-    Matrix3 transposition = transpose();
-
-    float inv_determinant = 1 / determinant;
-
-    return Matrix3.of(
-        Vector3.of(
-            transposition.minorDeterminant(0, 0) * inv_determinant,
-            transposition.minorDeterminant(0, 1) * -inv_determinant,
-            transposition.minorDeterminant(0, 2) * inv_determinant),
-        Vector3.of(
-            transposition.minorDeterminant(1, 0) * -inv_determinant,
-            transposition.minorDeterminant(1, 1) * inv_determinant,
-            transposition.minorDeterminant(1, 2) * -inv_determinant),
-        Vector3.of(
-            transposition.minorDeterminant(2, 0) * inv_determinant,
-            transposition.minorDeterminant(2, 1) * -inv_determinant,
-            transposition.minorDeterminant(2, 2) * inv_determinant));
+    return inverse;
   }
 
   private float minorDeterminant(int y, int x) {
@@ -106,12 +114,16 @@ public class Matrix3 {
   }
 
   /** Returns the determinant of this matrix. */
+  private Float determinant;
   public float determinant() {
-    float deta = a.x * ((b.y * c.z) - (b.z * c.y));
-    float detb = -a.y * ((b.x * c.z) - (b.z * c.x));
-    float detc = a.z * ((b.x * c.y) - (b.y * c.x));
+    if (determinant == null) {
+      float deta = a.x * ((b.y * c.z) - (b.z * c.y));
+      float detb = -a.y * ((b.x * c.z) - (b.z * c.x));
+      float detc = a.z * ((b.x * c.y) - (b.y * c.x));
 
-    return deta + detb + detc;
+      determinant = deta + detb + detc;
+    }
+    return determinant;
   }
 
   /** The dot product of this matrix and the given vector. */

@@ -32,29 +32,39 @@ public class Orientation {
         playerInfo.physics().rotation().roll());
   }
 
-  public static Matrix3 convertFromFlatVelocity(CarData car) {
-    return convert(0, Vector2.WEST.correctionAngle(car.velocity.flatten()), 0).getOrientationMatrix();
+  public static Orientation fromFlatVelocity(CarData car) {
+    return fromFlatVelocity(car.velocity);
+  }
+
+  public static Orientation fromFlatVelocity(Vector3 velocity) {
+    return convert(0, Vector2.WEST.correctionAngle(velocity.flatten()), 0);
   }
 
   /** The direction that the front of the car is facing */
-    public Vector3 getNoseVector() {
-        return orientation.row(0);
-    }
+  public Vector3 getNoseVector() {
+    return orientation.row(0);
+  }
 
-    /** The direction that the left side of the car is facing. */
-    public final Vector3 getLeftVector() {
-        return orientation.row(1);
-    }
+  /**
+   * The direction that the left side of the car is facing.
+   */
+  public final Vector3 getLeftVector() {
+    return orientation.row(1);
+  }
 
-    /** The direction the roof of the car is facing. (0, 0, 1) means the car is upright. */
-    public final Vector3 getRoofVector() {
-        return orientation.row(2);
-    }
+  /**
+   * The direction the roof of the car is facing. (0, 0, 1) means the car is upright.
+   */
+  public final Vector3 getRoofVector() {
+    return orientation.row(2);
+  }
 
-    /** Returns the 3x3 matrix representing the nose, right, and roof vectors respectively. */
-    public Matrix3 getOrientationMatrix() {
-        return orientation.transpose();
-    }
+  /**
+   * Returns the 3x3 matrix representing the nose, right, and roof vectors respectively.
+   */
+  public Matrix3 getOrientationMatrix() {
+    return orientation.transpose();
+  }
 
   /** All params are in radians. */
   public static Orientation convert(double pitch, double yaw, double roll) {

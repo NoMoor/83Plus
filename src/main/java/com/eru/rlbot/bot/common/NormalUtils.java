@@ -85,9 +85,9 @@ public class NormalUtils {
         .build();
 
     Vector3 ballRoll = input.ball.velocity;
-    if (ballRoll.norm() < 10) {
+    if (ballRoll.magnitude() < 10) {
       // The ball is stationary enough. Normalize to the car.
-      ballRoll = car.position.minus(input.ball.position).normalized();
+      ballRoll = car.position.minus(input.ball.position).normalize();
     }
 
     // TODO: Set other car values.

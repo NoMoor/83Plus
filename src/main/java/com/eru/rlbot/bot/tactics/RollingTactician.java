@@ -54,7 +54,7 @@ public class RollingTactician extends Tactician {
 
     boostToShoot(input, output, flatCorrectionAngle);
 
-    if (carToTarget.norm() > 1500
+    if (carToTarget.magnitude() > 1500
         && Math.abs(flatCorrectionAngle) < .25
         && input.car.hasWheelContact
         && ((input.car.groundSpeed > 1300 && input.car.boost < 20) || input.car.groundSpeed > 1500)) {

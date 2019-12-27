@@ -10,7 +10,7 @@ from rlbottraining.training_exercise import Playlist, TrainingExercise
 
 
 def make_grader():
-    return StrikerGrader(timeout_seconds=6.0)
+    return StrikerGrader(timeout_seconds=10.0)
 
 @dataclass
 class StoneShotOnGoal(TrainingExercise):
@@ -31,7 +31,8 @@ class StoneShotOnGoal(TrainingExercise):
                 # location=Vector3(self.ball_x + rng.uniform(-10, 10), self.ball_y + rng.uniform(-10, 10), self.ball_z),
                 location=Vector3(self.ball_x + rng.uniform(-500, 500), self.ball_y + rng.uniform(-500, 500),
                                  self.ball_z),
-                velocity=Vector3(self.ball_vx, self.ball_vy, self.ball_vz),
+                velocity=Vector3(self.ball_vx + rng.uniform(-500, 500), self.ball_vy + rng.uniform(-500, 500),
+                                 self.ball_vz),
                 angular_velocity=Vector3(0, 0, 0))),
             cars={
                 0: CarState(
@@ -75,8 +76,8 @@ class RollingAcross(StrikerExercise):
         return GameState(
             ball=BallState(physics=Physics(
                 # location=Vector3(1000 * rng.n11(), rng.uniform(0, 1500), 100),
-                location=Vector3(-1000, 1100, 100),
-                velocity=Vector3(rng.uniform(0, 1500), 0, 0),
+                location=Vector3(rng.uniform(-1000, 1000), rng.uniform(-1000, 1000), 100),
+                velocity=Vector3(rng.uniform(-1000, 1000), rng.uniform(-1000, 1000), 1000),
                 angular_velocity=Vector3(0, 0, 0))),
             cars={
                 0: CarState(

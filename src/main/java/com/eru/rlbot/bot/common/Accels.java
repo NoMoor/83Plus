@@ -152,8 +152,13 @@ public class Accels {
     }
   }
 
-  public static double speedAt(double groundSpeed, double norm) {
-    return 0;
+  public static double distanceToSlow(double currentVelocity, double finalVelocity) {
+    double d = 0;
+    while (currentVelocity > finalVelocity) {
+      d += currentVelocity * STEP_SIZE;
+      currentVelocity -= Constants.BREAKING_DECELERATION * STEP_SIZE;
+    }
+    return d;
   }
 
   public static class AccelResult {

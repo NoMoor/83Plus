@@ -23,7 +23,9 @@ public class CarData {
   /** The velocity of the car. */
   public final Vector3 velocity;
 
-  /** The result of calling velocity.flatten().norm(). */
+  /**
+   * The result of calling velocity.flatten().magnitude().
+   */
   public final double groundSpeed;
 
   /** The orientation of the car */

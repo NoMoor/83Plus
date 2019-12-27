@@ -9,9 +9,11 @@ public class Circle {
 
   public final Vector3 center;
   public final double radius;
+  public final double maxSpeed;
 
-  public Circle(Vector3 center, double radius) {
+  public Circle(Vector3 center, double radius, double maxSpeed) {
     this.center = center;
     this.radius = radius;
+    this.maxSpeed = maxSpeed;
   }
 }

@@ -38,7 +38,7 @@ public class DribbleTactician extends Tactician {
   public void execute(DataPacket input, ControlsOutput output, Tactic tactic) {
     BallData relativeBallData = NormalUtils.noseRelativeBall(input);
 
-    if (input.car.velocity.norm() > 1550 && Math.abs(relativeBallData.velocity.y) < 50) {
+    if (input.car.velocity.magnitude() > 1550 && Math.abs(relativeBallData.velocity.y) < 50) {
       tacticManager.delegateTactic(tactic, FlickTactician.class);
     } else if (ballIsOnGround(input)) {
       chip(input, relativeBallData, output);

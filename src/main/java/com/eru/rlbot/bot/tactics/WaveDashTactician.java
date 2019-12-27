@@ -148,7 +148,7 @@ public class WaveDashTactician extends Tactician {
   }
 
   private double travelOffset(DataPacket input) {
-    return input.car.orientation.getNoseVector().flatten().correctionAngle(input.car.velocity.normalized().flatten());
+    return input.car.orientation.getNoseVector().flatten().correctionAngle(input.car.velocity.normalize().flatten());
   }
 
   private int preJumpTicks = 0;

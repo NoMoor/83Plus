@@ -28,8 +28,8 @@ public final class CarBallContactManager {
 
     BotRenderer botRenderer = BotRenderer.forIndex(input.playerIndex);
 
-    double distanceToBall = Vector3.from(nearestPointWorld, input.ball.position).norm() - Constants.BALL_COLLISION_RADIUS;
-    botRenderer.setBranchInfo("%fuu", distanceToBall);
+    double distanceToBall = Vector3.from(nearestPointWorld, input.ball.position).magnitude() - Constants.BALL_COLLISION_RADIUS;
+//    botRenderer.setBranchInfo("%fuu", distanceToBall);
     botRenderer.setNearestHitboxPoint(nearestPointWorld);
 
 

@@ -1,8 +1,8 @@
 package com.eru.rlbot.bot.strats;
 
-import com.eru.rlbot.bot.tactics.Tactic;
 import com.eru.rlbot.bot.common.Angles;
 import com.eru.rlbot.bot.common.Constants;
+import com.eru.rlbot.bot.tactics.Tactic;
 import com.eru.rlbot.common.boost.BoostManager;
 import com.eru.rlbot.common.boost.BoostPad;
 import com.eru.rlbot.common.input.DataPacket;
@@ -44,7 +44,7 @@ public class PathPlanner {
 
     double offsetMagnitude =
         Math.min(
-            boostToShortestPath.norm(),
+            boostToShortestPath.magnitude(),
             isLargeBoost ? Constants.LARGE_BOOST_PICKUP_RADIUS : Constants.SMALL_BOOST_PICKUP_RADIUS);
 
     Vector3 pickUpOffset = boostToShortestPath.toMagnitude(offsetMagnitude);

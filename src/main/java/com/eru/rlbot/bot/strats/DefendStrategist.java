@@ -96,7 +96,7 @@ public class DefendStrategist extends Strategist {
             .build());
       }
     } else if (canClear(input)) {
-      if (Locations.carToBall(input).norm() > 2000) {
+      if (Locations.carToBall(input).magnitude() > 2000) {
         bot.botRenderer.addAlertText("Rotate clear");
         tacticManager.setTactic(Tactic.ballTactic()
           .setSubject(PredictionUtils.getFirstHittableBall(input))

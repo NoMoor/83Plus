@@ -2,8 +2,6 @@ package com.eru.rlbot.bot.tactics;
 
 import com.eru.rlbot.bot.common.*;
 import com.eru.rlbot.bot.main.Agc;
-import com.eru.rlbot.bot.optimizer.CarBallOptimizer;
-import com.eru.rlbot.bot.prediction.CarBallCollision;
 import com.eru.rlbot.common.Moment;
 import com.eru.rlbot.common.input.BallData;
 import com.eru.rlbot.common.input.CarData;
@@ -15,7 +13,6 @@ import com.eru.rlbot.common.vector.Vector3;
 import com.google.common.collect.ImmutableMap;
 import rlbot.flat.BallPrediction;
 import rlbot.flat.PredictionSlice;
-import java.awt.*;
 import java.util.Optional;
 
 // Relies on other low level tactical units to do the movement but this tactician is responsible for planning a shot on
@@ -110,101 +107,14 @@ public class TakeTheShotTactician extends Tactician {
     // TODO: We should only do this if we have an open goal.
 
     if (true) {
-      Path planPath = doPlanning(input, output, tactic);
-      executePath(input, output, planPath);
-    } else
-    if (Locations.isOpponentSideOfBall(input)) {
-      getGoalSide(input, output, tactic);
+      Path planPath = PathPlanner.doShotPlanning(input);
+
+      bot.botRenderer.renderPath(planPath);
+      pathExecutor.executePath(input, output, planPath);
     } else if (tactic.getTargetPosition().z < 200) {
       shoot(input, output, tactic);
     } else if (tactic.getTargetPosition().z < 530) {
       jumpingBall(input, output, tactic);
-    }
-  }
-
-  private void executePath(DataPacket input, ControlsOutput output, Path planPath) {
-    Path.Segment nextSegment = planPath.nodes.get(0);
-    if (nextSegment.end.distance(nextSegment.start) < 100) {
-      nextSegment = planPath.nodes.size() > 1 ? planPath.nodes.get(1) : nextSegment;
-    }
-
-    double correctionAngle = Angles.flatCorrectionAngle(input.car, nextSegment.end);
-    double minTurnRadius = Constants.radius(input.car.velocity.norm());
-
-    Circle turn = Paths.turnRadius(input.car, nextSegment.end);
-
-    boolean insideTurnRadius = turn.center.distance(nextSegment.end) < minTurnRadius;
-    boolean hardTurn = turn.center.distance(nextSegment.end) < minTurnRadius * 1.15;
-    output
-        .withThrottle(1)
-        .withSteer(hardTurn ? Math.signum(correctionAngle) : correctionAngle)
-        .withBoost(input.car.groundSpeed < 1800 && !insideTurnRadius);
-  }
-
-  private Path doPlanning(DataPacket input, ControlsOutput output, Tactic tactic) {
-    BallData nextBallLocation = DllHelper.getPredictedBallAtTime(input.ball, input.ball.elapsedSeconds + Constants.STEP_SIZE);
-
-    CarData optimalCar = CarBallOptimizer.getOptimalApproach(nextBallLocation, bot.opponentsGoal.center);
-
-    Circle approachCircle = Paths.closeApproach(optimalCar, input.car);
-
-    if (input.car.position.distance(approachCircle.center) < approachCircle.radius) {
-      return new Path(new Path.Segment(input.car.position, optimalCar.position, Path.Segment.Type.ARC));
-    }
-
-    Vector3 tangentPoint = Paths.tangent(approachCircle, input.car.position, optimalCar.position);
-
-    bot.botRenderer.renderHitBox(optimalCar);
-    bot.botRenderer.renderPrediction(CarBallCollision.calculateCollision(nextBallLocation, optimalCar));
-    bot.botRenderer.renderProjection(input.car, tangentPoint, Color.green);
-    bot.botRenderer.renderCircle(approachCircle, Color.MAGENTA);
-    // Sets the state if the button has been clicked.
-    bot.setState(optimalCar);
-
-    return new Path(
-        new Path.Segment(input.car.position, tangentPoint, Path.Segment.Type.STRAIGHT),
-        new Path.Segment(tangentPoint, optimalCar.position, Path.Segment.Type.ARC));
-//    double tangentCorrection = Angles.flatCorrectionAngle(input.car, tangentPoint);
-//    double optimalCorrection = Angles.flatCorrectionAngle(input.car, optimalCar.position);
-//
-//    double distanceToArcCenter = input.car.position.flatten().distance(approachCircle.center.flatten());
-//    double distanceToTangentPoint = input.car.position.flatten().distance(tangentPoint.flatten());
-//
-//    if (distanceToTangentPoint < 50 || distanceToArcCenter < approachCircle.radius + 10) {
-//      output
-//          .withSteer(Math.signum(optimalCorrection))
-//          .withThrottle(.02f);
-//    } else if (Math.signum(tangentCorrection) == Math.signum(optimalCorrection) && Math.abs(tangentCorrection) < Math.abs(optimalCorrection)) {
-//      // Turn to the tangent only. No secondary correction needed.
-//      bot.botRenderer.setBranchInfo("Gradual Turn %f / %f", distanceToArcCenter, approachCircle.radius);
-//      output
-//          .withSteer(tangentCorrection)
-//          .withThrottle(1.0f)
-//          .withBoost(input.car.groundSpeed < 2000);
-//    } else {
-//      // Create secondary correction and connect two corrections.
-//      bot.botRenderer.setBranchInfo("Secondary Turn");
-//    }
-  }
-
-  private void getGoalSide(DataPacket input, ControlsOutput output, Tactic tactic) {
-    bot.botRenderer.setBranchInfo("Get goal side.");
-    Vector3 rotationPost = Goal.ownGoal(bot.team).getSameSidePost(input.car);
-    Vector3 carToGoal = rotationPost.minus(input.car.position);
-
-    double rotationNorm = Math.min(carToGoal.flatten().norm(), NormalUtils.noseRelativeBall(input).position.y + 2000);
-    Vector3 rotationDirection = carToGoal.toMagnitude(rotationNorm);
-
-    Vector3 rotationTarget = input.car.position.plus(rotationDirection);
-
-    double steeringAngle = Angles.flatCorrectionAngle(input.car, rotationTarget);
-
-    output
-        .withSteer(steeringAngle)
-        .withThrottle(1.0f);
-
-    if (rotationTarget.distance(input.car.position) > 1000) {
-      output.withBoost();
     }
   }
 
@@ -231,7 +141,7 @@ public class TakeTheShotTactician extends Tactician {
 //      double shotYOffset = goalTarget.z - tactic.getTargetPosition().z;
 //
 //      // TODO: Update 5000 this to be distance from tactic subject to 'shot' subject.
-////      double zOffset = getRoughUnderCut(shotDistance, shotYOffset, input.car.velocity.flatten().norm());
+////      double zOffset = getRoughUnderCut(shotDistance, shotYOffset, input.car.velocity.flatten().magnitude());
       double zOffset = 0;
       double targetHeight = tactic.getTargetPosition().z - zOffset;
 
@@ -262,7 +172,7 @@ public class TakeTheShotTactician extends Tactician {
         if (secondJumpLock) {
           output
               .withThrottle(1.0);
-        } else if (!floatingTimeToTarget.isPresent() && input.ball.velocity.norm() == 0) {
+        } else if (!floatingTimeToTarget.isPresent() && input.ball.velocity.magnitude() == 0) {
           // Do we need to go higher?
           secondJumping = true;
           output
@@ -274,7 +184,7 @@ public class TakeTheShotTactician extends Tactician {
 
       if (!secondJumping || !JumpManager.canFlip()) {
         // Pitch to subject the ball
-        Vector3 noseVector = input.ball.position.minus(input.car.position).normalized();
+        Vector3 noseVector = input.ball.position.minus(input.car.position).normalize();
 
         float carNoseZ = input.car.orientation.getNoseVector().z;
         float carNoseDz = input.car.angularVelocity.z;
@@ -318,13 +228,13 @@ public class TakeTheShotTactician extends Tactician {
       if (absSteeringAngle < 1.4) {
         output.withBoost();
       }
-    } else if (noseNormalBall.velocity.norm() < targetSpeed) { // TODO: Take into account the relative ball speed.
+    } else if (noseNormalBall.velocity.magnitude() < targetSpeed) { // TODO: Take into account the relative ball speed.
       output
           .withThrottle(1.0f);
       if (absSteeringAngle < .4) {
         output.withBoost();
       }
-    } else if (noseNormalBall.velocity.norm() < targetSpeed + 20f) {
+    } else if (noseNormalBall.velocity.magnitude() < targetSpeed + 20f) {
       output.withThrottle(.02f);
     } else {
       // Coast.
@@ -343,7 +253,7 @@ public class TakeTheShotTactician extends Tactician {
     // This should use the moment and not the current velocity
     BallData noseRelativeBall = NormalUtils.noseRelativeBall(input);
     float ballSheerVelocity = noseRelativeBall.velocity.x;
-    Vector3 sheerOffset = tactic.subject.velocity.norm() > 0
+    Vector3 sheerOffset = tactic.subject.velocity.magnitude() > 0
         ? tactic.subject.velocity.toMagnitude(Math.signum(ballSheerVelocity) == Math.signum(minTurnToGoal) ? -1 : 1)
             .toMagnitude(Math.min(Math.abs(ballSheerVelocity / 10), Constants.BALL_RADIUS))
         : Vector3.zero();
@@ -354,7 +264,7 @@ public class TakeTheShotTactician extends Tactician {
   }
 
   private void trackShotTime(DataPacket input, double targetSpeed, Vector3 ballTarget) {
-    if (input.ball.velocity.norm() > 300) {
+    if (input.ball.velocity.magnitude() > 300) {
       shotStartTime = 0;
       timeToShot = 0;
     } else if (timeToShot == 0) {
@@ -363,7 +273,7 @@ public class TakeTheShotTactician extends Tactician {
           Angles.carTarget(input.car, ballTarget).flatten().norm(), targetSpeed)
           .time;
       shotStartTime = input.car.elapsedSeconds;
-    } else if (shotStartTime != 0 && Angles.carBall(input).flatten().norm() < 150 && input.ball.velocity.norm() == 0) {
+    } else if (shotStartTime != 0 && Angles.carBall(input).flatten().norm() < 150 && input.ball.velocity.magnitude() == 0) {
       double shotTime = input.car.elapsedSeconds - shotStartTime;
 //      bot.botRenderer.addAlertText("Hit time %f off by %f", shotTime, timeToShot - shotTime);
       shotStartTime = 0;

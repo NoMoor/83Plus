@@ -32,7 +32,11 @@ public class BallData {
         this.isAbsolute = true;
     }
 
-    public BallData(PredictionSlice predictionSlice) {
+  public static BallData fromPredictionSlice(PredictionSlice predictionSlice) {
+    return new BallData(predictionSlice);
+  }
+
+  private BallData(PredictionSlice predictionSlice) {
         this.position = Vector3.of(predictionSlice.physics().location());
         this.velocity = Vector3.of(predictionSlice.physics().velocity());
         this.spin = Vector3.of(predictionSlice.physics().angularVelocity());

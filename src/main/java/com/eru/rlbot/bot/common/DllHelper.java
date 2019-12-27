@@ -20,7 +20,7 @@ public class DllHelper {
       // If the velocity is 0, pretend we don't have ball prediction.
       Vector3 ballVelocity = Vector3.of(ballPrediction.slices(0).physics().velocity());
 
-      return ballVelocity.norm() == 0 ? Optional.empty() : Optional.of(ballPrediction);
+      return ballVelocity.magnitude() == 0 ? Optional.empty() : Optional.of(ballPrediction);
     } catch (RLBotInterfaceException e) {
       // e.printStackTrace(); Somewhat expected
       return Optional.empty();
@@ -44,13 +44,14 @@ public class DllHelper {
       return ball;
     }
 
+    // TODO: Update this to binary search.
     BallPrediction ballPrediction = predictionOptional.get();
     for (int i = 0 ; i < ballPrediction.slicesLength() ; i++) {
       PredictionSlice predictionSlice = ballPrediction.slices(i);
       if (predictionSlice.gameSeconds() > gameTime) {
-        return new BallData(predictionSlice);
+        return BallData.fromPredictionSlice(predictionSlice);
       }
     }
-    return new BallData(ballPrediction.slices(ballPrediction.slicesLength() - 1));
+    return BallData.fromPredictionSlice(ballPrediction.slices(ballPrediction.slicesLength() - 1));
   }
 }

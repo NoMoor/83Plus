@@ -47,6 +47,7 @@ public final class Constants {
   public static final double GRAVITY = 650;
   public static final double NEG_GRAVITY = -GRAVITY;
   public static final double BOOSTED_ACCELERATION = 991.666;
+  public static final double BREAKING_DECELERATION = 3500;
 
   public static final double JUMP_VELOCITY_INSTANT = 300; // Directed towards the roof of the car.
   public static final double JUMP_HOLD_TIME = .2; // 200ms
@@ -101,6 +102,11 @@ public final class Constants {
     } else {
       return 0.0;
     }
+  }
+
+  public static double maxSpeed(double radius) {
+    // TODO: Implement this inverse of curvature.
+    return 0;
   }
 
   /** The distance an object can normally move. */

@@ -65,13 +65,13 @@ public class Vector3 extends rlbot.vector.Vector3 {
   }
 
   /**
-   * If norm is negative, we will return a vector facing the opposite direction.
+   * If magnitude is negative, we will return a vector facing the opposite direction.
    */
   public Vector3 toMagnitude(double magnitude) {
     if (isZero()) {
       throw new IllegalStateException("Cannot scale up a vector with length zero!");
     }
-    double scaleRequired = magnitude / norm();
+    double scaleRequired = magnitude / magnitude();
     return multiply(scaleRequired);
   }
 
@@ -83,18 +83,29 @@ public class Vector3 extends rlbot.vector.Vector3 {
     return Math.sqrt(xDiff * xDiff + yDiff * yDiff + zDiff * zDiff);
   }
 
-  /** Returns norm of the vector. */
-  public double norm() {
+  /**
+   * Returns magnitude of the vector.
+   */
+  public double magnitude() {
     return Math.sqrt(this.dot(this));
   }
 
-  /** Returns the vector normalized to norm 1. */
-  public Vector3 normalized() {
+  /**
+   * Returns the vector normalize to magnitude 1.
+   */
+  public Vector3 normalize() {
 
     if (isZero()) {
       throw new IllegalStateException("Cannot normalize a vector with length zero!");
     }
-    return this.multiply(1 / norm());
+    return this.multiply(1 / magnitude());
+  }
+
+  public Vector3 uncheckedNormalize() {
+    if (isZero()) {
+      return new Vector3(1, 0, 0);
+    }
+    return this.multiply(1 / magnitude());
   }
 
   /** Returns the dot-product of this vector with the given vector. */
@@ -122,8 +133,9 @@ public class Vector3 extends rlbot.vector.Vector3 {
 
   /** Angle in radians? */
   public double angle(Vector3 v) {
-    double mag2 = norm();
-    double vmag2 = v.norm();
+    // TODO: This doesn't fucking work...
+    double mag2 = magnitude();
+    double vmag2 = v.magnitude();
     double dot = dot(v);
     return Math.acos(dot / Math.sqrt(mag2 * vmag2));
   }

@@ -25,7 +25,7 @@ public class Angles3 {
   private static final float HORIZON_TIME = .05f;
 
   public static void setControlsForFlatLanding(CarData car, ControlsOutput output) {
-    setControlsFor(car, Orientation.convertFromFlatVelocity(car), output);
+    setControlsFor(car, Orientation.fromFlatVelocity(car).getOrientationMatrix(), output);
   }
 
   /** Returns controls to optimally rotate toward the subject orientation. */
@@ -39,7 +39,7 @@ public class Angles3 {
 
     Vector3 phi = rotation_to_axis(theta);
 
-    boolean finished = (phi.norm() < EPSILON_PHI) && (omega.norm() < EPSILON_OMEGA);
+    boolean finished = (phi.magnitude() < EPSILON_PHI) && (omega.magnitude() < EPSILON_OMEGA);
 
     if (finished) {
       return true;
@@ -100,7 +100,7 @@ public class Angles3 {
 
       alpha = alpha.plus(delta_alpha);
 
-      if (delta_alpha.norm() < 1.0f) break;
+      if (delta_alpha.magnitude() < 1.0f) break;
     }
 
     Vector3 rpy = find_controls_for(alpha, omega_local);
@@ -123,7 +123,7 @@ public class Angles3 {
   //
   private static Matrix3 z(Vector3 q) {
 
-    double norm_q = q.norm();
+    double norm_q = q.magnitude();
 
     // for small enough values, use the taylor expansion
     if (norm_q < 0.2f) {

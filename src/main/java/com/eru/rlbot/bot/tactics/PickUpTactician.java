@@ -61,7 +61,7 @@ public class PickUpTactician extends Tactician {
       output
           .withBoost()
           .withThrottle(1.0f);
-    } else if (relativeBallData.position.norm() < 500 && relativeBallData.velocity.norm() > PICK_UP_SPEED) {
+    } else if (relativeBallData.position.magnitude() < 500 && relativeBallData.velocity.magnitude() > PICK_UP_SPEED) {
       bot.botRenderer.setBranchInfo("Slow down");
       float speedDiff = -relativeBallData.velocity.y - PICK_UP_SPEED;
       if (speedDiff < 200) {
@@ -70,7 +70,7 @@ public class PickUpTactician extends Tactician {
         output.withThrottle(-1f);
       }
       output.withSteer(Angles.flatCorrectionAngle(input.car, input.ball.position));
-    } else if (-relativeBallData.velocity.y < PICK_UP_SPEED || relativeBallData.position.norm() > 500) {
+    } else if (-relativeBallData.velocity.y < PICK_UP_SPEED || relativeBallData.position.magnitude() > 500) {
       bot.botRenderer.setBranchInfo("Get to the ball");
       output
           .withThrottle(1.0f)

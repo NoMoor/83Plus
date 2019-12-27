@@ -30,7 +30,7 @@ public class ShadowTactician extends Tactician {
       // TODO: Make this better
       float ballToTargetTime = tactic.subject.time - input.car.elapsedSeconds;
       double carToTargetTime = Accels.timeToDistance(
-          input.car.velocity.norm(),
+          input.car.velocity.magnitude(),
           input.car.position.distance(tactic.subject.position)).time;
 
       output

@@ -39,7 +39,7 @@ public class FlipTactician extends Tactician {
         output
             .withBoost(0 < noseZ && noseZ < .2)
             .withThrottle(1.0f);
-        Angles3.setControlsFor(input.car, Orientation.convertFromFlatVelocity(input.car), output);
+        Angles3.setControlsFor(input.car, Orientation.fromFlatVelocity(input.car).getOrientationMatrix(), output);
       }
     } else {
       if (!input.car.jumped) {

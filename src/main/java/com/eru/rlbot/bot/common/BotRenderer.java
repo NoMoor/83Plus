@@ -32,6 +32,7 @@ import java.util.stream.IntStream;
 public class BotRenderer {
 
   private static final int SMOOTHING_INTERVAL = 5;
+  public static final double FULL_CIRCLE = Math.PI * 2;
   private static Map<Integer, BotRenderer> BOTS = new HashMap<>();
 
   private Float initialTime = null;
@@ -100,6 +101,22 @@ public class BotRenderer {
     }
   }
 
+  public void renderPath(Path planPath) {
+    planPath.allNodes().forEach(this::render);
+  }
+
+  private void render(Path.Segment segment) {
+    // TODO: Render planned acceleration / deceleration.
+    switch (segment.type) {
+      case STRAIGHT:
+        render3DLine(Color.BLUE, segment.start, segment.end);
+        break;
+      case ARC:
+        renderArc(Color.PINK, segment);
+        break;
+    }
+  }
+
   public void renderProjection(CarData car, Vector3 projectedVector, Color color) {
     if (skipRendering) {
       return;
@@ -123,7 +140,7 @@ public class BotRenderer {
     renderControl();
 //    renderTacticLines(input.car);
     renderRefreshRate(input);
-//    renderBallPrediction();
+    renderBallPrediction();
 //    renderTurningRadius(input);
     if (true) {
 //      renderPredictionDiff(input);
@@ -151,8 +168,8 @@ public class BotRenderer {
     }
 
     Vector2 perpVelocity = carVelocity.perpendicular();
-    renderCircle(carPosition.plus(perpVelocity.asVector3().toMagnitude(radius)), radius, Color.orange);
-    renderCircle(carPosition.plus(perpVelocity.asVector3().toMagnitude(-radius)), radius, Color.orange);
+    renderCircle(Color.orange, carPosition.plus(perpVelocity.asVector3().toMagnitude(radius)), radius);
+    renderCircle(Color.orange, carPosition.plus(perpVelocity.asVector3().toMagnitude(-radius)), radius);
   }
 
   public void renderHitBox(CarData car) {
@@ -277,10 +294,10 @@ public class BotRenderer {
     renderText(0, 430, "sY: %d", (int) (prediction.spin.y - actual.spin.y));
     renderText(0, 460, "sZ: %d", (int) (prediction.spin.z - actual.spin.z));
 
-    renderText(0, 580, "dS: %d", (int) prediction.spin.minus(actual.spin).norm());
-    renderText(0, 610, "dP: %d", (int) prediction.velocity.minus(actual.velocity).norm());
-    renderText(0, 640, "%% %.2f", (prediction.velocity.minus(actual.velocity).norm() * 100
-        / prediction.velocity.norm()));
+    renderText(0, 580, "dS: %d", (int) prediction.spin.minus(actual.spin).magnitude());
+    renderText(0, 610, "dP: %d", (int) prediction.velocity.minus(actual.velocity).magnitude());
+    renderText(0, 640, "%% %.2f", (prediction.velocity.minus(actual.velocity).magnitude() * 100
+        / prediction.velocity.magnitude()));
 
     renderPrediction(predictionTrace);
 
@@ -454,12 +471,16 @@ public class BotRenderer {
     renderText(0, 550, "dX: %d", (int) relativeBallData.velocity.x);
   }
 
-  public void renderCircle(Circle circle, Color color) {
-    renderCircle(circle.center, circle.radius, color);
+  private void renderArc(Color pink, Path.Segment arc) {
+    renderCircle(pink, arc.circle.center, arc.start, arc.circle.radius, arc.getRadians());
   }
 
-  public void renderCircle(Vector3 position, double radius, Color color) {
-    ImmutableList<Vector3> points = toCirclePoints(position, radius);
+  public void renderCircle(Color color, Vector3 position, double radius) {
+    renderCircle(color, position, position.plus(Vector3.of(radius, 0, 0)), radius, FULL_CIRCLE);
+  }
+
+  private void renderCircle(Color color, Vector3 center, Vector3 startPoint, double radius, double radians) {
+    ImmutableList<Vector3> points = toCirclePoints(center, startPoint, radius, radians);
 
     Vector3 prevPoint = null;
     for (Vector3 nextPoint : points) {
@@ -470,20 +491,25 @@ public class BotRenderer {
     }
 
     // Close the loop.
-    if (prevPoint != null) {
+    if (prevPoint != null && radians == FULL_CIRCLE) {
       render3DLine(color, prevPoint, points.get(0));
     }
   }
 
-  private static final int POINT_COUNT = 40;
-  private ImmutableList<Vector3> toCirclePoints(Vector3 center, double radius) {
-    return IntStream.range(0, POINT_COUNT)
-        .mapToDouble(index -> index * (Math.PI * 2) / POINT_COUNT) // Map to angle radians
-        .mapToObj(radians -> pointOnCiricle(center, radius, radians))
+  private static final int POINT_COUNT = 20;
+
+  private ImmutableList<Vector3> toCirclePoints(Vector3 center, Vector3 initialPoint, double radius, double radians) {
+    Vector2 ray = initialPoint.minus(center).flatten();
+    double radianOffset = Vector2.WEST.correctionAngle(ray);
+
+    int renderPoints = Math.min(POINT_COUNT, (int) (radians * 10)) + 1;
+    return IntStream.range(0, renderPoints)
+        .mapToDouble(index -> index * radians / renderPoints) // Map to angle radians
+        .mapToObj(nextRadian -> pointOnCircle(center, radius, nextRadian + radianOffset))
         .collect(toImmutableList());
   }
 
-  private Vector3 pointOnCiricle(Vector3 center, double radius, double radians) {
+  private Vector3 pointOnCircle(Vector3 center, double radius, double radians) {
       double x = center.x + (radius * Math.cos(radians));
       double y = center.y + (radius * Math.sin(radians));
 

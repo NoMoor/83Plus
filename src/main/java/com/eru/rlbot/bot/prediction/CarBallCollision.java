@@ -30,12 +30,12 @@ public class CarBallCollision {
 
     Vector3 touchPoint = CarBall.nearestPointOnHitBox(ball.position, car);
 
-    double distanceToHitbox = touchPoint.minus(ball.position).norm();
+    double distanceToHitbox = touchPoint.minus(ball.position).magnitude();
     if (distanceToHitbox > Constants.BALL_COLLISION_RADIUS) {
       return ball;
     }
 
-    Vector3 normalizedBallCarTouch = touchPoint.minus(ball.position).normalized();
+    Vector3 normalizedBallCarTouch = touchPoint.minus(ball.position).normalize();
 
     // Levers of rotation for ball and car.
     Matrix3 ballLever = antisym(touchPoint.minus(ball.position));
@@ -63,7 +63,7 @@ public class CarBallCollision {
         .multiply(Math.min(physicsImpulse.dot(normalizedBallCarTouch), -1));
     Vector3 physicsImpulseParallel = physicsImpulse.minus(physicsImpulsePerpendicular);
 
-    double ratio = physicsImpulsePerpendicular.norm() / Math.max(physicsImpulseParallel.norm(), 0.001f);
+    double ratio = physicsImpulsePerpendicular.magnitude() / Math.max(physicsImpulseParallel.magnitude(), 0.001f);
     Vector3 scaledPhysicsImpulse =
         physicsImpulsePerpendicular.plus(physicsImpulseParallel.multiply(Math.min(1.0f, MU * ratio)));
 
@@ -105,9 +105,9 @@ public class CarBallCollision {
         .minus(carNose
             .multiply(carBallNose)
             .multiply(.35f))
-        .normalized();
+        .normalize();
 
-    double velocityDiff = Math.min(ball.velocity.minus(car.velocity).norm(), 4600);
+    double velocityDiff = Math.min(ball.velocity.minus(car.velocity).magnitude(), 4600);
     double psyonixScalingFactor = getPsyonixImplusScalingFactor(velocityDiff);
 
     return impulseDirection.multiply(velocityDiff * psyonixScalingFactor);

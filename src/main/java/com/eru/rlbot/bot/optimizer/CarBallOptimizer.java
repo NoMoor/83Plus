@@ -25,25 +25,25 @@ public class CarBallOptimizer {
   public static CarData getOptimalApproach(BallData ball, Vector3 target) {
     // The ball and target are close enough, just hit it toward the target.
     if (ball.position.distance(target) < 1000) {
-      return makeCar(ball.position, target.minus(ball.position).normalized());
+      return makeCar(ball, target.minus(ball.position).normalize());
     }
 
     long startTime = System.nanoTime();
-    Vector3 workingAngle = target.minus(ball.position).normalized();
+    Vector3 workingAngle = target.minus(ball.position).normalize();
     for (double nextStepSize : STEP_SIZES) {
       workingAngle = refineApproach(ball, target, workingAngle, nextStepSize);
     }
     logger.log(Level.DEBUG, "Optimization time: " + (System.nanoTime() - startTime));
-    return makeCar(ball.position, workingAngle);
+    return makeCar(ball, workingAngle);
   }
 
   private static Vector3 refineApproach(BallData ball, Vector3 target, Vector3 previousAngle, double granularity) {
     // TODO: Find the best vertical angle as well...
-    final Vector3 targetAngle = target.minus(ball.position).normalized();
+    final Vector3 targetAngle = target.minus(ball.position).normalize();
 
     Vector3 nextAngle = previousAngle;
 
-    BallData prevResult = CarBallCollision.calculateCollision(ball, makeCar(ball.position, previousAngle));
+    BallData prevResult = CarBallCollision.calculateCollision(ball, makeCar(ball, previousAngle));
     double previousOffset = Angles.flatCorrectionAngle(prevResult.velocity, previousAngle);
     double nextOffset = previousOffset;
 
@@ -62,24 +62,25 @@ public class CarBallOptimizer {
         nextAngle = rotationMatrixInverse.dot(nextAngle);
       }
 
-      BallData nextResult = CarBallCollision.calculateCollision(ball, makeCar(ball.position, nextAngle));
+      BallData nextResult = CarBallCollision.calculateCollision(ball, makeCar(ball, nextAngle));
       nextOffset = Angles.flatCorrectionAngle(nextResult.velocity, targetAngle);
     }
 
     return Math.abs(previousOffset) < Math.abs(nextOffset) ? previousAngle : nextAngle;
   }
 
-  private static CarData makeCar(Vector3 position, Vector3 noseOrientation) {
+  private static CarData makeCar(BallData ball, Vector3 noseOrientation) {
     // TODO: Fix these multiply by -1 issues...
-    Vector3 sideDoor = noseOrientation.cross(Vector3.of(0, 0, noseOrientation.z)).normalized().multiply(-1);
+    Vector3 sideDoor = noseOrientation.cross(Vector3.of(0, 0, noseOrientation.z)).normalize().multiply(-1);
     Vector3 roofOrientation = noseOrientation.cross(sideDoor).multiply(-1);
     Orientation carOrientation = Orientation.noseRoof(noseOrientation, roofOrientation);
-    Vector3 carPosition = position.minus(noseOrientation.toMagnitude(Constants.BALL_RADIUS + BoundingBox.frontToRj));
+    Vector3 carPosition = ball.position.minus(noseOrientation.toMagnitude(Constants.BALL_RADIUS + BoundingBox.frontToRj));
 
     return CarData.builder()
         .setOrientation(carOrientation)
         .setVelocity(noseOrientation.toMagnitude(AVERAGE_SPEED))
         .setPosition(carPosition)
+        .setTime(ball.elapsedSeconds)
         .build();
   }
 
