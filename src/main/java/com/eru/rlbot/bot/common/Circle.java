@@ -11,9 +11,16 @@ public class Circle {
   public final double radius;
   public final double maxSpeed;
 
-  public Circle(Vector3 center, double radius, double maxSpeed) {
+  public Circle(Vector3 center, double radius) {
     this.center = center;
     this.radius = radius;
-    this.maxSpeed = maxSpeed;
+    this.maxSpeed = Constants.maxSpeed(radius) * .9;
+  }
+
+  public static Vector3 pointOnCircle(Vector3 center, double radius, double radians) {
+    double x = center.x + (radius * Math.cos(radians));
+    double y = center.y + (radius * Math.sin(radians));
+
+    return Vector3.of(x, y, center.z);
   }
 }

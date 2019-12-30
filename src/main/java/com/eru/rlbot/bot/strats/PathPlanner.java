@@ -7,6 +7,7 @@ import com.eru.rlbot.common.boost.BoostManager;
 import com.eru.rlbot.common.boost.BoostPad;
 import com.eru.rlbot.common.input.DataPacket;
 import com.eru.rlbot.common.vector.Vector3;
+import com.eru.rlbot.common.vector.Vector3s;
 import com.google.common.collect.ImmutableList;
 import java.util.Optional;
 
@@ -40,7 +41,7 @@ public class PathPlanner {
   }
 
   private Vector3 getNearestBoostEdge(Vector3 location, Vector3 start, Vector3 end, boolean isLargeBoost) {
-    Vector3 boostToShortestPath = Vector3.from(location, nearestPointOnLineSegment(location, start, end));
+    Vector3 boostToShortestPath = Vector3.from(location, Vector3s.nearestPointOnLineSegment(location, start, end));
 
     double offsetMagnitude =
         Math.min(
@@ -69,7 +70,7 @@ public class PathPlanner {
 
       double thisDistance =
           Math.max(
-              shortestDistanceToVector(boostPad.getLocation(), carPosition, tacticPosition) - pickupRadius,
+              Vector3s.shortestDistanceToVector(boostPad.getLocation(), carPosition, tacticPosition) - pickupRadius,
               0);
 
       if (thisDistance < shortestDistance) {
@@ -93,26 +94,5 @@ public class PathPlanner {
       }
     }
     return Optional.ofNullable(closetBoost);
-  }
-
-  // https://math.stackexchange.com/a/2193733
-  private double shortestDistanceToVector(Vector3 location, Vector3 start, Vector3 end) {
-    Vector3 closestPoint = nearestPointOnLineSegment(location, start, end);
-    if (closestPoint.equals(start) || closestPoint.equals(end)) {
-      return Double.MAX_VALUE;
-    }
-    return location.distance(closestPoint);
-  }
-
-  private Vector3 nearestPointOnLineSegment(Vector3 location, Vector3 start, Vector3 end) {
-    Vector3 v = end.minus(start);
-    Vector3 u = start.minus(location);
-
-    double t = - (v.dot(u)) / (v.dot(v));
-    if (t >= 0 && t <= 1) {
-      return start.multiply(1 - t).plus(end.multiply(t));
-    } else {
-      return start.distance(location) < end.distance(location) ? start : end;
-    }
   }
 }

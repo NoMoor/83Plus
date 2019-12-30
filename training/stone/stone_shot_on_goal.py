@@ -10,7 +10,7 @@ from rlbottraining.training_exercise import Playlist, TrainingExercise
 
 
 def make_grader():
-    return StrikerGrader(timeout_seconds=10.0)
+    return StrikerGrader(timeout_seconds=5.0)
 
 @dataclass
 class StoneShotOnGoal(TrainingExercise):

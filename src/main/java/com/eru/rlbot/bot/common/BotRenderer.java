@@ -13,6 +13,7 @@ import com.eru.rlbot.common.input.BallData;
 import com.eru.rlbot.common.input.BoundingBox;
 import com.eru.rlbot.common.input.CarData;
 import com.eru.rlbot.common.input.DataPacket;
+import com.eru.rlbot.common.jump.JumpManager;
 import com.eru.rlbot.common.output.ControlsOutput;
 import com.eru.rlbot.common.vector.Vector2;
 import com.eru.rlbot.common.vector.Vector3;
@@ -76,6 +77,32 @@ public class BotRenderer {
     }
   }
 
+  public void renderInfo(DataPacket input, ControlsOutput output) {
+    if (skipRendering) return;
+
+    renderDebug();
+    renderText();
+    checkAlert(input);
+
+    renderControls(output);
+    renderAcceleration(input);
+
+//    renderTacticLines(input.car);
+//    renderRefreshRate(input);
+//    renderBallPrediction();
+//    renderTurningRadius(input);
+    if (true) {
+//      renderPredictionDiff(input);
+    } else {
+      renderRelativeBallData(input);
+    }
+
+    renderProjections(input);
+//    renderTouchIndicator(input);
+
+//    renderHitBox(input.car);
+  }
+
   private PriorityQueue<RenderRequest> renderRequests =
       new PriorityQueue<>(Comparator.comparingDouble(rr -> rr.renderTimeEnd));
   public void renderProjection(Vector3 source, Vector3 target, Color color, float renderUntil) {
@@ -101,18 +128,33 @@ public class BotRenderer {
     }
   }
 
-  public void renderPath(Path planPath) {
-    planPath.allNodes().forEach(this::render);
+  public void renderPath(DataPacket input, Path path) {
+    ImmutableList<Path.Segment> pathNodes = path.allNodes();
+
+//    if (pathNodes.size() > 0 && pathNodes.get(0).type == Path.Segment.Type.ARC) {
+//      Circle circle = pathNodes.get(0).circle;
+//      renderCircle(Color.WHITE, circle.center, circle.radius);
+//    }
+
+    for (int i = 0; i < pathNodes.size(); i++) {
+      Path.Segment node = pathNodes.get(i);
+      render(node, i == path.getCurrentIndex());
+    }
+
+    renderPoint(Color.GREEN, path.getCurrentTarget(input), 10);
   }
 
-  private void render(Path.Segment segment) {
-    // TODO: Render planned acceleration / deceleration.
+  private void render(Path.Segment segment, boolean isCurrentIndex) {
+    Color color = isCurrentIndex ? Color.ORANGE : segment.isComplete() ? Color.GREEN : Color.RED;
     switch (segment.type) {
+      case JUMP:
+        render3DLine(color, segment.start, segment.end);
+        break;
       case STRAIGHT:
-        render3DLine(Color.BLUE, segment.start, segment.end);
+        render3DLine(color, segment.start, segment.end);
         break;
       case ARC:
-        renderArc(Color.PINK, segment);
+        renderArc(color, segment);
         break;
     }
   }
@@ -134,30 +176,6 @@ public class BotRenderer {
     return BotLoopRenderer.forBotLoop(bot);
   }
 
-  public void renderInfo(DataPacket input, ControlsOutput output) {
-    if (skipRendering) return;
-
-    renderControl();
-//    renderTacticLines(input.car);
-    renderRefreshRate(input);
-    renderBallPrediction();
-//    renderTurningRadius(input);
-    if (true) {
-//      renderPredictionDiff(input);
-    } else {
-      renderRelativeBallData(input);
-    }
-
-    renderProjections(input);
-    renderTouchIndicator(input);
-
-    renderHitBox(input.car);
-    renderAcceleration(input);
-    renderOutput(output);
-    renderText();
-    checkAlert(input);
-  }
-
   private void renderTurningRadius(DataPacket input) {
     Vector3 carPosition = input.car.position;
     Vector2 carVelocity = input.car.velocity.flatten();
@@ -173,25 +191,26 @@ public class BotRenderer {
   }
 
   public void renderHitBox(CarData car) {
+    boolean canFlip = JumpManager.canFlip();
     BoundingBox hitbox = car.boundingBox;
 
     // Draw front box.
     render3DLine(Color.RED, hitbox.flt, hitbox.flb);
     render3DLine(Color.BLUE, hitbox.flb, hitbox.frb);
-    render3DLine(Color.CYAN, hitbox.frb, hitbox.frt);
-    render3DLine(Color.CYAN, hitbox.frt, hitbox.flt);
+    render3DLine(canFlip ? Color.GREEN : Color.CYAN, hitbox.frb, hitbox.frt);
+    render3DLine(canFlip ? Color.GREEN : Color.CYAN, hitbox.frt, hitbox.flt);
 
     // Draw Rear box.
-    render3DLine(Color.CYAN, hitbox.rlt, hitbox.rlb);
-    render3DLine(Color.CYAN, hitbox.rlb, hitbox.rrb);
-    render3DLine(Color.CYAN, hitbox.rrb, hitbox.rrt);
-    render3DLine(Color.CYAN, hitbox.rrt, hitbox.rlt);
+    render3DLine(canFlip ? Color.GREEN : Color.CYAN, hitbox.rlt, hitbox.rlb);
+    render3DLine(canFlip ? Color.GREEN : Color.CYAN, hitbox.rlb, hitbox.rrb);
+    render3DLine(canFlip ? Color.GREEN : Color.CYAN, hitbox.rrb, hitbox.rrt);
+    render3DLine(canFlip ? Color.GREEN : Color.CYAN, hitbox.rrt, hitbox.rlt);
 
     // Connect front and back.
-    render3DLine(Color.CYAN, hitbox.flt, hitbox.rlt);
+    render3DLine(canFlip ? Color.GREEN : Color.CYAN, hitbox.flt, hitbox.rlt);
     render3DLine(Color.GREEN, hitbox.flb, hitbox.rlb);
-    render3DLine(Color.CYAN, hitbox.frt, hitbox.rrt);
-    render3DLine(Color.CYAN, hitbox.frb, hitbox.rrb);
+    render3DLine(canFlip ? Color.GREEN : Color.CYAN, hitbox.frt, hitbox.rrt);
+    render3DLine(canFlip ? Color.GREEN : Color.CYAN, hitbox.frb, hitbox.rrb);
   }
 
   private void renderRefreshRate(DataPacket input) {
@@ -260,6 +279,11 @@ public class BotRenderer {
     if (alertText != null) {
       renderText(Color.RED, 800, 400, 3, alertText);
     }
+  }
+
+
+  public void renderPoint(Color pink, Vector3 location, int size) {
+    getRenderer().drawRectangle3d(pink, location, size, size, true);
   }
 
   public void setIntersectionTarget(Vector3 target) {
@@ -338,6 +362,11 @@ public class BotRenderer {
 
       final BallPrediction ballPrediction = gamePrediction != null ? gamePrediction : RLBotDll.getBallPrediction();
 
+      double firstVectorVelocity = Vector3.of(ballPrediction.slices(0).physics().velocity()).magnitude();
+      if (firstVectorVelocity < 55) {
+        return;
+      }
+
       PredictionSlice previousDrawPrediction = null;
       for (int i = 0 ; i < ballPrediction.slicesLength(); i++) {
         PredictionSlice nextSlice = ballPrediction.slices(i);
@@ -351,7 +380,7 @@ public class BotRenderer {
           previousDrawPrediction = nextSlice;
         }
       }
-      renderer.drawString3d("Actual", Color.CYAN, Vector3.of(previousDrawPrediction.physics().location()), 2, 2);
+//      renderer.drawString3d("Actual", Color.CYAN, Vector3.of(previousDrawPrediction.physics().location()), 2, 2);
     } catch (IOException e) {}
   }
 
@@ -391,7 +420,7 @@ public class BotRenderer {
     }
   }
 
-  private void renderControl() {
+  private void renderDebug() {
     renderText(Color.PINK, 0, 300,"%s", strategist == null ? "NONE" : strategist.getType());
     renderText(Color.CYAN, 150, 300,"%s", tactic == null ? "NONE" : tactic.tacticType);
     renderText(Color.PINK, 400, 300,"%s",
@@ -425,7 +454,7 @@ public class BotRenderer {
     return value > 0 ? "UP" : value == 0 ? "NONE" : "DOWN";
   }
 
-  private void renderOutput(ControlsOutput output) {
+  private void renderControls(ControlsOutput output) {
     renderText(250, 340, String.format("Throttle %.2f", output.getThrottle()));
     renderText(250, 370, String.format("Turn %.2f %s" , output.getSteer(), lor(output.getSteer())));
     renderText(250, 400, String.format("Boost %s" , output.holdBoost()));
@@ -496,24 +525,23 @@ public class BotRenderer {
     }
   }
 
-  private static final int POINT_COUNT = 20;
+  private static final int POINT_COUNT = 40;
 
   private ImmutableList<Vector3> toCirclePoints(Vector3 center, Vector3 initialPoint, double radius, double radians) {
     Vector2 ray = initialPoint.minus(center).flatten();
     double radianOffset = Vector2.WEST.correctionAngle(ray);
 
-    int renderPoints = Math.min(POINT_COUNT, (int) (radians * 10)) + 1;
-    return IntStream.range(0, renderPoints)
+    int renderPoints = Math.min(POINT_COUNT, (int) (Math.abs(radians) * 10));
+    ImmutableList<Vector3> curve = IntStream.range(1, renderPoints)
         .mapToDouble(index -> index * radians / renderPoints) // Map to angle radians
-        .mapToObj(nextRadian -> pointOnCircle(center, radius, nextRadian + radianOffset))
+        .mapToObj(nextRadian -> Circle.pointOnCircle(center, radius, nextRadian + radianOffset))
         .collect(toImmutableList());
-  }
 
-  private Vector3 pointOnCircle(Vector3 center, double radius, double radians) {
-      double x = center.x + (radius * Math.cos(radians));
-      double y = center.y + (radius * Math.sin(radians));
-
-      return Vector3.of(x, y, center.z);
+    return ImmutableList.<Vector3>builder()
+        .add(initialPoint) // First point
+        .addAll(curve)
+        .add(Circle.pointOnCircle(center, radius, radians + radianOffset)) // Last point
+        .build();
   }
 
   // Methods for rendering text on screen.

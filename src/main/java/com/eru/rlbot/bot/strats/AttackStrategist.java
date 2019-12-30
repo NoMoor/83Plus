@@ -49,6 +49,16 @@ public class AttackStrategist extends Strategist {
       return true;
     }
 
+    // TODO: Figure out when to invoke the aerial stuff.
+    if (input.ball.position.z > 300 && false) {
+      tacticManager.setTactic(Tactic.ballTactic()
+          .setSubject(input.ball.position)
+          .setObject(Goal.opponentGoal(input.car.team).center)
+          .setTacticType(Tactic.TacticType.AERIAL)
+          .build());
+      return true;
+    }
+
     if (TakeTheShotTactician.takeTheShot(input)) {
       Moment targetMoment = TakeTheShotTactician.shotTarget(input);
       tacticManager.setTactic(

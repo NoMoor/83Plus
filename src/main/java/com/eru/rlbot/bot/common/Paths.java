@@ -16,7 +16,7 @@ public class Paths {
 
     Vector3 center1 = car.position.plus(centerOffset);
     Vector3 center2 = car.position.minus(centerOffset);
-    return new Circle(center1.distance(targetLocation) < center2.distance(targetLocation) ? center1 : center2, turnRadius, car.groundSpeed);
+    return new Circle(center1.distance(targetLocation) < center2.distance(targetLocation) ? center1 : center2, turnRadius);
   }
 
   /**
@@ -38,8 +38,7 @@ public class Paths {
     return new Circle(center1.distance(currentLocation) < center2.distance(currentLocation)
         ? center1
         : center2,
-        turnRadius,
-        target.groundSpeed);
+        turnRadius);
   }
 
   static Vector3 tangent(Circle circle, Vector3 currentCarPos, CarData targetCar) {

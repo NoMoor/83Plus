@@ -44,9 +44,9 @@ public class RotateTactician extends Tactician {
         .setOrientation(Orientation.fromFlatVelocity(targetVelocity))
         .build();
 
-    Path path = PathPlanner.planPath(input, targetCar);
+    Path path = PathPlanner.planPath(input.car, targetCar);
     path.setTimed(false);
-    bot.botRenderer.renderPath(path);
+    bot.botRenderer.renderPath(input, path);
     bot.botRenderer.renderHitBox(targetCar);
 
     pathExecutor.executePath(input, output, path);

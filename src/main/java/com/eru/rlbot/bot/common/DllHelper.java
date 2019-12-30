@@ -1,7 +1,6 @@
 package com.eru.rlbot.bot.common;
 
 import com.eru.rlbot.common.input.BallData;
-import com.eru.rlbot.common.vector.Vector3;
 import rlbot.cppinterop.RLBotDll;
 import rlbot.cppinterop.RLBotInterfaceException;
 import rlbot.flat.BallPrediction;
@@ -18,9 +17,9 @@ public class DllHelper {
       // TODO: Make this cleaner.
       // TODO: Wrap ball prediction to have iterator and Vector types or at least easier operation.
       // If the velocity is 0, pretend we don't have ball prediction.
-      Vector3 ballVelocity = Vector3.of(ballPrediction.slices(0).physics().velocity());
+      // Vector3 ballVelocity = Vector3.of(ballPrediction.slices(0).physics().velocity());
 
-      return ballVelocity.magnitude() == 0 ? Optional.empty() : Optional.of(ballPrediction);
+      return Optional.of(ballPrediction);
     } catch (RLBotInterfaceException e) {
       // e.printStackTrace(); Somewhat expected
       return Optional.empty();

@@ -16,8 +16,9 @@ public class GoalLineTactician extends Tactician {
   public void execute(DataPacket input, ControlsOutput output, Tactic tactic) {
     // TODO: If this has an object, we should hit toward that.
     Path planPath = PathPlanner.doDefensePlanning(input);
+    planPath.startTiming(input);
 
-    bot.botRenderer.renderPath(planPath);
+    bot.botRenderer.renderPath(input, planPath);
     pathExecutor.executePath(input, output, planPath);
   }
 }

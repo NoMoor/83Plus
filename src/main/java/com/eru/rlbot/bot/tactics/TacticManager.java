@@ -17,6 +17,7 @@ public class TacticManager {
     DEFAULT_TACTICIAN_MAP.put(Tactic.TacticType.CATCH, CatchTactician.class);
     DEFAULT_TACTICIAN_MAP.put(Tactic.TacticType.DEFEND, GoalLineTactician.class);
     DEFAULT_TACTICIAN_MAP.put(Tactic.TacticType.DRIBBLE, DribbleTactician.class);
+    DEFAULT_TACTICIAN_MAP.put(Tactic.TacticType.FAST_AERIAL, FastAerial.class);
     DEFAULT_TACTICIAN_MAP.put(Tactic.TacticType.FLIP, FlipTactician.class);
     DEFAULT_TACTICIAN_MAP.put(Tactic.TacticType.FLICK, FlickTactician.class);
     DEFAULT_TACTICIAN_MAP.put(Tactic.TacticType.HIT_BALL, RollingTactician.class);

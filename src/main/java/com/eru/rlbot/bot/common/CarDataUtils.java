@@ -4,12 +4,16 @@ import com.eru.rlbot.common.input.CarData;
 
 public final class CarDataUtils {
 
-  public static CarData rewind(CarData carData, double distance) {
-    double time = distance / carData.velocity.magnitude();
+  public static CarData rewindDistance(CarData car, double distance) {
+    double time = distance / car.velocity.magnitude();
 
-    return carData.toBuilder()
-        .setPosition(carData.position.minus(carData.velocity.multiply(time)))
-        .setTime(carData.elapsedSeconds - time)
+    return rewindTime(car, time);
+  }
+
+  public static CarData rewindTime(CarData car, double time) {
+    return car.toBuilder()
+        .setPosition(car.position.minus(car.velocity.multiply(time)))
+        .setTime(car.elapsedSeconds - time)
         .build();
   }
 

@@ -134,10 +134,10 @@ public class Vector3 extends rlbot.vector.Vector3 {
   /** Angle in radians? */
   public double angle(Vector3 v) {
     // TODO: This doesn't fucking work...
-    double mag2 = magnitude();
-    double vmag2 = v.magnitude();
+    double mag = magnitude();
+    double vmag = v.magnitude();
     double dot = dot(v);
-    return Math.acos(dot / Math.sqrt(mag2 * vmag2));
+    return Math.acos(dot / (mag * vmag));
   }
 
   /** Returns the cross product of this and the given vector. */

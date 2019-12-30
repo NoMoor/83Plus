@@ -1,10 +1,16 @@
-from stone.stone_shot_on_goal import RollingAcross
+from math import pi
+
+from stone.stone_shot_on_goal import BallDrop
 
 stone_exercises = [
     # StoneKickoff('Stone Kickoff'),
     # StoneShotOnGoal('Stone Shot On Goal'),
     # RollingTowardsGoalShot("Rolling shot"),
-    RollingAcross("Rolling across"),
+    # RollingAcross("Rolling across"),
+
+    # Path planning ideas.
+    BallDrop("Path Testing", ball_x=1500, ball_y=500, ball_z=100, ball_vz=0, ball_vx=0, car_y=-2000, car_spin=-pi / 10),
+    # BallDrop("Path Testing", ball_x=0, ball_y=500, ball_z=100, ball_vz=1000, ball_vx=500, car_y=-2000),
 
     # Balls rolling toward and away from the center of the map
     # StoneShotOnGoal('Testing', ball_x=-1120, ball_y=500, ball_z=92, ball_vx=1000, ball_vy=-500, car_start_x=0, car_start_y=-1800),

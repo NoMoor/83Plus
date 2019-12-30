@@ -88,7 +88,7 @@ public final class Constants {
     return velocity == 0 ? 0 : (1 / curvature(velocity));
   }
 
-  private static double curvature(double velocity) {
+  static double curvature(double velocity) {
     if (0.0 <= velocity && velocity < 500.0) {
       return 0.006900 - 5.84e-6 * velocity;
     } else if (500.0 <= velocity && velocity < 1000.0) {
@@ -104,9 +104,37 @@ public final class Constants {
     }
   }
 
+  private static double speedGranularity = .5;
+
+  /**
+   * Uses binary search to converge on the max speed for a given radius. Takes O(11) cycles.
+   */
   public static double maxSpeed(double radius) {
-    // TODO: Implement this inverse of curvature.
-    return 0;
+    double desiredCurvature = 1 / radius;
+
+    if (desiredCurvature >= curvature(.1)) {
+      return 0;
+    }
+    if (radius <= curvature(Constants.BOOSTED_MAX_SPEED)) {
+      return BOOSTED_MAX_SPEED;
+    }
+
+    double lowSpeed = .1;
+    double highSpeed = Constants.BOOSTED_MAX_SPEED;
+
+    while (highSpeed - lowSpeed > speedGranularity) {
+      double midSpeed = (highSpeed + lowSpeed) / 2;
+      double midCurve = curvature(midSpeed);
+
+      // Must go slower
+      if (midCurve < desiredCurvature) {
+        highSpeed = midSpeed;
+      } else {
+        lowSpeed = midSpeed;
+      }
+    }
+
+    return lowSpeed;
   }
 
   /** The distance an object can normally move. */

@@ -100,6 +100,13 @@ public class TakeTheShotTactician extends Tactician {
         : Accels.timeToDistance(car.velocity.flatten().norm(), relativeBall.position.flatten().norm()).time;
   }
 
+  private Path path;
+
+  @Override
+  public boolean isLocked() {
+    return true;
+  }
+
   @Override
   public void execute(DataPacket input, ControlsOutput output, Tactic tactic) {
     bot.botRenderer.setIntersectionTarget(tactic.getTargetPosition());
@@ -107,10 +114,13 @@ public class TakeTheShotTactician extends Tactician {
     // TODO: We should only do this if we have an open goal.
 
     if (true) {
-      Path planPath = PathPlanner.doShotPlanning(input);
+      if (path == null || (path.isTimed() && path.getEndTime() < input.car.elapsedSeconds)) {
+        path = PathPlanner.doShotPlanning(input);
+        path.startTiming(input);
+      }
 
-      bot.botRenderer.renderPath(planPath);
-      pathExecutor.executePath(input, output, planPath);
+      bot.botRenderer.renderPath(input, path);
+      pathExecutor.executePath(input, output, path);
     } else if (tactic.getTargetPosition().z < 200) {
       shoot(input, output, tactic);
     } else if (tactic.getTargetPosition().z < 530) {

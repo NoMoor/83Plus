@@ -29,6 +29,9 @@ public class TrailRenderer {
   private static LinkedList<TrailRendererInternal> RENDER_POOL = new LinkedList<>();
 
   public static void recordAndRender(DataPacket input, ControlsOutput output) {
+    if (true)
+      return;
+
     record(input, output);
     renderTrail();
   }

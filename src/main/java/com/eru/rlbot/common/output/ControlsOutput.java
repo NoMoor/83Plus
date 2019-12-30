@@ -114,7 +114,7 @@ public class ControlsOutput implements ControllerState {
         return this;
     }
 
-    private float clamp(float value) {
+    public static float clamp(float value) {
         return Math.max(-1, Math.min(1, value));
     }
 
