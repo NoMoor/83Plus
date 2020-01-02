@@ -1,5 +1,6 @@
 package com.eru.rlbot.bot.common;
 
+import com.eru.rlbot.common.input.CarData;
 import com.eru.rlbot.common.vector.Vector3;
 
 /**
@@ -22,5 +23,13 @@ public class Circle {
     double y = center.y + (radius * Math.sin(radians));
 
     return Vector3.of(x, y, center.z);
+  }
+
+  public boolean isClockwise(CarData carData) {
+    return isClockwise(carData.position, carData.orientation.getNoseVector());
+  }
+
+  private boolean isClockwise(Vector3 position, Vector3 noseVector) {
+    return center.minus(position).cross(noseVector).z < 0;
   }
 }

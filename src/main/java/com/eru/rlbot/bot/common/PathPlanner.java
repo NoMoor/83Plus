@@ -10,6 +10,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import rlbot.flat.BallPrediction;
 import rlbot.flat.PredictionSlice;
+import java.awt.*;
 import java.util.Optional;
 
 public class PathPlanner {
@@ -132,39 +133,38 @@ public class PathPlanner {
     workingTarget = projectedCardData;
 
     Circle closeApproachCircle = Paths.closeApproach(workingTarget, car);
-    Vector3 tangentPoint = Paths.tangent(closeApproachCircle, car.position, workingTarget);
+    Circle closeTurningRadius = Paths.closeTurningRadius(closeApproachCircle, car);
 
-//    // TODO: Probably just get rid of this code.
-//    boolean insideApproachCircle = car.position.distance(closeApproachCircle.center) < closeApproachCircle.radius * .8;
-//    boolean isTravelingTowardGoal = Math.signum(car.velocity.dot(workingTarget.velocity)) > 0;
+    BotRenderer.forIndex(car.playerIndex).renderCircle(Color.white, closeApproachCircle);
+    BotRenderer.forIndex(car.playerIndex).renderCircle(Color.white, closeTurningRadius);
+
+    Paths.CircleTangents tangents = Paths.tangents(closeTurningRadius, closeApproachCircle);
+    Path.Segment connectingSegment;
+    if (closeApproachCircle.isClockwise(workingTarget)) {
+      connectingSegment = closeTurningRadius.isClockwise(car) ? tangents.cwcw : tangents.ccwcw;
+    } else {
+      connectingSegment = closeTurningRadius.isClockwise(car) ? tangents.cwccw : tangents.ccwccw;
+    }
+
+//    if (Math.signum(tangentCorrection) == Math.signum(approachCorrection)
+//        && Math.abs(tangentCorrection) < Math.abs(approachCorrection)) {
 //
-//    if (isTravelingTowardGoal && insideApproachCircle) {
+//      Circle circle = getWideCircle(car, workingTarget);
 //      return pathBuilder
-//          .addEarlierSegment(Path.Segment.arc(car.position, workingTarget, closeApproachCircle))
+//          .addEarlierSegment(Path.Segment.arc(car.position, workingTarget, circle))
 //          .build();
 //    }
 
-    double tangentCorrection = Angles.flatCorrectionAngle(car, tangentPoint);
-    double approachCorrection = Angles.flatCorrectionAngle(car, workingTarget.position);
-
-    if (Math.signum(tangentCorrection) == Math.signum(approachCorrection)
-        && Math.abs(tangentCorrection) < Math.abs(approachCorrection)) {
-
-      Circle circle = getCircle(car, workingTarget);
-      return pathBuilder
-          .addEarlierSegment(Path.Segment.arc(car.position, workingTarget, circle))
-          .build();
-    }
-
     return pathBuilder
-        .addEarlierSegment(Path.Segment.arc(tangentPoint, workingTarget, closeApproachCircle))
-        .addEarlierSegment(Path.Segment.straight(car.position, tangentPoint))
+        .addEarlierSegment(Path.Segment.arc(connectingSegment.end, workingTarget, closeApproachCircle))
+        .addEarlierSegment(connectingSegment)
+        .addEarlierSegment(Path.Segment.arc(car.position, connectingSegment.start, closeTurningRadius, false))
         .build();
   }
 
   // TODO: I don't think this is quite right.
-  // Calculates a circle from two tangent orientations.
-  private static Circle getCircle(CarData a, CarData b) {
+  // Calculates a circle from two tangentForTargetDirection orientations.
+  private static Circle getWideCircle(CarData a, CarData b) {
     // Do one gradual arc to the approach.
     double correctionAngle = a.orientation.getNoseVector().flatten()
         .correctionAngle(b.orientation.getNoseVector().flatten());

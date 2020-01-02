@@ -85,7 +85,11 @@ public final class Constants {
   }
 
   public static double radius(double velocity) {
-    return velocity == 0 ? 0 : (1 / curvature(velocity));
+    if (velocity <= 0) {
+      velocity = 1;
+    }
+
+    return (1 / curvature(velocity));
   }
 
   static double curvature(double velocity) {

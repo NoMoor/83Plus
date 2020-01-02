@@ -1,7 +1,11 @@
 package com.eru.rlbot.bot.common;
 
+import static com.google.common.collect.ImmutableList.toImmutableList;
+
 import com.eru.rlbot.common.input.CarData;
+import com.eru.rlbot.common.vector.Vector2;
 import com.eru.rlbot.common.vector.Vector3;
+import com.google.common.collect.ImmutableList;
 
 public class Paths {
 
@@ -41,9 +45,19 @@ public class Paths {
         turnRadius);
   }
 
-  static Vector3 tangent(Circle circle, Vector3 currentCarPos, CarData targetCar) {
+  static Vector3 tangentForTargetDirection(Circle circle, Vector3 currentCarPos, CarData targetCar) {
+    TangentPoints tangentPoints = tangents(circle, currentCarPos);
+
+    // Select the point going in the right direction.
+    Vector3 centerToTarget = circle.center.minus(targetCar.position);
+    double targetHandedness = Math.signum(centerToTarget.cross(targetCar.orientation.getNoseVector()).z);
+
+    return targetHandedness < 0 ? tangentPoints.left : tangentPoints.right;
+  }
+
+  public static TangentPoints tangents(Circle circle, Vector3 point) {
     // Find a circle that goes through both the center of the original circle and the given position.
-    Vector3 bisector = circle.center.minus(currentCarPos).divide(2);
+    Vector3 bisector = circle.center.minus(point).divide(2);
 
     double d = bisector.magnitude();
     double r = circle.radius;
@@ -52,20 +66,137 @@ public class Paths {
     double x = ((d * d) - (r * r) + (R * R)) / (2 * d);
     double a = (1 / (2 * d)) * Math.sqrt((4 * (d * d) * (R * R)) - Math.pow((d * d) - (r * r) + (R * R), 2));
 
-    Vector3 tanx = currentCarPos.plus(bisector.plus(bisector.normalize().toMagnitude(x)));
+    Vector3 tanx = point.plus(bisector.plus(bisector.normalize().toMagnitude(x)));
     Vector3 perp = bisector.flatten().perpendicular().scaledToMagnitude(a).asVector3();
 
-    Vector3 tangent1 = tanx.plus(perp);
-    Vector3 tangent2 = tanx.minus(perp);
+    // TODO: Label these. One should always have the same spin.
+    return new TangentPoints(tanx.minus(perp), tanx.plus(perp));
+  }
 
-    // Select the point going in the right direction.
-    Vector3 centerToTarget = circle.center.minus(targetCar.position);
-    double targetHandedness = Math.signum(centerToTarget.cross(targetCar.orientation.getNoseVector()).z);
+  public static CircleTangents tangents(Circle a, Circle b) {
+    if (a.radius == b.radius) {
+      a = new Circle(a.center, a.radius + 1);
+    }
+    Circle larger = a.radius > b.radius ? a : b;
+    Circle smaller = larger == a ? b : a;
+    boolean aIsLarger = a.radius > b.radius;
 
-    Vector3 centerToTan1 = circle.center.minus(tangent1);
-    double tan1Handedness = Math.signum(centerToTan1.cross(tangent1.minus(currentCarPos)).z);
+    // TODO: Do checking to see if they overlap.
 
-    return targetHandedness == tan1Handedness ? tangent1 : tangent2;
+    // Get inside tangents.
+    ImmutableList<Path.Segment> insideSegments =
+        tangents(new Circle(larger.center, larger.radius + smaller.radius), smaller.center).getPoints().stream()
+            .map(tangentPoint -> toInsideSegments(larger, smaller, aIsLarger, tangentPoint))
+            .collect(toImmutableList());
+
+    // Get outside tangents.
+    ImmutableList<Path.Segment> outsideSegments =
+        tangents(new Circle(larger.center, larger.radius - smaller.radius), smaller.center).getPoints().stream()
+            .map(tangentPoint -> toOutsideSegments(larger, smaller, aIsLarger, tangentPoint))
+            .collect(toImmutableList());
+
+    return new CircleTangents(
+        outsideSegments.get(0),
+        insideSegments.get(0),
+        insideSegments.get(1),
+        outsideSegments.get(1));
+  }
+
+  private static Path.Segment toOutsideSegments(Circle larger, Circle smaller, boolean aIsLarger, Vector3 tangentPoint) {
+    Vector3 offset = larger.center.minus(tangentPoint).toMagnitude(smaller.radius);
+    Vector3 largerTangent = tangentPoint.minus(offset);
+    Vector3 smallerTangent = smaller.center.minus(offset);
+    return Path.Segment.straight(
+        aIsLarger ? largerTangent : smallerTangent,
+        aIsLarger ? smallerTangent : largerTangent);
+  }
+
+  private static Path.Segment toInsideSegments(Circle larger, Circle smaller, boolean aIsLarger, Vector3 tangentPoint) {
+    Vector3 offset = larger.center.minus(tangentPoint).toMagnitude(smaller.radius);
+    Vector3 largerTangent = tangentPoint.plus(offset);
+    Vector3 smallerTangent = smaller.center.plus(offset);
+    return Path.Segment.straight(
+        aIsLarger ? largerTangent : smallerTangent,
+        aIsLarger ? smallerTangent : largerTangent);
+  }
+
+  public static Circle closeTurningRadius(Circle closeApproachCircle, CarData car) {
+    ImmutableList<Circle> circles =
+        turningRadiusCircles(
+            car.position,
+            Math.max(800, car.groundSpeed),
+            car.orientation.getNoseVector());
+
+    Circle left = circles.get(0);
+    Circle right = circles.get(1);
+
+    if (left.center.distance(closeApproachCircle.center) < right.center.distance(closeApproachCircle.center)) {
+      return left;
+    }
+    return right;
+  }
+
+  public static ImmutableList<Circle> turningRadiusCircles(CarData car) {
+    return turningRadiusCircles(car.position, car.groundSpeed, car.orientation.getNoseVector());
+  }
+
+  public static ImmutableList<Circle> turningRadiusCircles(Vector3 position, double speed, Vector3 noseVector) {
+    double radius = Constants.radius(speed);
+
+    Vector2 perpVelocity = noseVector.flatten().perpendicular();
+    Circle rightCircle = new Circle(position.plus(perpVelocity.asVector3().toMagnitude(radius)), radius);
+    Circle leftCircle = new Circle(position.plus(perpVelocity.asVector3().toMagnitude(-radius)), radius);
+
+    return ImmutableList.of(leftCircle, rightCircle);
+  }
+
+  public static class CircleTangents {
+    public final Path.Segment cwcw;
+    public final Path.Segment ccwcw;
+    public final Path.Segment cwccw;
+    public final Path.Segment ccwccw;
+
+    public final int numDistinctTangents;
+
+    public CircleTangents(
+        Path.Segment cwcw,
+        Path.Segment ccwcw,
+        Path.Segment cwccw,
+        Path.Segment ccwccw) {
+
+      this.cwcw = cwcw;
+      this.ccwcw = ccwcw;
+      this.cwccw = cwccw;
+      this.ccwccw = ccwccw;
+
+      if (Double.isNaN(cwcw.start.x)) {
+        numDistinctTangents = 0;
+      } else if (Double.isNaN(cwccw.start.x)) {
+        numDistinctTangents = 2;
+      } else if (ccwcw.equals(cwccw)) {
+        numDistinctTangents = 3;
+      } else {
+        numDistinctTangents = 4;
+      }
+    }
+
+    public ImmutableList<Path.Segment> getSegments() {
+      return ImmutableList.of(cwcw, ccwcw, cwccw, ccwccw);
+    }
+  }
+
+  public static class TangentPoints {
+    public final Vector3 left; // Clockwise
+    public final Vector3 right; // Counter-clockwise
+
+    TangentPoints(Vector3 left, Vector3 right) {
+      this.left = left;
+      this.right = right;
+    }
+
+    public ImmutableList<Vector3> getPoints() {
+      return ImmutableList.of(left, right);
+    }
   }
 
   private Paths() {

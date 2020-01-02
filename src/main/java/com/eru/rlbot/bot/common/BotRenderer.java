@@ -80,17 +80,17 @@ public class BotRenderer {
   public void renderInfo(DataPacket input, ControlsOutput output) {
     if (skipRendering) return;
 
-    renderDebug();
-    renderText();
-    checkAlert(input);
-
+//    renderDebug();
+//    renderText();
+//    checkAlert(input);
+//
     renderControls(output);
     renderAcceleration(input);
 
 //    renderTacticLines(input.car);
 //    renderRefreshRate(input);
 //    renderBallPrediction();
-//    renderTurningRadius(input);
+    renderTurningRadius(input);
     if (true) {
 //      renderPredictionDiff(input);
     } else {
@@ -138,10 +138,10 @@ public class BotRenderer {
 
     for (int i = 0; i < pathNodes.size(); i++) {
       Path.Segment node = pathNodes.get(i);
-      render(node, i == path.getCurrentIndex());
+      render(node, i == path.getCurrentPidIndex());
     }
 
-    renderPoint(Color.GREEN, path.getCurrentTarget(input), 10);
+    renderPoint(Color.GREEN, path.getPIDTarget(input), 10);
   }
 
   private void render(Path.Segment segment, boolean isCurrentIndex) {
@@ -177,17 +177,14 @@ public class BotRenderer {
   }
 
   private void renderTurningRadius(DataPacket input) {
-    Vector3 carPosition = input.car.position;
-    Vector2 carVelocity = input.car.velocity.flatten();
+    ImmutableList<Circle> radiusCircles = Paths.turningRadiusCircles(input.car);
 
-    double radius = Constants.radius(input.car.groundSpeed);
-    if (radius == 0) {
-      return;
+    if (input.ball.position.distance(radiusCircles.get(0).center)
+        < input.ball.position.distance(radiusCircles.get(1).center)) {
+      renderCircle(Color.orange, radiusCircles.get(0));
+    } else {
+      renderCircle(Color.blue, radiusCircles.get(1));
     }
-
-    Vector2 perpVelocity = carVelocity.perpendicular();
-    renderCircle(Color.orange, carPosition.plus(perpVelocity.asVector3().toMagnitude(radius)), radius);
-    renderCircle(Color.orange, carPosition.plus(perpVelocity.asVector3().toMagnitude(-radius)), radius);
   }
 
   public void renderHitBox(CarData car) {
@@ -504,8 +501,12 @@ public class BotRenderer {
     renderCircle(pink, arc.circle.center, arc.start, arc.circle.radius, arc.getRadians());
   }
 
-  public void renderCircle(Color color, Vector3 position, double radius) {
-    renderCircle(color, position, position.plus(Vector3.of(radius, 0, 0)), radius, FULL_CIRCLE);
+  public void renderCircle(Color color, Circle circle) {
+    renderCircle(color, circle.center, circle.radius);
+  }
+
+  public void renderCircle(Color color, Vector3 center, double radius) {
+    renderCircle(color, center, center.plus(Vector3.of(radius, 0, 0)), radius, FULL_CIRCLE);
   }
 
   private void renderCircle(Color color, Vector3 center, Vector3 startPoint, double radius, double radians) {

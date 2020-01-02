@@ -9,7 +9,10 @@ stone_exercises = [
     # RollingAcross("Rolling across"),
 
     # Path planning ideas.
-    BallDrop("Path Testing", ball_x=1500, ball_y=500, ball_z=100, ball_vz=0, ball_vx=0, car_y=-2000, car_spin=-pi / 10),
+    # BallDrop("Path Testing", ball_x=1500, ball_y=1750, ball_z=100, ball_vz=0, ball_vx=0, car_y=-2000),
+    # BallDrop("Path Testing", ball_x=1500, ball_y=1750, ball_z=100, ball_vz=0, ball_vx=0, car_x=-1000, car_y=2000),
+    BallDrop("Path Testing", ball_x=1500, ball_y=1750, ball_z=100, ball_vz=0, ball_vx=0, car_x=-1000, car_y=2000,
+             car_spin=pi * 3 / 4),
     # BallDrop("Path Testing", ball_x=0, ball_y=500, ball_z=100, ball_vz=1000, ball_vx=500, car_y=-2000),
 
     # Balls rolling toward and away from the center of the map

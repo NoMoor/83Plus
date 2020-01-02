@@ -33,7 +33,7 @@ public class DefendStrategist extends Strategist {
     double carToGoal = input.car.position.distance(centerGoal);
     double ballToGoal = input.ball.position.distance(centerGoal);
 
-    return carToGoal > ballToGoal;
+    return carToGoal > ballToGoal && false;
   }
 
   private static boolean shotOnGoal(DataPacket input) {
