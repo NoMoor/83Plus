@@ -33,7 +33,7 @@ import java.util.stream.IntStream;
 public class BotRenderer {
 
   private static final int SMOOTHING_INTERVAL = 5;
-  public static final double FULL_CIRCLE = Math.PI * 2;
+  private static final double FULL_CIRCLE = Math.PI * 2;
   private static Map<Integer, BotRenderer> BOTS = new HashMap<>();
 
   private Float initialTime = null;
@@ -82,7 +82,7 @@ public class BotRenderer {
 
 //    renderDebug();
 //    renderText();
-//    checkAlert(input);
+    renderAlert(input);
 //
     renderControls(output);
     renderAcceleration(input);
@@ -90,7 +90,7 @@ public class BotRenderer {
 //    renderTacticLines(input.car);
 //    renderRefreshRate(input);
 //    renderBallPrediction();
-    renderTurningRadius(input);
+//    renderTurningRadius(input);
     if (true) {
 //      renderPredictionDiff(input);
     } else {
@@ -129,23 +129,32 @@ public class BotRenderer {
   }
 
   public void renderPath(DataPacket input, Path path) {
-    ImmutableList<Path.Segment> pathNodes = path.allNodes();
+    ImmutableList<Segment> pathNodes = path.allNodes();
 
-//    if (pathNodes.size() > 0 && pathNodes.get(0).type == Path.Segment.Type.ARC) {
-//      Circle circle = pathNodes.get(0).circle;
-//      renderCircle(Color.WHITE, circle.center, circle.radius);
-//    }
-
+    Segment.Type previousType = null;
+    Color previousColor = null;
     for (int i = 0; i < pathNodes.size(); i++) {
-      Path.Segment node = pathNodes.get(i);
-      render(node, i == path.getCurrentPidIndex());
+      Segment segment = pathNodes.get(i);
+
+      Color color = i == path.getCurrentIndex() ? Color.ORANGE : segment.isComplete() ? Color.GREEN : Color.RED;
+//      color = segment.type == Segment.Type.JUMP ? Color.white : segment.type == Segment.Type.STRAIGHT ? Color.pink : color;
+
+      if (segment.type == previousType) {
+//        color = previousColor.darker();
+      }
+
+      render(segment, color);
+
+      previousType = segment.type;
+      previousColor = color;
     }
 
-    renderPoint(Color.GREEN, path.getPIDTarget(input), 10);
+    renderPoint(Color.GREEN, path.updateAndGetPidTarget(input), 10);
+
+//    renderHitBox(path.getTarget());
   }
 
-  private void render(Path.Segment segment, boolean isCurrentIndex) {
-    Color color = isCurrentIndex ? Color.ORANGE : segment.isComplete() ? Color.GREEN : Color.RED;
+  private void render(Segment segment, Color color) {
     switch (segment.type) {
       case JUMP:
         render3DLine(color, segment.start, segment.end);
@@ -265,7 +274,7 @@ public class BotRenderer {
     }
   }
 
-  private void checkAlert(DataPacket input) {
+  private void renderAlert(DataPacket input) {
     if (alertText != null && alertTimeSeconds == 0) {
       alertTimeSeconds = input.car.elapsedSeconds;
     } else if (input.car.elapsedSeconds - alertTimeSeconds > 4) {
@@ -497,8 +506,9 @@ public class BotRenderer {
     renderText(0, 550, "dX: %d", (int) relativeBallData.velocity.x);
   }
 
-  private void renderArc(Color pink, Path.Segment arc) {
-    renderCircle(pink, arc.circle.center, arc.start, arc.circle.radius, arc.getRadians());
+  private void renderArc(Color color, Segment arc) {
+    renderCircle(color, arc.circle.center, arc.start, arc.circle.radius, arc.getRadians());
+    getRenderer().drawString3d(String.format("%d", (int) arc.circle.maxSpeed), color, arc.start, 2, 2);
   }
 
   public void renderCircle(Color color, Circle circle) {

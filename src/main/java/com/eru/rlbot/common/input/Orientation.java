@@ -17,6 +17,10 @@ public class Orientation {
 
   private final Matrix3 orientation;
 
+  public static Orientation fromOrientationMatrix(Matrix3 orientationMatrix) {
+    return new Orientation(orientationMatrix.column(0), orientationMatrix.column(1), orientationMatrix.column(2));
+  }
+
   public Orientation(Vector3 noseVector, Vector3 leftVector, Vector3 roofVector) {
     orientation = Matrix3.of(noseVector, leftVector, roofVector);
   }

@@ -1,6 +1,7 @@
 package com.eru.rlbot.bot.common;
 
 import com.eru.rlbot.common.input.CarData;
+import com.eru.rlbot.common.vector.Vector2;
 import com.eru.rlbot.common.vector.Vector3;
 
 /**
@@ -15,7 +16,7 @@ public class Circle {
   public Circle(Vector3 center, double radius) {
     this.center = center;
     this.radius = radius;
-    this.maxSpeed = Constants.maxSpeed(radius) * .9;
+    this.maxSpeed = Constants.maxSpeed(radius) * .95;
   }
 
   public static Vector3 pointOnCircle(Vector3 center, double radius, double radians) {
@@ -31,5 +32,10 @@ public class Circle {
 
   private boolean isClockwise(Vector3 position, Vector3 noseVector) {
     return center.minus(position).cross(noseVector).z < 0;
+  }
+
+  public double radianOffset(Vector3 point) {
+    Vector2 ray = point.minus(center).flatten();
+    return Vector2.WEST.correctionAngle(ray);
   }
 }

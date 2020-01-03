@@ -132,9 +132,10 @@ public class Vector3 extends rlbot.vector.Vector3 {
     return new Vector2(x, y);
   }
 
-  /** Angle in radians? */
+  /**
+   * Angle in radians.
+   */
   public double angle(Vector3 v) {
-    // TODO: This doesn't fucking work...
     double mag = magnitude();
     double vmag = v.magnitude();
     double dot = dot(v);

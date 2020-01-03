@@ -118,6 +118,10 @@ public class ControlsOutput implements ControllerState {
         return Math.max(-1, Math.min(1, value));
     }
 
+  public static double clamp(double value) {
+    return Math.max(-1, Math.min(1, value));
+  }
+
     @Override
     public float getSteer() {
         return steer;

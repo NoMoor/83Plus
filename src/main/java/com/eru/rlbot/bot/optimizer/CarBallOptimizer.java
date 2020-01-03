@@ -11,6 +11,7 @@ import com.eru.rlbot.common.input.CarData;
 import com.eru.rlbot.common.input.Orientation;
 import com.eru.rlbot.common.vector.Vector3;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Range;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -33,7 +34,7 @@ public class CarBallOptimizer {
     for (double nextStepSize : STEP_SIZES) {
       workingAngle = refineApproach(ball, target, workingAngle, nextStepSize);
     }
-    logger.log(Level.DEBUG, "Optimization time: " + (System.nanoTime() - startTime));
+    logger.log(Level.WARN, "Optimization time: " + (System.nanoTime() - startTime));
     return makeCar(ball, workingAngle);
   }
 
@@ -70,9 +71,8 @@ public class CarBallOptimizer {
   }
 
   private static CarData makeCar(BallData ball, Vector3 noseOrientation) {
-    // TODO: Fix these multiply by -1 issues...
-    Vector3 sideDoor = noseOrientation.cross(Vector3.of(0, 0, noseOrientation.z)).normalize().multiply(-1);
-    Vector3 roofOrientation = noseOrientation.cross(sideDoor).multiply(-1);
+    Vector3 sideDoor = noseOrientation.cross(Vector3.of(0, 0, 1)).normalize();
+    Vector3 roofOrientation = sideDoor.cross(noseOrientation);
     Orientation carOrientation = Orientation.noseRoof(noseOrientation, roofOrientation);
     Vector3 carPosition = ball.position.minus(noseOrientation.toMagnitude(Constants.BALL_RADIUS + BoundingBox.frontToRj));
 
@@ -82,6 +82,99 @@ public class CarBallOptimizer {
         .setPosition(carPosition)
         .setTime(ball.elapsedSeconds)
         .build();
+  }
+
+  public static CarData getOptimalApproach(BallData ball, Vector3 target, CarData car) {
+    Vector3 targetVelocity = target.minus(ball.position);
+
+    // Optimize x offset.
+    Range<Float> xOffsetRange = Range.closed(-BoundingBox.halfWidth - 20, BoundingBox.halfWidth + 20);
+    float currXOffset = 0;
+    float previousStepSize = 5;
+
+    while (previousStepSize > X_PRECISION && xOffsetRange.contains(currXOffset)) {
+      float prevXOffset = currXOffset;
+      double score = getXGradient(ball, car, targetVelocity, currXOffset);
+      currXOffset -= X_EPSILON * score;
+      previousStepSize = Math.abs(currXOffset - prevXOffset);
+    }
+
+    currXOffset = Angles3.clip(currXOffset, xOffsetRange.lowerEndpoint(), xOffsetRange.upperEndpoint());
+
+    car = adjustCarX(car, currXOffset);
+
+    Range<Double> aOffsetRange = Range.closed(-Math.PI, Math.PI);
+    double currAOffset = 0;
+    double previousAStepSize = 1;
+
+    while (previousAStepSize > A_PRECISION && aOffsetRange.contains(currAOffset)) {
+      double prevAOffset = currAOffset;
+      double score = getAGradient(car, ball, targetVelocity, currAOffset);
+      currAOffset -= A_EPSILON * score;
+      previousAStepSize = Math.abs(currAOffset - prevAOffset);
+    }
+
+    car = adjustCarA(car, ball, currAOffset);
+
+    return car;
+  }
+
+  private static final double A_PRECISION = .025f;
+  private static final double A_EPSILON = .05f;
+  private static final double A_GAMMA = .1f;
+
+  private static double getAGradient(CarData car, BallData ball, Vector3 targetVelocity, double currAOffset) {
+    BallData resultA = CarBallCollision.calculateCollision(ball, adjustCarA(car, ball, currAOffset));
+    double aScore = score(resultA.velocity, targetVelocity);
+
+    BallData resultB = CarBallCollision.calculateCollision(ball, adjustCarA(car, ball, currAOffset + A_GAMMA));
+    double bScore = score(resultB.velocity, targetVelocity);
+
+    return (bScore - aScore) / A_GAMMA;
+  }
+
+  private static final double X_PRECISION = .1; // How accurate to get x.
+  private static final double X_EPSILON = 10; // Proportionate step size to take
+  private static final double X_GAMMA = 10; // How small of an area to evaluate x gradient
+
+  private static double getXGradient(BallData ball, CarData car, Vector3 targetVelocity, float currXOffset) {
+    BallData resultA = CarBallCollision.calculateCollision(ball, adjustCarX(car, currXOffset));
+    double aScore = score(resultA.velocity, targetVelocity);
+
+    BallData resultB = CarBallCollision.calculateCollision(ball, adjustCarX(car, currXOffset + X_GAMMA));
+    double bScore = score(resultB.velocity, targetVelocity);
+
+    return (bScore - aScore) / X_GAMMA;
+  }
+
+  private static CarData adjustCarA(CarData car, BallData ball, double currAOffset) {
+    Matrix3 rotate = Angles3.rotationMatrix(currAOffset);
+
+    Orientation newCarOrientation =
+        Orientation.fromOrientationMatrix(rotate.dot(car.orientation.getOrientationMatrix()));
+
+    Vector3 carBall = ball.position.minus(car.position);
+    Vector3 rotatedCarBall = rotate.dot(carBall);
+
+    return car.toBuilder()
+        .setOrientation(newCarOrientation)
+        .setPosition(car.position.plus(carBall).minus(rotatedCarBall))
+        .setVelocity(rotate.dot(car.velocity))
+        .build();
+  }
+
+  private static CarData adjustCarX(CarData car, double dx) {
+    Vector3 newPosition = car.position.plus(car.orientation.getLeftVector().toMagnitude(dx));
+
+    return car.toBuilder()
+        .setPosition(newPosition)
+        .build();
+  }
+
+  public static double score(Vector3 target, Vector3 result) {
+    // TODO: Handle zero.
+
+    return Math.abs(target.angle(result)) - Math.PI;
   }
 
   private CarBallOptimizer() {

@@ -84,13 +84,13 @@ public class Paths {
     // TODO: Do checking to see if they overlap.
 
     // Get inside tangents.
-    ImmutableList<Path.Segment> insideSegments =
+    ImmutableList<Segment> insideSegments =
         tangents(new Circle(larger.center, larger.radius + smaller.radius), smaller.center).getPoints().stream()
             .map(tangentPoint -> toInsideSegments(larger, smaller, aIsLarger, tangentPoint))
             .collect(toImmutableList());
 
     // Get outside tangents.
-    ImmutableList<Path.Segment> outsideSegments =
+    ImmutableList<Segment> outsideSegments =
         tangents(new Circle(larger.center, larger.radius - smaller.radius), smaller.center).getPoints().stream()
             .map(tangentPoint -> toOutsideSegments(larger, smaller, aIsLarger, tangentPoint))
             .collect(toImmutableList());
@@ -102,25 +102,25 @@ public class Paths {
         outsideSegments.get(1));
   }
 
-  private static Path.Segment toOutsideSegments(Circle larger, Circle smaller, boolean aIsLarger, Vector3 tangentPoint) {
+  private static Segment toOutsideSegments(Circle larger, Circle smaller, boolean aIsLarger, Vector3 tangentPoint) {
     Vector3 offset = larger.center.minus(tangentPoint).toMagnitude(smaller.radius);
     Vector3 largerTangent = tangentPoint.minus(offset);
     Vector3 smallerTangent = smaller.center.minus(offset);
-    return Path.Segment.straight(
+    return Segment.straight(
         aIsLarger ? largerTangent : smallerTangent,
         aIsLarger ? smallerTangent : largerTangent);
   }
 
-  private static Path.Segment toInsideSegments(Circle larger, Circle smaller, boolean aIsLarger, Vector3 tangentPoint) {
+  private static Segment toInsideSegments(Circle larger, Circle smaller, boolean aIsLarger, Vector3 tangentPoint) {
     Vector3 offset = larger.center.minus(tangentPoint).toMagnitude(smaller.radius);
     Vector3 largerTangent = tangentPoint.plus(offset);
     Vector3 smallerTangent = smaller.center.plus(offset);
-    return Path.Segment.straight(
+    return Segment.straight(
         aIsLarger ? largerTangent : smallerTangent,
         aIsLarger ? smallerTangent : largerTangent);
   }
 
-  public static Circle closeTurningRadius(Circle closeApproachCircle, CarData car) {
+  public static Circle closeTurningRadius(Vector3 point, CarData car) {
     ImmutableList<Circle> circles =
         turningRadiusCircles(
             car.position,
@@ -130,7 +130,7 @@ public class Paths {
     Circle left = circles.get(0);
     Circle right = circles.get(1);
 
-    if (left.center.distance(closeApproachCircle.center) < right.center.distance(closeApproachCircle.center)) {
+    if (left.center.distance(point) < right.center.distance(point)) {
       return left;
     }
     return right;
@@ -151,18 +151,18 @@ public class Paths {
   }
 
   public static class CircleTangents {
-    public final Path.Segment cwcw;
-    public final Path.Segment ccwcw;
-    public final Path.Segment cwccw;
-    public final Path.Segment ccwccw;
+    public final Segment cwcw;
+    public final Segment ccwcw;
+    public final Segment cwccw;
+    public final Segment ccwccw;
 
     public final int numDistinctTangents;
 
     public CircleTangents(
-        Path.Segment cwcw,
-        Path.Segment ccwcw,
-        Path.Segment cwccw,
-        Path.Segment ccwccw) {
+        Segment cwcw,
+        Segment ccwcw,
+        Segment cwccw,
+        Segment ccwccw) {
 
       this.cwcw = cwcw;
       this.ccwcw = ccwcw;
@@ -180,7 +180,7 @@ public class Paths {
       }
     }
 
-    public ImmutableList<Path.Segment> getSegments() {
+    public ImmutableList<Segment> getSegments() {
       return ImmutableList.of(cwcw, ccwcw, cwccw, ccwccw);
     }
   }

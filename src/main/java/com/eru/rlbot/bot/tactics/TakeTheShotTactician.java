@@ -98,17 +98,14 @@ public class TakeTheShotTactician extends Tactician {
   public void execute(DataPacket input, ControlsOutput output, Tactic tactic) {
     bot.botRenderer.setIntersectionTarget(tactic.getTargetPosition());
 
-    if (path == null || (path.isTimed() && path.getEndTime() < input.car.elapsedSeconds)) {
+    if (path == null || path.isOffCourse() || path.getEndTime() < input.car.elapsedSeconds) {
+//      bot.botRenderer.addAlertText("New Path %f", input.car.elapsedSeconds);
       path = PathPlanner.doShotPlanning(input);
       path.lockAndSegment(input);
+      path.extendThroughBall();
     }
-
 
     bot.botRenderer.renderPath(input, path);
     pathExecutor.executePath(input, output, path);
-//
-//    output
-//        .withBoost(false)
-//        .withThrottle(0.00);
   }
 }

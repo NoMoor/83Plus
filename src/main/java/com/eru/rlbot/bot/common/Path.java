@@ -4,22 +4,24 @@ import static com.eru.rlbot.bot.common.Constants.STEP_SIZE;
 
 import com.eru.rlbot.common.input.CarData;
 import com.eru.rlbot.common.input.DataPacket;
-import com.eru.rlbot.common.vector.Vector2;
 import com.eru.rlbot.common.vector.Vector3;
 import com.google.common.collect.ImmutableList;
 import java.util.LinkedList;
 import java.util.ListIterator;
-import java.util.Objects;
 
 public class Path {
 
-  private final ImmutableList<Segment> nodes;
+  private ImmutableList<Segment> nodes;
+  // Alternatively, we could move the target forward...
+  private Segment extension;
+
   private final CarData start;
   private final CarData target;
 
   private int currentPidIndex;
   private int currentIndex;
   private boolean isTimed;
+  private boolean isOffCourse;
 
   private Path(CarData car, CarData targetCar, ImmutableList<Segment> nodes) {
     this.nodes = nodes;
@@ -50,14 +52,21 @@ public class Path {
     traverseTime(0, input.car.boost, true);
   }
 
-  public static final float LEAD_TIME = .05f;
+  static final float LEAD_FRAMES = 7f;
+  static final float LEAD_TIME = LEAD_FRAMES / Constants.STEP_SIZE_COUNT;
 
-  public Vector3 getPIDTarget(DataPacket input) {
+  Vector3 updateAndGetPidTarget(DataPacket input) {
     float targetTime = input.car.elapsedSeconds + LEAD_TIME;
 
+    updateSegmentIndex(input);
+
+    while (hasNextPidSegment() && nodes.get(currentPidIndex).endTime < targetTime) {
+      currentPidIndex++;
+    }
     Segment segment = nodes.get(currentPidIndex);
-    if (hasNextSegment() && segment.endTime < targetTime) {
-      segment = nodes.get(currentPidIndex++);
+
+    if (segment.endTime < targetTime && extension != null) {
+      segment = extension;
     }
 
     // Clamp to the end of the last target.
@@ -65,6 +74,29 @@ public class Path {
         Math.min((targetTime - segment.startTime) / (segment.endTime - segment.startTime), 1);
 
     return segment.getProgress(segmentCompletion);
+  }
+
+  private void updateSegmentIndex(DataPacket input) {
+    while (hasNextSegment() && nodes.get(currentIndex).endTime < input.car.elapsedSeconds) {
+      nodes.get(currentIndex++).markComplete();
+    }
+  }
+
+  public void extendThroughBall() {
+    Segment lastSegment = nodes.get(nodes.size() - 1);
+    this.extension = lastSegment.extend(Path.LEAD_TIME * target.velocity.magnitude());
+  }
+
+  public void markOffCourse() {
+    this.isOffCourse = true;
+  }
+
+  public boolean isOffCourse() {
+    return this.isOffCourse;
+  }
+
+  public CarData getTarget() {
+    return target;
   }
 
   public static final class Builder {
@@ -93,19 +125,21 @@ public class Path {
     }
   }
 
-  public static final double SLOWING_BUFFER = 20;
+  private static final double SLOWING_BUFFER = 100;
 
-  public double minimumTraverseTime() {
-    return traverseTime(currentPidIndex, start.boost, false);
+  double minimumTraverseTime() {
+    return traverseTime(currentIndex, start.boost, false);
   }
 
-  public double nonBoostingTraverseTime() {
-    return traverseTime(currentPidIndex, 0, false);
+  double nonBoostingTraverseTime() {
+    return traverseTime(currentIndex, 0, false);
   }
 
-  private static final float ACCELERATION_BUFFER = .9f;
+  private static final float ACCELERATION_BUFFER = .95f;
 
   private double traverseTime(int startIndex, double boostAmount, boolean modifySegments) {
+    ImmutableList.Builder<Segment> timedSegments = ImmutableList.builder();
+
     double boost = boostAmount;
     double currentVelocity = start.groundSpeed;
     double time = 0;
@@ -124,6 +158,7 @@ public class Path {
       }
 
       double segmentDistance = nextSegment.flatDistance();
+      double segmentStartSpeed = currentVelocity;
 
       while (segmentDistance > 0) {
         double nextAcceleration = 0;
@@ -137,18 +172,36 @@ public class Path {
             boost -= STEP_SIZE * 33;
           }
         } else if (breakNow(currentVelocity, segmentDistance, speedGoal)) {
-          nextAcceleration = -Constants.BREAKING_DECELERATION * ACCELERATION_BUFFER;
+          nextAcceleration = -Constants.BREAKING_DECELERATION;
         }
 
         double newVelocity = currentVelocity + (nextAcceleration * STEP_SIZE);
         segmentDistance -= ((currentVelocity + newVelocity) / 2) * STEP_SIZE;
         currentVelocity = newVelocity;
         time += STEP_SIZE;
+
+        // Split if significant acceleration
+        if (modifySegments && Math.abs(segmentStartSpeed - currentVelocity) > Accels.acceleration(segmentStartSpeed) / 4) {
+          double traveledSegmentDistance = nextSegment.flatDistance() - segmentDistance;
+          Pair<Segment, Segment> segments =
+              nextSegment.splitSegment(traveledSegmentDistance, start.elapsedSeconds + time);
+
+          timedSegments.add(segments.getFirst());
+          nextSegment = segments.getSecond();
+          segmentDistance = nextSegment.flatDistance();
+          segmentStartSpeed = currentVelocity;
+        }
+
       }
 
       if (modifySegments) {
         nextSegment.endTime = start.elapsedSeconds + time;
+        timedSegments.add(nextSegment);
       }
+    }
+
+    if (modifySegments) {
+      nodes = timedSegments.build();
     }
 
     return time;
@@ -194,7 +247,15 @@ public class Path {
     return currentPidIndex;
   }
 
+  int getCurrentIndex() {
+    return currentIndex;
+  }
+
   private boolean hasNextSegment() {
+    return nodes.size() > currentIndex + 1;
+  }
+
+  private boolean hasNextPidSegment() {
     return nodes.size() > currentPidIndex + 1;
   }
 
@@ -204,11 +265,16 @@ public class Path {
   }
 
   ImmutableList<Segment> allNodes() {
+    if (extension != null) {
+      ImmutableList.Builder<Segment> nodeListBuilder = ImmutableList.builder();
+      return nodeListBuilder.addAll(nodes).add(extension).build();
+    }
+
     return nodes;
   }
 
   public boolean breakNow(CarData car) {
-    return breakNow(car.groundSpeed, car.position.distance(nodes.get(currentPidIndex).end), getSpeedGoal());
+    return breakNow(car.groundSpeed, car.position.distance(nodes.get(currentIndex).end), getSpeedGoal());
   }
 
   private boolean breakNow(double groundSpeed, double distance, double goalSpeed) {
@@ -218,141 +284,5 @@ public class Path {
 
   public float getEndTime() {
     return target.elapsedSeconds;
-  }
-
-  public static class Segment {
-    public final Vector3 start;
-    public final Vector3 end;
-    public final Type type;
-    public final Circle circle;
-    public final boolean clockWise;
-
-    public double endTime;
-    public double startTime;
-    private boolean isComplete;
-
-    public static Segment arc(Vector3 start, CarData target, Circle circle) {
-      return new Segment(start, target, circle);
-    }
-
-    public static Segment arc(Vector3 start, Vector3 end, Circle circle, boolean clockWise) {
-      return new Segment(start, end, circle, clockWise);
-    }
-
-    public static Segment straight(Vector3 start, Vector3 end) {
-      return new Segment(start, end, Type.STRAIGHT);
-    }
-
-    // TODO: Add speed?
-    public static Segment jump(Vector3 start, Vector3 end) {
-      return new Segment(start, end, Type.JUMP);
-    }
-
-    private Segment(Vector3 start, CarData target, Circle circle) {
-      this.start = start;
-      this.end = target.position;
-      this.circle = circle;
-      this.clockWise = circle.isClockwise(target);
-      this.type = Type.ARC;
-    }
-
-
-    public Segment(Vector3 start, Vector3 end, Circle circle, boolean clockWise) {
-      this.start = start;
-      this.end = end;
-      this.circle = circle;
-      this.clockWise = clockWise;
-      this.type = Type.ARC;
-    }
-
-    private Segment(Vector3 start, Vector3 end, Type type) {
-      this.start = start;
-      this.end = end;
-      this.type = type;
-      this.circle = null;
-      this.clockWise = false;
-    }
-
-    private void markComplete() {
-      this.isComplete = true;
-    }
-
-    public boolean isComplete() {
-      return this.isComplete;
-    }
-
-    private double maxSpeed() {
-      switch (type) {
-        case STRAIGHT:
-        case JUMP:
-          return Constants.BOOSTED_MAX_SPEED;
-        case ARC:
-          return circle.maxSpeed;
-        default:
-          throw new IllegalStateException(String.format("Unsupported type %s", type));
-      }
-    }
-
-    public Vector3 getProgress(double segmentCompletion) {
-      switch (type) {
-        case ARC:
-          double radians = getRadians() * segmentCompletion;
-          double radianOffset = Vector2.WEST.correctionAngle(start.minus(circle.center).flatten());
-
-          return Circle.pointOnCircle(circle.center, circle.radius, radians + radianOffset);
-        case STRAIGHT:
-        case JUMP:
-          return end.minus(start).multiply(segmentCompletion).plus(start);
-        default:
-          throw new IllegalStateException("Doh!");
-      }
-    }
-
-    public enum Type {
-      STRAIGHT,
-      ARC,
-      JUMP
-    }
-
-    public double getRadians() {
-      Objects.requireNonNull(circle);
-
-      Vector3 legA = circle.center.minus(start);
-      Vector3 legB = circle.center.minus(end);
-
-      double value = legA.flatten().correctionAngle(legB.flatten());
-
-      // TODO: This is not tested...
-      if (value < 0 && clockWise) {
-        value += Math.PI * 2;
-      } else if (value > 0 && !clockWise) {
-        value -= Math.PI * 2;
-      }
-      return value;
-    }
-
-    private Double distance;
-
-    private double flatDistance() {
-      if (distance == null) {
-        switch (type) {
-          case STRAIGHT:
-          case JUMP:
-            distance = start.flatten().distance(end.flatten());
-            break;
-          case ARC:
-            distance = calculateArcLength();
-            break;
-          default:
-            throw new IllegalStateException(String.format("Type %s unsupported", type));
-        }
-      }
-
-      return distance;
-    }
-
-    private double calculateArcLength() {
-      return Math.abs(getRadians()) * circle.radius;
-    }
   }
 }

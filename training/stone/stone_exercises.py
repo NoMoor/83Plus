@@ -1,5 +1,3 @@
-from math import pi
-
 from stone.stone_shot_on_goal import BallDrop
 
 stone_exercises = [
@@ -11,8 +9,12 @@ stone_exercises = [
     # Path planning ideas.
     # BallDrop("Path Testing", ball_x=1500, ball_y=1750, ball_z=100, ball_vz=0, ball_vx=0, car_y=-2000),
     # BallDrop("Path Testing", ball_x=1500, ball_y=1750, ball_z=100, ball_vz=0, ball_vx=0, car_x=-1000, car_y=2000),
-    BallDrop("Path Testing", ball_x=1500, ball_y=1750, ball_z=100, ball_vz=0, ball_vx=0, car_x=-1000, car_y=2000,
-             car_spin=pi * 3 / 4),
+    BallDrop("Optimizer Testing", ball_x=1500, ball_y=1750, ball_z=100, ball_vz=0, ball_vx=0, car_x=2000, car_y=-2000,
+             car_spin=0),
+    # BallDrop("Path Testing Far away", ball_x=1500, ball_y=1750, ball_z=100, ball_vz=0, ball_vx=0, car_x=-1000, car_y=-2000,
+    #              car_spin=0),
+    # BallDrop("Path Close up", ball_x=1500, ball_y=1750, ball_z=100, ball_vz=0, ball_vx=0, car_x=1600, car_y=1000,
+    #          car_spin=pi * 3 /4),
     # BallDrop("Path Testing", ball_x=0, ball_y=500, ball_z=100, ball_vz=1000, ball_vx=500, car_y=-2000),
 
     # Balls rolling toward and away from the center of the map
