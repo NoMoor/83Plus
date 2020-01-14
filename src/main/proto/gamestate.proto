@@ -1,0 +1,27 @@
+syntax = "proto2";
+
+package gamestate;
+
+option java_package = "com.eru.rlbot.common";
+option java_outer_classname = "GameStateProtos";
+
+message GameState {
+    optional int64 frameId = 1;
+    repeated CarState car = 2;
+    optional BallState ball = 3;
+
+    message CarState {
+        required int32 id = 1;
+        required int32 team = 2;
+        repeated float pos = 3;
+        repeated float vel = 4;
+        repeated float spin = 5;
+        repeated float orientation = 6;
+    }
+
+    message BallState {
+        repeated float pos = 1;
+        repeated float vel = 2;
+        repeated float spin = 3;
+    }
+}

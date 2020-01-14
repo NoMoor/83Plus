@@ -1,6 +1,5 @@
 package com.eru.rlbot.common.vector;
 
-import com.eru.rlbot.bot.common.Constants;
 import com.eru.rlbot.bot.common.Matrix3;
 import com.google.flatbuffers.FlatBufferBuilder;
 
@@ -180,16 +179,25 @@ public class Vector3 extends rlbot.vector.Vector3 {
   }
 
   /** Returns a new vector with value added to the y component. */
-  public Vector3 addY(float value) {
+  public Vector3 addY(double value) {
     return new Vector3(this.x, this.y + value, z);
   }
 
   /** Returns a new vector with value added to the z component. */
-  public Vector3 addZ(float value) {
+  public Vector3 addZ(double value) {
     return new Vector3(this.x, y, this.z + value);
   }
 
   public Vector3 flat() {
-    return Vector3.of(this.x, this.y, Constants.CAR_AT_REST);
+    return Vector3.of(this.x, this.y, 0);
+  }
+
+  public Vector3 setZ(float newZ) {
+    return new Vector3(this.x, this.y, newZ);
+  }
+
+  public Vector3 clockwisePerpendicular() {
+    // TODO: Check this.
+    return this.cross(Vector3.of(0, 0, 1));
   }
 }

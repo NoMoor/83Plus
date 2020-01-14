@@ -35,7 +35,7 @@ public class PathPlanner {
       Path path = planShotOnGoal(input, predictionSlice);
       double timeToBall = path.minimumTraverseTime();
       if (ALWAYS_ON || timeToBall + input.car.elapsedSeconds < predictionSlice.gameSeconds()) {
-        logger.warn(String.format("Took %d ms to plan", (int) (System.nanoTime() - startTime) / 1000000));
+        logger.warn(String.format("Took %f ms to plan", (System.nanoTime() - startTime) / 1000000d));
         return path;
       }
     }
@@ -84,7 +84,7 @@ public class PathPlanner {
   }
 
   private static Path planShotOnGoal(DataPacket input, PredictionSlice predictionSlice) {
-    return plan(input.car, BallData.fromPredictionSlice(predictionSlice), Goal.opponentGoal(input.car.team).center);
+    return plan(input.car, BallData.fromPredictionSlice(predictionSlice), Goal.opponentGoal(input.car.team).centerTop);
   }
 
   private static Path plan(CarData currentCar, BallData targetBall, Vector3 target) {
@@ -107,7 +107,7 @@ public class PathPlanner {
     return CarData.builder()
         .setTime(ball.elapsedSeconds)
         .setOrientation(orientation)
-        .setVelocity(approachBall.toMagnitude(Math.max(car.groundSpeed, 800)))
+        .setVelocity(approachBall.toMagnitude(Math.max(car.groundSpeed, 1500)))
         .setPosition(makeGroundCar(orientation, ball.position))
         .build();
   }
@@ -202,44 +202,6 @@ public class PathPlanner {
     return pathBuilder
         .addEarlierSegment(Segment.arc(car.position, connectingSegment.start, closeTurningRadius, closeTurningRadius.isClockwise(car)))
         .build();
-  }
-
-  // TODO: I don't think this is quite right.
-  // Calculates a circle from two tangentForTargetDirection orientations.
-  private static Circle getWideCircle(CarData a, CarData b) {
-    // Do one gradual arc to the approach.
-    double correctionAngle = a.orientation.getNoseVector().flatten()
-        .correctionAngle(b.orientation.getNoseVector().flatten());
-    double halfAngle = Math.signum(correctionAngle) * (Math.PI - Math.abs(correctionAngle)) / 2;
-
-    // TODO: Add check if halfAngle == 0 and a/b are not co-linear.
-
-    double centerABisectorAngle = Math.abs(halfAngle);
-
-    Vector3 ray = b.position.minus(a.position);
-    Vector3 halfRay = ray.divide(2);
-    Vector3 bisectorPoint = halfRay.plus(a.position);
-
-    // tan(theta) = opposite / adjacent
-    // tan(theta) * adjacent = opposite;
-    double middleAdjustmentMagnitude = Math.tan(centerABisectorAngle) * halfRay.magnitude();
-
-    Vector3 centerAdjustment = Vector3.of(-Math.signum(halfAngle) * ray.y, ray.x, 0).toMagnitude(middleAdjustmentMagnitude);
-    Vector3 centerPosition = bisectorPoint.plus(centerAdjustment);
-
-    double radius = a.position.minus(centerPosition).magnitude();
-
-//    BotRenderer botRenderer = BotRenderer.forIndex(a.playerIndex);
-//    botRenderer.renderHitBox(b);
-//    botRenderer.renderPoint(Color.PINK, a.position.plus(halfRay), 5);
-//    botRenderer.renderProjection(a, b.position, Color.magenta);
-//    botRenderer.renderProjection(a, bisectorPoint, Color.orange);
-//
-//    botRenderer.renderProjection(a, a.orientation.getNoseVector().flatten().scaledToMagnitude(3000).asVector3().plus(a.position), Color.red);
-//    botRenderer.renderProjection(b, b.orientation.getNoseVector().flatten().scaledToMagnitude(-3000).asVector3().plus(b.position), Color.red);
-//    botRenderer.addAlertText("Test %f %f", correctionAngle, halfAngle);
-
-    return new Circle(centerPosition, radius);
   }
 
   private static boolean addPathSegment(CarData car, Segment segment, Path.Builder pathBuilder) {

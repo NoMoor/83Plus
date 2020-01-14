@@ -53,6 +53,8 @@ public class CarData {
    */
   public final int team;
 
+  public final boolean isLiveData;
+
   /**
    * This is not really a car-specific attribute, but it's often very useful to know. It's included here
    * so you don't need to pass around DataPacket everywhere.
@@ -81,6 +83,7 @@ public class CarData {
     this.doubleJumped = playerInfo.doubleJumped();
 
     this.boundingBox = new BoundingBox(position, orientation);
+    this.isLiveData = true;
   }
 
   private CarData(Builder builder) {
@@ -93,13 +96,14 @@ public class CarData {
     this.angularVelocity = builder.angularVelocity;
     this.boost = builder.boost;
     this.isSupersonic = groundSpeed > Constants.SUPER_SONIC;
-    this.team = 1;
-    this.hasWheelContact = false;
-    this.jumped = false;
-    this.doubleJumped = false;
+    this.team = builder.team;
+    this.hasWheelContact = builder.hasWheelContact;
+    this.jumped = builder.jumped;
+    this.doubleJumped = builder.doubleJumped;
     this.elapsedSeconds = builder.time;
     this.boundingBox = new BoundingBox(position, orientation);
-    this.playerIndex = 0;
+    this.playerIndex = builder.playerIndex;
+    this.isLiveData = false;
   }
 
   public static Builder builder() {
@@ -107,15 +111,18 @@ public class CarData {
   }
 
   public CarData.Builder toBuilder() {
-    Builder builder = new Builder()
+    return new Builder()
         .setPosition(position)
         .setTime(elapsedSeconds)
-        .setVelocity(velocity);
-
-    builder.boost = this.boost;
-    builder.orientation = this.orientation;
-    builder.angularVelocity = this.angularVelocity;
-    return builder;
+        .setVelocity(velocity)
+        .setBoost(boost)
+        .setOrientation(orientation)
+        .setAngularVelocity(angularVelocity)
+        .setHasWheelContact(hasWheelContact)
+        .setTeam(team)
+        .setJumped(jumped)
+        .setDoubleJumped(doubleJumped)
+        .setPlayerIndex(playerIndex);
   }
 
   public static String csvHeader(String label) {
@@ -145,14 +152,19 @@ public class CarData {
   }
 
   public static class Builder {
+    private boolean jumped;
+    private boolean doubleJumped;
     private float time;
-    public double boost;
-    public Orientation orientation = Orientation.convert(0, 0, 0);
-    public Vector3 velocity = Vector3.zero();
-    public Vector3 position = Vector3.zero();
-    public Vector3 angularVelocity = Vector3.zero();
-
+    private double boost;
+    private boolean hasWheelContact;
+    private Orientation orientation = Orientation.convert(0, 0, 0);
+    private Vector3 velocity = Vector3.zero();
+    private Vector3 position = Vector3.zero();
+    private Vector3 angularVelocity = Vector3.zero();
     private boolean builderCalled = false;
+    private int team;
+    private int playerIndex;
+
     public CarData build() {
       if (builderCalled) {
         throw new IllegalStateException("Cannot call build again");
@@ -162,23 +174,58 @@ public class CarData {
       return new CarData(this);
     }
 
-    public Builder setVelocity(Vector3 velocity) {
-      this.velocity = velocity;
+    public Builder setVelocity(Vector3 value) {
+      this.velocity = value;
       return this;
     }
 
-    public Builder setPosition(Vector3 position) {
-      this.position = position;
+    public Builder setPosition(Vector3 value) {
+      this.position = value;
       return this;
     }
 
-    public Builder setTime(double time) {
-      this.time = (float) time;
+    public Builder setTime(double value) {
+      this.time = (float) value;
       return this;
     }
 
-    public Builder setOrientation(Orientation orientation) {
-      this.orientation = orientation;
+    public Builder setBoost(double value) {
+      this.boost = (float) value;
+      return this;
+    }
+
+    public Builder setOrientation(Orientation value) {
+      this.orientation = value;
+      return this;
+    }
+
+    public Builder setHasWheelContact(boolean value) {
+      this.hasWheelContact = value;
+      return this;
+    }
+
+    public Builder setAngularVelocity(Vector3 value) {
+      this.angularVelocity = value;
+      return this;
+    }
+
+    public Builder setTeam(int team) {
+      this.team = team;
+      return this;
+    }
+
+    public Builder setJumped(boolean jumped) {
+      this.jumped = jumped;
+      return this;
+    }
+
+    public Builder setDoubleJumped(boolean doubleJumped) {
+      this.doubleJumped = doubleJumped;
+      return this;
+    }
+
+    public Builder setPlayerIndex(int playerIndex) {
+      this.playerIndex = playerIndex;
       return this;
     }
   }

@@ -28,6 +28,8 @@ public class FlipTactician extends Tactician {
 
   @Override
   public void execute(DataPacket input, ControlsOutput output, Tactic tactic) {
+    JumpManager jumpManager = JumpManager.forCar(input.car);
+
     if (flipComplete) {
       if (input.car.hasWheelContact) {
         bot.botRenderer.setBranchInfo("Flip complete");
@@ -46,17 +48,17 @@ public class FlipTactician extends Tactician {
         bot.botRenderer.setBranchInfo("Initial Jump");
         // Jump now
         output
-            .withJump(!JumpManager.jumpPressedLastFrame())
+            .withJump(!jumpManager.jumpPressedLastFrame())
             .withThrottle(1.0);
       } else if (input.car.position.z < 50 && input.car.velocity.z >= 0) {
         bot.botRenderer.setBranchInfo("Hold Jump");
         output
             .withJump()
             .withBoost();
-      } else if (!JumpManager.canFlip() && !JumpManager.hasReleasedJumpInAir()) {
+      } else if (!jumpManager.canFlip() && !jumpManager.hasReleasedJumpInAir()) {
         bot.botRenderer.setBranchInfo("Quick release");
         // Release Jump
-      } else if (JumpManager.canFlip()) {
+      } else if (jumpManager.canFlip()) {
         bot.botRenderer.setBranchInfo("Do flip");
         // TODO: This doesn't work for half flips...
         double velocityCorrectionAngle =

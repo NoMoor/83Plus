@@ -24,5 +24,6 @@ def make_default_playlist():
                 Path(__file__).absolute().parent.parent / 'src' / 'main' / 'python' / 'local_version.cfg',
                 Team.BLUE)
         ]
+        exercise.match_config.mutators.gravity = "Low"
 
     return exercises

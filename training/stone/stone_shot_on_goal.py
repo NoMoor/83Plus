@@ -10,7 +10,8 @@ from rlbottraining.training_exercise import Playlist, TrainingExercise
 
 
 def make_grader():
-    return StrikerGrader(timeout_seconds=10.0)
+    # return StrikerGrader(timeout_seconds=6.0)
+    return StrikerGrader(timeout_seconds=4.0)
 
 @dataclass
 class StoneShotOnGoal(TrainingExercise):
@@ -107,7 +108,9 @@ class BallDrop(TrainingExercise):
     car_x: float = 0
     car_y: float = 10
     car_z: float = 17
-    car_spin: float = pi / 2
+    car_spin: float = 0
+    car_pitch: float = 0
+    car_roll: float = 0
 
     def make_game_state(self, rng: SeededRandomNumberGenerator) -> GameState:
         return GameState(
@@ -119,11 +122,9 @@ class BallDrop(TrainingExercise):
                 0: CarState(
                     physics=Physics(
                         location=Vector3(self.car_x, self.car_y, self.car_z),
-                        rotation=Rotator(0, self.car_spin, 0),
+                        rotation=Rotator(self.car_pitch, self.car_spin, self.car_roll),
                         velocity=Vector3(0, 0, 0),
                         angular_velocity=Vector3(0, 0, 0)),
-                    jumped=False,
-                    double_jumped=False,
                     boost_amount=100)
             },
             boosts={i: BoostState(0) for i in range(34)},  # Is this needed.

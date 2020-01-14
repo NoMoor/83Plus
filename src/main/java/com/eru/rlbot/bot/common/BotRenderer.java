@@ -61,6 +61,18 @@ public class BotRenderer {
     return BOTS.get(botIndex);
   }
 
+  public void renderPath(ImmutableList<Vector3> locations) {
+    if (skipRendering) return;
+
+    Vector3 prev = null;
+    for (Vector3 location : locations) {
+      if (prev != null) {
+        getRenderer().drawLine3d(Color.pink, prev, location);
+      }
+      prev = location;
+    }
+  }
+
   private static class RenderRequest {
     private final float renderTimeEnd;
     private final Vector3 source;
@@ -82,10 +94,11 @@ public class BotRenderer {
 
 //    renderDebug();
 //    renderText();
-    renderAlert(input);
+//    renderAlert(input);
 //
-    renderControls(output);
-    renderAcceleration(input);
+//    renderControls(output);
+//    renderAcceleration(input);
+//    renderLocation(input);
 
 //    renderTacticLines(input.car);
 //    renderRefreshRate(input);
@@ -94,10 +107,10 @@ public class BotRenderer {
     if (true) {
 //      renderPredictionDiff(input);
     } else {
-      renderRelativeBallData(input);
+//      renderRelativeBallData(input);
     }
 
-    renderProjections(input);
+//    renderProjections(input);
 //    renderTouchIndicator(input);
 
 //    renderHitBox(input.car);
@@ -129,6 +142,10 @@ public class BotRenderer {
   }
 
   public void renderPath(DataPacket input, Path path) {
+    if (skipRendering) {
+      return;
+    }
+
     ImmutableList<Segment> pathNodes = path.allNodes();
 
     Segment.Type previousType = null;
@@ -143,7 +160,20 @@ public class BotRenderer {
 //        color = previousColor.darker();
       }
 
-      render(segment, color);
+      switch (segment.type) {
+        case JUMP:
+          render3DLine(color, segment.start, segment.end);
+          break;
+        case STRAIGHT:
+          render3DLine(color, segment.start, segment.end);
+          break;
+        case ARC:
+          renderArc(color, segment);
+          if (previousType != Segment.Type.ARC) {
+            getRenderer().drawString3d(String.format("%d", (int) segment.circle.maxSpeed), color, segment.start, 2, 2);
+          }
+          break;
+      }
 
       previousType = segment.type;
       previousColor = color;
@@ -151,21 +181,7 @@ public class BotRenderer {
 
     renderPoint(Color.GREEN, path.updateAndGetPidTarget(input), 10);
 
-//    renderHitBox(path.getTarget());
-  }
-
-  private void render(Segment segment, Color color) {
-    switch (segment.type) {
-      case JUMP:
-        render3DLine(color, segment.start, segment.end);
-        break;
-      case STRAIGHT:
-        render3DLine(color, segment.start, segment.end);
-        break;
-      case ARC:
-        renderArc(color, segment);
-        break;
-    }
+    renderHitBox(Color.BLACK, path.getTarget());
   }
 
   public void renderProjection(CarData car, Vector3 projectedVector, Color color) {
@@ -197,26 +213,40 @@ public class BotRenderer {
   }
 
   public void renderHitBox(CarData car) {
-    boolean canFlip = JumpManager.canFlip();
+    JumpManager jumpManager = JumpManager.forCar(car);
+    renderHitBox(
+        jumpManager.canJump()
+            ? Color.GREEN
+            : jumpManager.canFlip()
+            ? Color.ORANGE
+            : !jumpManager.hasReleasedJumpInAir()
+            ? Color.CYAN
+            : Color.RED,
+        car);
+  }
+
+  public void renderHitBox(Color color, CarData car) {
     BoundingBox hitbox = car.boundingBox;
 
     // Draw front box.
     render3DLine(Color.RED, hitbox.flt, hitbox.flb);
     render3DLine(Color.BLUE, hitbox.flb, hitbox.frb);
-    render3DLine(canFlip ? Color.GREEN : Color.CYAN, hitbox.frb, hitbox.frt);
-    render3DLine(canFlip ? Color.GREEN : Color.CYAN, hitbox.frt, hitbox.flt);
+    render3DLine(color, hitbox.frb, hitbox.frt);
+    render3DLine(color, hitbox.frt, hitbox.flt);
 
     // Draw Rear box.
-    render3DLine(canFlip ? Color.GREEN : Color.CYAN, hitbox.rlt, hitbox.rlb);
-    render3DLine(canFlip ? Color.GREEN : Color.CYAN, hitbox.rlb, hitbox.rrb);
-    render3DLine(canFlip ? Color.GREEN : Color.CYAN, hitbox.rrb, hitbox.rrt);
-    render3DLine(canFlip ? Color.GREEN : Color.CYAN, hitbox.rrt, hitbox.rlt);
+    render3DLine(color, hitbox.rlt, hitbox.rlb);
+    render3DLine(color, hitbox.rlb, hitbox.rrb);
+    render3DLine(color, hitbox.rrb, hitbox.rrt);
+    render3DLine(color, hitbox.rrt, hitbox.rlt);
 
     // Connect front and back.
-    render3DLine(canFlip ? Color.GREEN : Color.CYAN, hitbox.flt, hitbox.rlt);
+    render3DLine(color, hitbox.flt, hitbox.rlt);
     render3DLine(Color.GREEN, hitbox.flb, hitbox.rlb);
-    render3DLine(canFlip ? Color.GREEN : Color.CYAN, hitbox.frt, hitbox.rrt);
-    render3DLine(canFlip ? Color.GREEN : Color.CYAN, hitbox.frb, hitbox.rrb);
+    render3DLine(color, hitbox.frt, hitbox.rrt);
+    render3DLine(color, hitbox.frb, hitbox.rrb);
+
+//    renderProjection(car, car.position.plus(car.velocity), Color.yellow);
   }
 
   private void renderRefreshRate(DataPacket input) {
@@ -471,6 +501,15 @@ public class BotRenderer {
     renderText(250, 550, String.format("Roll %.2f %s" , output.getRoll(), lor(output.getRoll())));
   }
 
+
+  private void renderLocation(DataPacket input) {
+    CarData car = input.car;
+
+    renderText(0, 340, String.format("X: %.0f", car.position.x));
+    renderText(0, 370, String.format("Y: %.0f", car.position.y));
+    renderText(0, 400, String.format("Z: %.0f", car.position.z));
+  }
+
   private void renderAcceleration(DataPacket input) {
     CarData car = input.car;
 
@@ -508,7 +547,6 @@ public class BotRenderer {
 
   private void renderArc(Color color, Segment arc) {
     renderCircle(color, arc.circle.center, arc.start, arc.circle.radius, arc.getRadians());
-    getRenderer().drawString3d(String.format("%d", (int) arc.circle.maxSpeed), color, arc.start, 2, 2);
   }
 
   public void renderCircle(Color color, Circle circle) {

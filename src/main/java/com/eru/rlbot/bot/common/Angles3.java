@@ -45,8 +45,7 @@ public class Angles3 {
       return true;
     }
 
-    Matrix3 z0 = z(phi);
-//    Vector3 dphi_dt = z0.dot(omega); // This doesn't seem to be used. ???
+    Matrix3 z0 = angularVelocityMatrix(phi);
 
     float horizon_time = Math.max(0.03f, 4.0f * HORIZON_TIME);
 
@@ -63,24 +62,6 @@ public class Angles3 {
     float offset = 0.00001f;
     for (int i = 0; i < n_iter; i++) {
       Vector3 f0 = f(alpha, horizon_time, theta, omega, z0, phi);
-
-      // TODO: Choose an implementation.
-//      Vector3 df_j0 = f0
-//          .minus(f(alpha.plus(Matrix3.IDENTITY.row(0).multiply(eps)), horizon_time, theta, omega, z0, phi))
-//          .multiply(1 / eps);
-//      df_j0 = Vector3.of(df_j0.x + offset, df_j0.y, df_j0.z);
-//
-//      Vector3 df_j1 = f0
-//          .minus(f(alpha.plus(Matrix3.IDENTITY.row(1).multiply(eps)), horizon_time, theta, omega, z0, phi))
-//          .multiply(1 / eps);
-//      df_j1 = Vector3.of(df_j1.x, df_j1.y + offset, df_j1.z);
-//
-//      Vector3 df_j2 = f0
-//          .minus(f(alpha.plus(Matrix3.IDENTITY.row(2).multiply(eps)), horizon_time, theta, omega, z0, phi))
-//          .multiply(1 / eps);
-//      df_j2 = Vector3.of(df_j2.x, df_j2.y, df_j2.z + offset);
-//
-//      Matrix3 J = Matrix3.of(df_j0, df_j1, df_j2);
 
       List<Vector3> vector3List = new ArrayList<>(3);
       for (int j = 0; j < 3; j++) {
@@ -121,7 +102,7 @@ public class Angles3 {
   //
   //    Vector3 dphi_dt = dot(Z(phi), omega)
   //
-  private static Matrix3 z(Vector3 q) {
+  private static Matrix3 angularVelocityMatrix(Vector3 q) {
 
     double norm_q = q.magnitude();
 
@@ -166,7 +147,7 @@ public class Angles3 {
 
   // This function provides a guideline for when
   // control switching should take place.
-  private static Vector3 g(Vector3 q, Vector3 dq_dt) {
+  private static Vector3 g(Vector3 dq_dt) {
     Vector3 T = ANGULAR_ACCELERATION;
     Vector3 D = ANGULAR_DAMPING;
 
@@ -189,7 +170,7 @@ public class Angles3 {
             omega.plus(alpha_world.multiply(0.5f * dt)))
             .multiply(dt));
     Vector3 dphi_dt_pred = z0.dot(omega_pred);
-    return phi_pred.multiply(-1.0d).minus(g(phi_pred, dphi_dt_pred));
+    return phi_pred.multiply(-1.0d).minus(g(dphi_dt_pred));
   }
 
   // Let g(x) be the continuous piecewise linear function
@@ -223,19 +204,21 @@ public class Angles3 {
   }
 
   private static Vector3 find_controls_for(Vector3 ideal_alpha, Vector3 omega_local) {
-    Vector3 w = omega_local;
     Vector3 T = ANGULAR_ACCELERATION;
     Vector3 D = ANGULAR_DAMPING;
 
     // Note: these controls are calculated differently,
     // since Rocket League never disables roll damping.
-    Vector3 alphaValuesX = Vector3.of(-T.x + (D.x * w.x), (D.x * w.x), T.x + (D.x * w.x));
+    Vector3 alphaValuesX = Vector3.of(
+        -T.x + (D.x * omega_local.x),
+        (D.x * omega_local.x),
+        T.x + (D.x * omega_local.x));
     double x = solve_pwl(ideal_alpha.x, alphaValuesX);
 
-    Vector3 alphaValuesY = Vector3.of(-T.y, D.y * w.y, T.y);
+    Vector3 alphaValuesY = Vector3.of(-T.y, D.y * omega_local.y, T.y);
     double y = solve_pwl(ideal_alpha.y, alphaValuesY);
 
-    Vector3 alphaValuesZ = Vector3.of(-T.z, D.z * w.z, T.z);
+    Vector3 alphaValuesZ = Vector3.of(-T.z, D.z * omega_local.z, T.z);
     double z = solve_pwl(ideal_alpha.z, alphaValuesZ);
 
     return Vector3.of(x, y, z);

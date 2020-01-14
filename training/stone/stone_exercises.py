@@ -1,3 +1,5 @@
+from math import pi
+
 from stone.stone_shot_on_goal import BallDrop
 
 stone_exercises = [
@@ -6,11 +8,23 @@ stone_exercises = [
     # RollingTowardsGoalShot("Rolling shot"),
     # RollingAcross("Rolling across"),
 
+    # Sticking the car to the wall...
+    # BallDrop("Side Wall", ball_x=1500, ball_y=1750, ball_z=100, car_x=4079, car_y=3650, car_z=500,
+    #          car_spin=0, car_pitch=pi/2),
+    # BallDrop("Back Wall", ball_x=1500, ball_y=1750, ball_z=100, car_x=2600, car_y=5103, car_z=500,
+    #          car_spin=pi/2, car_pitch=pi/2),
+    # BallDrop("Corner", ball_x=1500, ball_y=1750, ball_z=100, car_x=3480, car_y=4560, car_z=500,
+    #          car_spin=pi/4, car_pitch=pi/2),
+
+    BallDrop("Flip testing", ball_x=0, ball_y=1750, ball_z=250, ball_sz=0, car_x=0, car_y=-500, car_spin=pi / 2),
+    # BallDrop("Ceiling sticky testing", ball_x=0, ball_y=1750, ball_z=250, ball_sz=0, car_x=0, car_y=-500, car_z=2028, car_spin=-pi/2,
+    #          car_pitch=pi),
+
     # Path planning ideas.
     # BallDrop("Path Testing", ball_x=1500, ball_y=1750, ball_z=100, ball_vz=0, ball_vx=0, car_y=-2000),
     # BallDrop("Path Testing", ball_x=1500, ball_y=1750, ball_z=100, ball_vz=0, ball_vx=0, car_x=-1000, car_y=2000),
-    BallDrop("Optimizer Testing", ball_x=1500, ball_y=1750, ball_z=100, ball_vz=0, ball_vx=0, car_x=2000, car_y=-2000,
-             car_spin=0),
+    # BallDrop("Optimizer Testing", ball_x=1500, ball_y=1750, ball_z=100, ball_vz=0, ball_vx=0, car_x=2000, car_y=-2000,
+    #          car_spin=0),
     # BallDrop("Path Testing Far away", ball_x=1500, ball_y=1750, ball_z=100, ball_vz=0, ball_vx=0, car_x=-1000, car_y=-2000,
     #              car_spin=0),
     # BallDrop("Path Close up", ball_x=1500, ball_y=1750, ball_z=100, ball_vz=0, ball_vx=0, car_x=1600, car_y=1000,

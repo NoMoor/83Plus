@@ -122,10 +122,12 @@ public class KickoffTactician extends Tactician {
   private void mustyKicks(ControlsOutput output, DataPacket input) {
     BallData relativeData = NormalUtils.noseRelativeBall(input);
 
+    JumpManager jumpManager = JumpManager.forCar(input.car);
+
     if (secondFlipLock) {
       if (input.car.hasWheelContact) {
         output.withJump();
-      } else if (JumpManager.canFlip()) {
+      } else if (jumpManager.canFlip()) {
         secondFlipLock = false;
         output
             .withJump()
@@ -210,8 +212,10 @@ public class KickoffTactician extends Tactician {
 
     tryFlipLock(input, relativeData);
 
+    JumpManager jumpManager = JumpManager.forCar(input.car);
+
     if (flipLock) {
-      if (JumpManager.canFlip() && relativeData.position.y < getFlipDistance()) {
+      if (jumpManager.canFlip() && relativeData.position.y < getFlipDistance()) {
         output.withPitch(NOSE_DOWN);
         output.withJump();
         flipLock = false;

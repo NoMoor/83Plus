@@ -48,10 +48,14 @@ public final class Constants {
   public static final double NEG_GRAVITY = -GRAVITY;
   public static final double BOOSTED_ACCELERATION = 991.666;
   public static final double BREAKING_DECELERATION = 3500;
+  public static final double COASTING_DECELERATION = 525;
 
   public static final double JUMP_VELOCITY_INSTANT = 300; // Directed towards the roof of the car.
   public static final double JUMP_HOLD_TIME = .2; // 200ms
   public static final double JUMP_ACCELERATION_HELD = 1400; // Directed towards the roof of the car. Not including gravity.
+  public static final double JUMP_ACCELERATION_HOLD_SLOW_TICK_COUNT = 5;
+  public static final double JUMP_ACCELERATION_SLOW_HELD = 1296;
+  public static final double JUMP_ACCELERATION_FAST_HELD = 1456;
 
   // Goal
   public static final int GOAL_WIDTH = 1785; // 892.755 * 2
@@ -60,17 +64,19 @@ public final class Constants {
   public static final float SMALL_BOOST_PICKUP_RADIUS = 140; // Actual 144
   public static final float LARGE_BOOST_PICKUP_RADIUS = 208; // Actual 208
 
-  /**
-   * Maximum Car Angular Acceleration:
-   * Yaw: 9.11 radians/s^2
-   * Pitch: 12.46 radians/s^2
-   * Roll: 38.34 radians/s^2
-   */
+  public static final float STICKY_FORCE_ACCEL = 162;
 
   // Speed
   public static final double BOOSTED_MAX_SPEED = 2299;
   public static final double SUPER_SONIC = 2200;
   public static final double MAX_UNBOOSTED_SPEED = 1409;
+  public static final double BOOST_RATE = 33.3;
+  public static final double FORWARD_DODGE_IMPULSE = 500;
+
+  public static final double MAX_PITCH_ACCEL = 12.46;
+  public static final double MAX_YAW_ACCEL = 9.11;
+  public static final double MAX_ROLL_ACCEL = 38.34;
+  public static final double MAX_ANGULAR_VELOCITY = 5.5;
 
   public static double turnDepth(double velocity, double angle) {
     return radius(velocity) * Math.sin(angle);

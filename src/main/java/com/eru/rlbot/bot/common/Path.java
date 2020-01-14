@@ -231,16 +231,14 @@ public class Path {
         && Accels.distanceToSlow(currentVelocity, maxSpeed) + SLOWING_BUFFER < segmentDistance;
   }
 
-  // TODO: This doesn't work.
-  private static final float COMPLETION_DISTANCE = 50;
   public Segment getSegment(DataPacket input) {
     Segment nextSegment = nodes.get(currentIndex);
-    if (hasNextSegment() && nextSegment.end.distance(input.car.position) < COMPLETION_DISTANCE) {
+    if (hasNextSegment() && nextSegment.endTime < input.car.elapsedSeconds) {
       nextSegment.markComplete();
       currentIndex++;
     }
 
-    return nodes.get(currentPidIndex);
+    return nodes.get(currentIndex);
   }
 
   int getCurrentPidIndex() {

@@ -150,7 +150,7 @@ public class CarBallCollision {
   }
 
   // https://github.com/samuelpmish/RLUtilities/blob/879b5e335db2313c46db4a0cb2e89c244153492b/inc/linear_algebra/math.h#L163
-  private static Matrix3 antisym(Vector3 vector) {
+  public static Matrix3 antisym(Vector3 vector) {
     return Matrix3.of(
         Vector3.of(0, -vector.z, vector.y),
         Vector3.of(vector.z, 0, -vector.x),

@@ -47,7 +47,10 @@ public class AerialTactician extends Tactician {
     Vector3 boostVector = calculateBoost(input.car, interceptLocation, interceptTime);
 
     Vector3 boostIndicator = boostVector.divide(Constants.BOOSTED_ACCELERATION / 100);
-    bot.botRenderer.renderProjection(input.car, input.car.position.plus(boostIndicator), boostIndicator.magnitude() < 100 ? Color.RED : Color.green);
+    bot.botRenderer.renderProjection(
+        input.car,
+        input.car.position.plus(boostIndicator),
+        boostIndicator.magnitude() < 100 ? Color.RED : Color.green);
 
     if (input.car.hasWheelContact) {
       output
@@ -117,7 +120,7 @@ public class AerialTactician extends Tactician {
   private void executeAerialPD(DataPacket input, ControlsOutput output, Tactic nextTactic) {
     if (input.car.hasWheelContact || jumpLock) {
       output.withJump();
-      jumpLock = !JumpManager.hasMaxJumpHeight();
+      jumpLock = !JumpManager.forCar(input.car).hasMaxJumpHeight();
     }
 
     // Positive if we need to go up.

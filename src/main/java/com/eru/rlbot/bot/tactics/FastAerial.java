@@ -28,16 +28,16 @@ public class FastAerial extends Tactician {
       if (hasJumpedTicks > 5) {
         isFinished = true;
       }
-    } else if (!JumpManager.hasMaxJumpHeight()) {
+    } else if (!JumpManager.forCar(input.car).hasMaxJumpHeight()) {
       output
           .withJump()
           .withBoost()
           .withPitch(1.0);
-    } else if (!JumpManager.hasReleasedJumpInAir()) {
+    } else if (!JumpManager.forCar(input.car).hasReleasedJumpInAir()) {
       output
           .withBoost()
           .withPitch(1.0);
-    } else if (JumpManager.canFlip()) {
+    } else if (JumpManager.forCar(input.car).canFlip()) {
       // Release Pitch for this frame.
       output
           .withJump()

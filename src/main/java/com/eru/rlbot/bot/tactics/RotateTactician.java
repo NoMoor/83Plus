@@ -9,6 +9,7 @@ import com.eru.rlbot.common.input.DataPacket;
 import com.eru.rlbot.common.input.Orientation;
 import com.eru.rlbot.common.output.ControlsOutput;
 import com.eru.rlbot.common.vector.Vector3;
+import java.awt.*;
 
 public class RotateTactician extends Tactician {
 
@@ -47,7 +48,7 @@ public class RotateTactician extends Tactician {
     Path path = PathPlanner.planPath(input.car, targetCar);
     path.setTimed(false);
     bot.botRenderer.renderPath(input, path);
-    bot.botRenderer.renderHitBox(targetCar);
+    bot.botRenderer.renderHitBox(Color.BLACK, targetCar);
 
     pathExecutor.executePath(input, output, path);
   }

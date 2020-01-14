@@ -1,10 +1,10 @@
 package com.eru.rlbot.bot.common;
 
-import com.eru.rlbot.common.input.CarData;
-import com.eru.rlbot.common.vector.Vector3;
-
 import static com.eru.rlbot.bot.common.Constants.BALL_RADIUS;
 import static com.eru.rlbot.bot.common.Constants.HALF_LENGTH;
+
+import com.eru.rlbot.common.input.CarData;
+import com.eru.rlbot.common.vector.Vector3;
 
 public class Goal {
 
@@ -27,6 +27,7 @@ public class Goal {
 
   // TODO: Add cross-bar
   public final Vector3 center;
+  public final Vector3 centerTop;
   public final Vector3 left;
   public final Vector3 right;
   public final Vector3 leftInside;
@@ -36,6 +37,7 @@ public class Goal {
 
   private Goal(Vector3 center) {
     this.center = center;
+    this.centerTop = center.addZ(Constants.GOAL_HEIGH - BALL_RADIUS);
     this.left = center.y > 0 ? center.plus(HALF_GOAL) : center.minus(HALF_GOAL);
     this.leftInside = center.y > 0 ? center.plus(HALF_GOAL_INSIDE) : center.minus(HALF_GOAL_INSIDE);
     this.leftOutside = center.y > 0 ? center.plus(HALF_GOAL_OUTSIDE) : center.minus(HALF_GOAL_OUTSIDE);

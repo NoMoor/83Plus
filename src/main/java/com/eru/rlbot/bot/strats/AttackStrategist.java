@@ -49,6 +49,15 @@ public class AttackStrategist extends Strategist {
       return true;
     }
 
+    if (true) {
+      tacticManager.setTactic(
+          Tactic.builder()
+              .setSubject(input.ball.position)
+              .setTacticType(Tactic.TacticType.JUMP_FLIP)
+              .build());
+      return true;
+    }
+
     // TODO: Figure out when to invoke the aerial stuff.
     if (input.ball.position.z > 300 && false) {
       tacticManager.setTactic(Tactic.ballTactic()

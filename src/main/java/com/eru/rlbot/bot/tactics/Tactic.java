@@ -45,6 +45,7 @@ public class Tactic {
     GRAB_BOOST,
     HALF_FLIP,
     HIT_BALL,
+    JUMP_FLIP,
     KICKOFF,
     PICK_UP,
     ROTATE,

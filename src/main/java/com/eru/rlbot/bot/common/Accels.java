@@ -1,12 +1,15 @@
 package com.eru.rlbot.bot.common;
 
 import com.eru.rlbot.common.input.CarData;
+import com.eru.rlbot.common.input.Orientation;
+import com.eru.rlbot.common.jump.JumpManager;
+import com.eru.rlbot.common.vector.Vector3;
 import java.util.Optional;
 
 public class Accels {
 
-  private static final double SLOW_SLOPE = (1600.0 - 160) / (0 - 1400);
-  private static final double FAST_SLOPE = (160.0 - 0) / (1400 - 1410);
+  private static final float SLOW_SLOPE = (1600.0f - 160) / (0 - 1400);
+  private static final float FAST_SLOPE = (160.0f - 0) / (1400 - 1410);
 
   public static final double MAX_ACCELERATION = acceleration(0) + Constants.BOOSTED_ACCELERATION;
 
@@ -148,7 +151,11 @@ public class Accels {
     if (time > Constants.JUMP_HOLD_TIME) {
       return Constants.NEG_GRAVITY;
     } else {
-      return Constants.JUMP_ACCELERATION_HELD + Constants.NEG_GRAVITY;
+      int jumpTick = (int) (time / Constants.STEP_SIZE);
+      return (jumpTick < Constants.JUMP_ACCELERATION_HOLD_SLOW_TICK_COUNT
+          ? Constants.JUMP_ACCELERATION_SLOW_HELD
+          : Constants.JUMP_ACCELERATION_FAST_HELD)
+          + Constants.NEG_GRAVITY;
     }
   }
 
@@ -169,5 +176,43 @@ public class Accels {
       this.speed = speed;
       this.time = time;
     }
+  }
+
+  public static Vector3 flipImpulse(Orientation orientation, Vector3 velocity, double pitch, double yaw, double roll) {
+    Vector3 frontImpulse = Vector3.zero();
+    Vector3 sideImpulse = Vector3.zero();
+
+    if (pitch != 0) {
+      if (pitch > 0) {
+        // backflip
+        double vForward = orientation.getNoseVector().dot(velocity);
+        double backImpulse = -Constants.FORWARD_DODGE_IMPULSE * (1 + .5 * (vForward / Constants.BOOSTED_MAX_SPEED));
+        frontImpulse = orientation.getNoseVector().flat().toMagnitude(backImpulse);
+      } else {
+        frontImpulse = orientation.getNoseVector().flat().toMagnitude(Constants.FORWARD_DODGE_IMPULSE);
+      }
+    }
+
+    if (yaw != 0 || roll != 0) {
+      double vForward = orientation.getNoseVector().dot(velocity);
+      double sideImpulseMagnitude = Constants.FORWARD_DODGE_IMPULSE * (1 + .9 * (vForward / Constants.BOOSTED_MAX_SPEED));
+      sideImpulse = orientation.getNoseVector().flat().clockwisePerpendicular()
+          .toMagnitude(sideImpulseMagnitude * Angles3.clip(yaw + roll, -1, 1));
+    }
+
+    return frontImpulse.plus(sideImpulse);
+  }
+
+  public static Vector3 flipAngularAcceleration(
+      Orientation orientation, double pitch, double yaw, double roll) {
+
+    double yawRoll = Angles3.clip(yaw + roll, -1, 1);
+    double total = Math.abs(pitch) + Math.abs(yawRoll);
+
+    Vector3 side = orientation.getNoseVector().toMagnitude(yawRoll / total);
+    Vector3 front = orientation.getLeftVector().toMagnitude(-pitch / total);
+
+    return side.plus(front)
+        .multiply(Constants.STEP_SIZE_COUNT * Constants.MAX_ANGULAR_VELOCITY / JumpManager.FLIP_ACCELERATION_TICKS);
   }
 }

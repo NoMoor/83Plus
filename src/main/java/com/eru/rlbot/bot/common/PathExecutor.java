@@ -60,7 +60,8 @@ public class PathExecutor {
       output.withThrottle(-1);
     }
 
-    if (target.z - 40 > input.car.position.z) {
+    Segment currentSegment = path.getSegment(input);
+    if (currentSegment.type == Segment.Type.JUMP) {
       output.withJump();
     }
 

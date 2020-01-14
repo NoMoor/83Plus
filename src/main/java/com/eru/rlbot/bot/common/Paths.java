@@ -67,7 +67,7 @@ public class Paths {
     double a = (1 / (2 * d)) * Math.sqrt((4 * (d * d) * (R * R)) - Math.pow((d * d) - (r * r) + (R * R), 2));
 
     Vector3 tanx = point.plus(bisector.plus(bisector.normalize().toMagnitude(x)));
-    Vector3 perp = bisector.flatten().perpendicular().scaledToMagnitude(a).asVector3();
+    Vector3 perp = bisector.flatten().ClockwisePerpendicular().scaledToMagnitude(a).asVector3();
 
     // TODO: Label these. One should always have the same spin.
     return new TangentPoints(tanx.minus(perp), tanx.plus(perp));
@@ -143,7 +143,7 @@ public class Paths {
   public static ImmutableList<Circle> turningRadiusCircles(Vector3 position, double speed, Vector3 noseVector) {
     double radius = Constants.radius(speed);
 
-    Vector2 perpVelocity = noseVector.flatten().perpendicular();
+    Vector2 perpVelocity = noseVector.flatten().ClockwisePerpendicular();
     Circle rightCircle = new Circle(position.plus(perpVelocity.asVector3().toMagnitude(radius)), radius);
     Circle leftCircle = new Circle(position.plus(perpVelocity.asVector3().toMagnitude(-radius)), radius);
 

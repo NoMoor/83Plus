@@ -3,6 +3,17 @@
 
 apply plugin: 'java'
 apply plugin: 'application'
+apply plugin: 'com.google.protobuf'
+apply plugin: 'idea'
+
+buildscript {
+    repositories {
+        maven { url "https://plugins.gradle.org/m2/" }
+    }
+    dependencies {
+        classpath 'com.google.protobuf:protobuf-gradle-plugin:0.8.8'
+    }
+}
 
 sourceCompatibility = 1.8
 
@@ -33,6 +44,8 @@ dependencies {
     // Fetch the framework jar file
     compile 'org.rlbot.commons:framework:1.+'
     compile 'com.google.guava:guava:27.1-jre'
+    compile 'com.google.protobuf:protobuf-java:3.4.0'
+    compile 'com.google.protobuf:protobuf-java-util:3.4.0'
     compile group: 'org.apache.logging.log4j', name: 'log4j-api', version: '2.12.1'
     compile group: 'org.apache.logging.log4j', name: 'log4j-core', version: '2.12.1'
     compile group: 'org.ejml', name: 'ejml-ddense', version: '0.35'
@@ -100,5 +113,29 @@ distZip {
     }
     into (applicationName + '/bin') {
         from fileTree('port.cfg')
+    }
+}
+
+protobuf {
+    protoc {
+        // The artifact spec for the Protobuf Compiler
+        artifact = 'com.google.protobuf:protoc:3.0.0'
+    }
+    plugins {
+        // Optional: an artifact spec for a protoc plugin, with "grpc" as
+        // the identifier, which can be referred to in the "plugins"
+        // container of the "generateProtoTasks" closure.
+        grpc {
+            artifact = 'io.grpc:protoc-gen-grpc-java:1.0.0-pre2'
+        }
+    }
+    generateProtoTasks {
+        ofSourceSet('main')*.plugins {
+            // Apply the "grpc" plugin whose spec is defined above, without
+            // options.  Note the braces cannot be omitted, otherwise the
+            // plugin will not be added. This is because of the implicit way
+            // NamedDomainObjectContainer binds the methods.
+            grpc { }
+        }
     }
 }

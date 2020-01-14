@@ -112,7 +112,7 @@ public class Vector2 {
     return Vector3.of(x, y, 0);
   }
 
-  public Vector2 perpendicular() {
+  public Vector2 ClockwisePerpendicular() {
     return new Vector2(-y, x);
   }
 }

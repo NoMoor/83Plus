@@ -47,7 +47,7 @@ public class BotLauncher {
   }
 
   private static JPanel stateSettingButtons(BotManager botManager, BotFactory factory) {
-    JPanel stateSettingPanel = new JPanel();
+    final JPanel stateSettingPanel = new JPanel();
     stateSettingPanel.setBorder(new EmptyBorder(10, 10, 10, 10));
     stateSettingPanel.setLayout(new BoxLayout(stateSettingPanel, BoxLayout.Y_AXIS));
 
@@ -60,18 +60,18 @@ public class BotLauncher {
         }
 
         // TODO: Disable based on flag.
-        JButton stateSettingButton = new JButton(String.format("Trigger state: %d", botIndex));
-        stateSettingButton.addActionListener((event) -> {
-          int index = Integer.valueOf(event.getActionCommand().substring(event.getActionCommand().length() - 1));
-          factory.getBot(index).enableStateSetting();
-          stateSettingButton.setEnabled(true);
-        });
+        JButton stateSettingButton = new JButton(String.format("Set State: %d", System.currentTimeMillis()));
+//        stateSettingButton.addActionListener((event) -> {
+//          int index = Integer.valueOf(event.getActionCommand().substring(event.getActionCommand().length() - 1));
+//          factory.getBot(index).enableStateSetting();
+//          stateSettingButton.setEnabled(true);
+//        });
         stateSettingButton.setEnabled(true);
         stateSettingPanel.add(stateSettingButton);
       }
     };
 
-    new Timer(1000, myListener).start();
+    new Timer(10000, myListener).start();
 
     return stateSettingPanel;
   }
