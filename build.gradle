@@ -52,6 +52,7 @@ dependencies {
     compile group: 'org.ejml', name: 'ejml-simple', version: '0.35'
 
     testCompile 'junit:junit:4.12'
+    testCompile 'com.google.truth:truth:1.0.1'
     testImplementation 'org.hamcrest:hamcrest:2.2'
 
     // This is makes it easy to find the dll when running in intellij, where JVM args don't get passed from gradle.
@@ -128,6 +129,10 @@ protobuf {
         grpc {
             artifact = 'io.grpc:protoc-gen-grpc-java:1.0.0-pre2'
         }
+
+        grpc_python {
+            path = "python -m grpc_tools.protoc"
+        }
     }
     generateProtoTasks {
         ofSourceSet('main')*.plugins {
@@ -136,6 +141,14 @@ protobuf {
             // plugin will not be added. This is because of the implicit way
             // NamedDomainObjectContainer binds the methods.
             grpc { }
+
+            python { }
         }
+    }
+}
+
+task printClasspath {
+    doLast {
+        configurations.testRuntime.each { println it }
     }
 }

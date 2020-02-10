@@ -4,8 +4,12 @@ import com.eru.rlbot.bot.tactics.Tactician;
 import com.eru.rlbot.common.input.DataPacket;
 import com.eru.rlbot.common.output.ControlsOutput;
 import com.eru.rlbot.common.vector.Vector3;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public class PathExecutor {
+
+  private static final Logger logger = LogManager.getLogger("PathExecutor");
 
   private final Tactician tactician;
 
@@ -17,25 +21,36 @@ public class PathExecutor {
     return new PathExecutor(tactician);
   }
 
-  private static final double P = 8;
-  private static final double D = 0.05 * Path.LEAD_FRAMES;
+  private static final double P = 50;
+  private static final double D = 0.00 * Path.LEAD_FRAMES;
 
   public void executePath(DataPacket input, ControlsOutput output, Path path) {
-    Vector3 target = path.updateAndGetPidTarget(input);
+    Vector3 target = path.pidTarget(input);
 
     Vector3 distanceDiff = target.minus(input.car.position);
-    if (distanceDiff.magnitude() > Constants.BOOSTED_MAX_SPEED * 2 * Path.LEAD_TIME) {
+    if (distanceDiff.magnitude() > Constants.BOOSTED_MAX_SPEED * 1.1 * Path.LEAD_TIME) {
+      logger.debug("Off course: {}", distanceDiff.magnitude());
       path.markOffCourse();
+    } else {
+      double delta = path.currentTarget(input).distance(input.car.position);
+      if (delta > 10 && delta < 6000) {
+        logger.debug("Delta {}", delta);
+      }
     }
 
+    // Determine the angular velocity to hit the point
     double correctionAngle = Angles.flatCorrectionAngle(input.car, target);
+    double correctionCurvature = 1 / (input.car.position.distance(target) / (2 * Math.signum(correctionAngle)));
+    double correctionAngularVelocity = correctionCurvature * input.car.groundSpeed;
+
     double maxCurvature = Constants.curvature(input.car.groundSpeed);
-    double neededCurvature = correctionAngle * maxCurvature;
+    double maxAngularVelocity = maxCurvature * input.car.groundSpeed;
 
-    double inputAngularVelocity = neededCurvature * input.car.groundSpeed;
     double currentAngularVelocity = input.car.angularVelocity.z;
+    double diffAngularVelocity = currentAngularVelocity - maxAngularVelocity;
 
-    output.withSteer((inputAngularVelocity * P) - (currentAngularVelocity * D));
+//    output.withSteer((diffAngularVelocity * P) - (currentAngularVelocity * D));
+    output.withSteer(2 * correctionAngularVelocity / maxAngularVelocity);
 
     double timeToTarget = distanceDiff.magnitude() / input.car.velocity.magnitude();
 
@@ -44,9 +59,9 @@ public class PathExecutor {
       Accels.AccelResult boostTime =
           Accels.boostedTimeToDistance(input.car.velocity.magnitude(), distanceDiff.magnitude());
 
-      if (boostTime.time > Path.LEAD_TIME * 1.5) {
+      if (boostTime.time * 1.25 > Path.LEAD_TIME) {
         output
-            .withBoost(Math.abs(output.getSteer()) < .8)
+            .withBoost()
             .withThrottle(1.0);
       } else {
         Accels.AccelResult accelTime = Accels.timeToDistance(input.car.velocity.magnitude(), distanceDiff.magnitude());
@@ -54,7 +69,7 @@ public class PathExecutor {
         double savings = timeToTarget - accelTime.time;
         output.withThrottle((savings * 10) / Path.LEAD_TIME);
       }
-    } else if (timeToTarget > Path.LEAD_TIME * .7) {
+    } else if (timeToTarget > Path.LEAD_TIME * .9) {
       output.withThrottle(0);
     } else {
       output.withThrottle(-1);

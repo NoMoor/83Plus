@@ -1,5 +1,6 @@
 package com.eru.rlbot.common.input;
 
+import com.eru.rlbot.bot.common.Constants;
 import com.eru.rlbot.common.vector.Vector3;
 import rlbot.flat.BallInfo;
 import rlbot.flat.PredictionSlice;
@@ -75,17 +76,28 @@ public class BallData {
         velocity.z);
   }
 
-    /** A builder for {@link BallData}. */
-    public final static class Builder {
-        private Vector3 position;
-        private Vector3 velocity;
-        private Vector3 spin;
-        private float elapsedSeconds;
-        private boolean isLiveData;
-        private boolean isRelativeData;
+  public boolean fuzzyEquals(BallData ball) {
+    double stepDrift = Math.max(Math.abs(elapsedSeconds - ball.elapsedSeconds) / Constants.STEP_SIZE, 1);
 
-        public Builder setPosition(Vector3 position) {
-            this.position = position;
+    return Math.abs(elapsedSeconds - ball.elapsedSeconds) < (Constants.STEP_SIZE * 3)
+        && spin.isWithin(.5 * stepDrift).of(ball.spin)
+        && position.isWithin(20 * stepDrift).of(ball.position)
+        && velocity.isWithin(30 * stepDrift).of(ball.velocity);
+  }
+
+  /**
+   * A builder for {@link BallData}.
+   */
+  public final static class Builder {
+    private Vector3 position;
+    private Vector3 velocity;
+    private Vector3 spin;
+    private float elapsedSeconds;
+    private boolean isLiveData;
+    private boolean isRelativeData;
+
+    public Builder setPosition(Vector3 position) {
+      this.position = position;
             return this;
         }
 

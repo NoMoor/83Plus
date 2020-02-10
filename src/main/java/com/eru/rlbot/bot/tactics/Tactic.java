@@ -57,7 +57,7 @@ public class Tactic {
   }
 
   public Vector3 getTargetPosition() {
-    return subject.position;
+    return subject != null ? subject.position : null;
   }
 
   @Override

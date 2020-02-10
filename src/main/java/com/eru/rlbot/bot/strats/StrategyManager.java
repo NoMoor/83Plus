@@ -14,7 +14,7 @@ import java.util.Map;
 
 public class StrategyManager {
 
-  // Delay ~1 frame after a jump to allow prediction propagation.
+  // Delay ~1 frame after a jump to allow ball propagation.
   private static final float RESET_DELAY = .1f;
 
   private static final float STRATEGY_UPDATE_INTERVAL = .25F;

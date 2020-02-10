@@ -25,7 +25,7 @@ public class Angles3 {
   private static final float HORIZON_TIME = .05f;
 
   public static void setControlsForFlatLanding(CarData car, ControlsOutput output) {
-    setControlsFor(car, Orientation.fromFlatVelocity(car).getOrientationMatrix(), output);
+    setControlsFor(car, Orientation.fromFlatOrientation(car).getOrientationMatrix(), output);
   }
 
   /** Returns controls to optimally rotate toward the subject orientation. */

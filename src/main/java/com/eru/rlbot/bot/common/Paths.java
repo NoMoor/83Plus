@@ -6,6 +6,8 @@ import com.eru.rlbot.common.input.CarData;
 import com.eru.rlbot.common.vector.Vector2;
 import com.eru.rlbot.common.vector.Vector3;
 import com.google.common.collect.ImmutableList;
+import java.util.Comparator;
+import java.util.stream.Stream;
 
 public class Paths {
 
@@ -26,8 +28,7 @@ public class Paths {
   /**
    * Returns the ideal approach based on the target speed.
    */
-  static Circle closeApproach(CarData target, CarData currentCarData) {
-    Vector3 currentLocation = currentCarData.position;
+  static Circles closeApproach(CarData target) {
     Vector3 front = target.orientation.getNoseVector().normalize();
     Vector3 up = front.cross(Vector3.of(0, 0, 1).cross(front)).normalize();
     Vector3 left = up.cross(front).normalize();
@@ -39,10 +40,9 @@ public class Paths {
     Vector3 center1 = target.position.plus(centerOffset);
     Vector3 center2 = target.position.minus(centerOffset);
 
-    return new Circle(center1.distance(currentLocation) < center2.distance(currentLocation)
-        ? center1
-        : center2,
-        turnRadius);
+    return new Circles(
+        new Circle(center1, turnRadius),
+        new Circle(center2, turnRadius));
   }
 
   static Vector3 tangentForTargetDirection(Circle circle, Vector3 currentCarPos, CarData targetCar) {
@@ -53,6 +53,29 @@ public class Paths {
     double targetHandedness = Math.signum(centerToTarget.cross(targetCar.orientation.getNoseVector()).z);
 
     return targetHandedness < 0 ? tangentPoints.left : tangentPoints.right;
+  }
+
+  public static ImmutableList<Segment> shortestBiArc(CarData target, CarData source) {
+    Circles ballStrikingCircles = closeApproach(target);
+    Circles carTurningCircles =
+        turningRadiusCircles(source.position, Math.max(800, source.groundSpeed), source.orientation.getNoseVector());
+
+    ImmutableList<Segment> cwcw = biArcSegments(source.position, carTurningCircles.cw, target.position, ballStrikingCircles.cw, CircleTangents.Shape.CWCW);
+    ImmutableList<Segment> ccwcw = biArcSegments(source.position, carTurningCircles.ccw, target.position, ballStrikingCircles.cw, CircleTangents.Shape.CCWCW);
+    ImmutableList<Segment> cwccw = biArcSegments(source.position, carTurningCircles.cw, target.position, ballStrikingCircles.ccw, CircleTangents.Shape.CWCCW);
+    ImmutableList<Segment> ccwccw = biArcSegments(source.position, carTurningCircles.ccw, target.position, ballStrikingCircles.ccw, CircleTangents.Shape.CCWCCW);
+
+    return Stream.of(cwcw, ccwcw, cwccw, ccwccw)
+        .min(Comparator.comparingDouble(segments -> segments.stream().mapToDouble(Segment::flatDistance).sum()))
+        .get();
+  }
+
+  private static ImmutableList<Segment> biArcSegments(
+      Vector3 start, Circle circle1, Vector3 end, Circle circle2, CircleTangents.Shape shape) {
+    Segment connector = tangents(circle1, circle2).getSegment(shape);
+    Segment arc1 = Segment.arc(start, connector.start, circle1, shape == CircleTangents.Shape.CWCCW || shape == CircleTangents.Shape.CWCW);
+    Segment arc2 = Segment.arc(connector.end, end, circle2, shape == CircleTangents.Shape.CCWCW || shape == CircleTangents.Shape.CWCW);
+    return ImmutableList.of(arc1, connector, arc2);
   }
 
   public static TangentPoints tangents(Circle circle, Vector3 point) {
@@ -69,7 +92,6 @@ public class Paths {
     Vector3 tanx = point.plus(bisector.plus(bisector.normalize().toMagnitude(x)));
     Vector3 perp = bisector.flatten().ClockwisePerpendicular().scaledToMagnitude(a).asVector3();
 
-    // TODO: Label these. One should always have the same spin.
     return new TangentPoints(tanx.minus(perp), tanx.plus(perp));
   }
 
@@ -121,33 +143,30 @@ public class Paths {
   }
 
   public static Circle closeTurningRadius(Vector3 point, CarData car) {
-    ImmutableList<Circle> circles =
+    Circles circles =
         turningRadiusCircles(
             car.position,
             Math.max(800, car.groundSpeed),
             car.orientation.getNoseVector());
 
-    Circle left = circles.get(0);
-    Circle right = circles.get(1);
-
-    if (left.center.distance(point) < right.center.distance(point)) {
-      return left;
+    if (circles.cw.center.distance(point) < circles.ccw.center.distance(point)) {
+      return circles.cw;
     }
-    return right;
+    return circles.ccw;
   }
 
-  public static ImmutableList<Circle> turningRadiusCircles(CarData car) {
+  public static Circles turningRadiusCircles(CarData car) {
     return turningRadiusCircles(car.position, car.groundSpeed, car.orientation.getNoseVector());
   }
 
-  public static ImmutableList<Circle> turningRadiusCircles(Vector3 position, double speed, Vector3 noseVector) {
+  public static Circles turningRadiusCircles(Vector3 position, double speed, Vector3 noseVector) {
     double radius = Constants.radius(speed);
 
     Vector2 perpVelocity = noseVector.flatten().ClockwisePerpendicular();
-    Circle rightCircle = new Circle(position.plus(perpVelocity.asVector3().toMagnitude(radius)), radius);
-    Circle leftCircle = new Circle(position.plus(perpVelocity.asVector3().toMagnitude(-radius)), radius);
+    Circle cw = new Circle(position.plus(perpVelocity.asVector3().toMagnitude(radius)), radius);
+    Circle ccw = new Circle(position.plus(perpVelocity.asVector3().toMagnitude(-radius)), radius);
 
-    return ImmutableList.of(leftCircle, rightCircle);
+    return new Circles(cw, ccw);
   }
 
   public static class CircleTangents {
@@ -183,6 +202,27 @@ public class Paths {
     public ImmutableList<Segment> getSegments() {
       return ImmutableList.of(cwcw, ccwcw, cwccw, ccwccw);
     }
+
+    public Segment getSegment(Shape shape) {
+      switch (shape) {
+        case CWCW:
+          return cwcw;
+        case CCWCW:
+          return ccwcw;
+        case CWCCW:
+          return cwccw;
+        case CCWCCW:
+          return ccwccw;
+      }
+      throw new IllegalArgumentException("Unhandled shape " + shape);
+    }
+
+    public enum Shape {
+      CWCW,
+      CCWCW,
+      CWCCW,
+      CCWCCW
+    }
   }
 
   public static class TangentPoints {
@@ -200,5 +240,19 @@ public class Paths {
   }
 
   private Paths() {
+  }
+
+  public static class Circles {
+    public final Circle cw; // Clockwise
+    public final Circle ccw; // Counter-clockwise
+
+    Circles(Circle cw, Circle ccw) {
+      this.cw = cw;
+      this.ccw = ccw;
+    }
+
+    public ImmutableList<Circle> getCircles() {
+      return ImmutableList.of(cw, ccw);
+    }
   }
 }

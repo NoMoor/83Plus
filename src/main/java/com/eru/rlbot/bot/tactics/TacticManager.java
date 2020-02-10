@@ -31,6 +31,8 @@ public class TacticManager {
     DEFAULT_TACTICIAN_MAP.put(Tactic.TacticType.WAVE_DASH, WaveDashTactician.class);
   }
 
+  private final Map<Tactic.TacticType, Tactician> tacticians = new HashMap<>();
+
   private final BotRenderer botRenderer;
   private LinkedList<Tactic> tacticList = new LinkedList<>();
 
@@ -87,10 +89,6 @@ public class TacticManager {
     this.setTactic(tactic.withType(tacticType));
   }
 
-  public void delegateTactic(Tactic tactic, Class<? extends Tactician> tactician) {
-    this.controllingTactician = Pair.of(tactic.tacticType, newTactician(tactician));
-  }
-
   public void preemptTactic(Tactic tactic) {
     this.tacticList.addFirst(tactic);
     this.controllingTactician = Pair.of(tactic.tacticType, getTactician(tactic));
@@ -119,8 +117,14 @@ public class TacticManager {
       controllingTactician = null;
     }
 
-    controllingTactician = Pair.of(tactic.tacticType, newTactician(DEFAULT_TACTICIAN_MAP.get(tactic.tacticType)));
+    Tactician tactician = tacticians.computeIfAbsent(tactic.tacticType, this::newTactician);
+
+    controllingTactician = Pair.of(tactic.tacticType, tactician);
     return controllingTactician.getSecond();
+  }
+
+  private Tactician newTactician(Tactic.TacticType type) {
+    return newTactician(DEFAULT_TACTICIAN_MAP.get(type));
   }
 
   private Tactician newTactician(Class<? extends Tactician> t) {

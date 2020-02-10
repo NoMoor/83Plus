@@ -1,5 +1,8 @@
 syntax = "proto2";
 
+// Command to regenerate the python version
+// C:\Code\Protobuf\protoc\bin\protoc -I=C:\Code\AGC\src\main\proto --python_out=C:\Code\AGC\visualization C:\Code\AGC\src\main\proto\gamestate.proto
+
 package gamestate;
 
 option java_package = "com.eru.rlbot.common";
@@ -9,6 +12,8 @@ message GameState {
     optional int64 frameId = 1;
     repeated CarState car = 2;
     optional BallState ball = 3;
+    optional string label = 4;
+    optional int64 training_id = 5;
 
     message CarState {
         required int32 id = 1;

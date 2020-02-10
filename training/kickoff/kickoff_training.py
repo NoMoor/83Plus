@@ -1,19 +1,19 @@
 from dataclasses import dataclass, field
+
 from math import pi
-
-from rlbot.utils.game_state_util import GameState, BoostState, BallState, CarState, Physics, Vector3, Rotator
-
-from rlbottraining.training_exercise import TrainingExercise
+from rlbot.utils.game_state_util import GameState, BallState, CarState, Physics, Vector3, Rotator
 from rlbottraining.common_graders.goal_grader import StrikerGrader
+from rlbottraining.common_graders.tick_wrapper import GameTickPacketWrapperGrader
 from rlbottraining.grading.grader import Grader
 from rlbottraining.rng import SeededRandomNumberGenerator
-from rlbottraining.common_graders.tick_wrapper import GameTickPacketWrapperGrader
 from rlbottraining.training_exercise import Playlist
+from rlbottraining.training_exercise import TrainingExercise
+
 
 @dataclass
 class KickOff(TrainingExercise):
     grader: Grader = field(default_factory=lambda: GameTickPacketWrapperGrader(
-        StrikerGrader(timeout_seconds=5.0, ally_team=0)))
+        StrikerGrader(timeout_seconds=10, ally_team=0)))
     car_start_x: float = 0
     car_start_y: float = -4608
     car_yaw: float = 0

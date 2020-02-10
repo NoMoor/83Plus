@@ -6,7 +6,6 @@ import com.eru.rlbot.bot.main.Agc;
 import com.eru.rlbot.bot.tactics.KickoffTactician;
 import com.eru.rlbot.bot.tactics.Tactic;
 import com.eru.rlbot.bot.tactics.TakeTheShotTactician;
-import com.eru.rlbot.common.Moment;
 import com.eru.rlbot.common.input.DataPacket;
 import com.eru.rlbot.common.vector.Vector3;
 
@@ -45,11 +44,11 @@ public class AttackStrategist extends Strategist {
           Tactic.builder()
               .setSubject(input.ball.position)
               .setTacticType(Tactic.TacticType.KICKOFF)
-              .plan(planner::plan));
+              .build());
       return true;
     }
 
-    if (true) {
+    if (false) {
       tacticManager.setTactic(
           Tactic.builder()
               .setSubject(input.ball.position)
@@ -69,10 +68,9 @@ public class AttackStrategist extends Strategist {
     }
 
     if (TakeTheShotTactician.takeTheShot(input)) {
-      Moment targetMoment = TakeTheShotTactician.shotTarget(input);
       tacticManager.setTactic(
           Tactic.builder()
-              .setSubject(targetMoment)
+              .setObject(Goal.opponentGoal(input.car.team).center)
               .setTacticType(Tactic.TacticType.STRIKE)
               .build());
       return true;

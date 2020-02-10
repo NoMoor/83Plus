@@ -10,7 +10,9 @@ public class BallPredictor {
 
   private static final float PREDICTION_TIME = 2f;
 
-  /** Gets a list of prediction-slice-like {@link BallData} objects. */
+  /**
+   * Gets a list of ball-slice-like {@link BallData} objects.
+   */
   public static ImmutableList<BallData> makePrediction(BallData ball) {
     BallData currentBall = ball;
 

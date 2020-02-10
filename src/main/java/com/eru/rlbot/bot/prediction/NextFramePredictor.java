@@ -11,7 +11,6 @@ import com.eru.rlbot.common.jump.JumpManager;
 import com.eru.rlbot.common.output.ControlsOutput;
 import com.eru.rlbot.common.vector.Vector3;
 import com.google.common.collect.ImmutableList;
-import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -202,10 +201,10 @@ public class NextFramePredictor {
     botRenderer.renderHitBox(actual);
 
 //    logger.log(Level.INFO, "avX {} {} {} {} {} {}", expected.angularVelocity.x - actual.angularVelocity.x, expected.angularVelocity.x, actual.angularVelocity.x, lastFrameControls.holdJump(), lastFramePrediction.hasWheelContact, actual.hasWheelContact);
-    logger.log(Level.INFO, "vY {} {} {} {} {} {}", expected.velocity.y - actual.velocity.y, expected.velocity.y, actual.velocity.y, lastFrameControls.holdJump(), lastFramePrediction.hasWheelContact, actual.hasWheelContact);
+//    logger.log(Level.INFO, "vY {} {} {} {} {} {}", expected.velocity.y - actual.velocity.y, expected.velocity.y, actual.velocity.y, lastFrameControls.holdJump(), lastFramePrediction.hasWheelContact, actual.hasWheelContact);
 //    logger.log(Level.INFO, "vZ {} {} {} {} {} {}", expected.velocity.z - actual.velocity.z, expected.velocity.z, actual.velocity.z, lastFrameControls.holdJump(), lastFramePrediction.hasWheelContact, actual.hasWheelContact);
 //    logger.log(Level.INFO, "pZ {} {} {} {} {} {}", expected.position.z - actual.position.z, expected.position.z, actual.position.z, lastFrameControls.holdJump(), lastFramePrediction.hasWheelContact, actual.hasWheelContact);
-//      logger.log(Level.INFO, "Speed diff: {} {} {}", expected.velocity.magnitude() - actual.velocity.magnitude(), actual.velocity.magnitude(), lastFrameControls.holdJump());
+//    logger.log(Level.INFO, "Speed diff: {} {} {}", expected.velocity.magnitude() - actual.velocity.magnitude(), actual.velocity.magnitude(), lastFrameControls.holdJump());
 //    logger.log(Level.INFO, "velocity {} {} {} {}", expected.velocity.y - actual.velocity.y, expected.velocity.y, actual.velocity.y, lastFrameControls.holdJump());
 //    logger.log(Level.INFO, "Distance diff: {}", expected.position.distance(actual.position));
 //    logger.log(Level.INFO, "Velocity diff: {}", expected.velocity.magnitude()-actual.velocity.magnitude());

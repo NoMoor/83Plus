@@ -20,6 +20,10 @@ public class DefendStrategist extends Strategist {
   }
 
   static boolean shouldDefend(DataPacket input) {
+    if (true) {
+      return false;
+    }
+
     return lastManBack(input) || ballNearGoal(input) || canClear(input);
   }
 

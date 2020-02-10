@@ -60,7 +60,7 @@ public class AerialTactician extends Tactician {
       double flatDistance = tactic.subject.position.flatten().distance(input.car.position.flatten());
 
       if (tactic.subject.position.z * 4 / Constants.BOOSTED_ACCELERATION > flatDistance / input.car.groundSpeed) {
-        tacticManager.delegateTactic(tactic, FastAerial.class);
+        tacticManager.preemptTactic(tactic.withType(Tactic.TacticType.FAST_AERIAL));
       }
     } else if (interceptTime < .75) {
       pointAt(input.car, tactic.subject.position, output);

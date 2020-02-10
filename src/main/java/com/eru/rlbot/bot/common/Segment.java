@@ -111,6 +111,10 @@ public class Segment {
     return newSegment;
   }
 
+  public Double avgSpeed() {
+    return flatDistance() / (endTime - startTime);
+  }
+
   public enum Type {
     STRAIGHT,
     ARC,

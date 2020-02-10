@@ -1,22 +1,20 @@
 package com.eru.rlbot.bot.tactics;
 
-import com.eru.rlbot.bot.common.Angles;
-import com.eru.rlbot.bot.common.Constants;
-import com.eru.rlbot.bot.common.Goal;
-import com.eru.rlbot.bot.common.NormalUtils;
+import com.eru.rlbot.bot.common.*;
 import com.eru.rlbot.bot.main.Agc;
+import com.eru.rlbot.common.StateLogger;
 import com.eru.rlbot.common.input.BallData;
 import com.eru.rlbot.common.input.CarData;
 import com.eru.rlbot.common.input.DataPacket;
 import com.eru.rlbot.common.jump.JumpManager;
 import com.eru.rlbot.common.output.ControlsOutput;
 import com.eru.rlbot.common.vector.Vector3;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public class KickoffTactician extends Tactician {
 
-  private static final float NOSE_DOWN = -1.0f;
-
-  private boolean flipLock;
+  private static final Logger logger = LogManager.getLogger("KickoffTactician");
 
   private Tactic tactic;
 
@@ -37,20 +35,19 @@ public class KickoffTactician extends Tactician {
   }
 
   private enum StartLocation {
-    LEFT, LEFT_CENTER, CENTER, RIGHT_CENTER, RIGHT
+    FAR_LEFT, LEFT_CENTER, CENTER, RIGHT_CENTER, FAR_RIGHT
   }
 
   private void setStartLocation(CarData car) {
-    boolean rightPosition = (car.position.y > 0 ^ car.position.x > 0);
+    boolean rightPosition = (car.position.y > 0 ^ car.position.x < 0);
     if (Math.abs(car.position.x) < 1) {
       location = StartLocation.CENTER;
     } else if (Math.abs(car.position.y) <= 2560) {
-      location = rightPosition ? StartLocation.RIGHT : StartLocation.LEFT;
+      location = rightPosition ? StartLocation.FAR_RIGHT : StartLocation.FAR_LEFT;
     } else {
       location = rightPosition ? StartLocation.RIGHT_CENTER : StartLocation.LEFT_CENTER;
     }
 
-    flipLock = false;
     secondFlipLock = false;
   }
 
@@ -60,21 +57,8 @@ public class KickoffTactician extends Tactician {
       tactic = nextTactic;
       setStartLocation(input.car);
     }
-    bot.botRenderer.setBranchInfo(String.format("%s", location));
 
-    switch (location) {
-      case LEFT:
-      case RIGHT:
-      case LEFT_CENTER:
-      case RIGHT_CENTER:
-      case CENTER:
-        centerKickOff(input, output);
-        break;
-    }
-
-//    mustyKicks(output, input);
-
-    // dumbKickoff(output, input);
+    kickoffs(output, input);
   }
 
   private void centerKickOff(DataPacket input, ControlsOutput output) {
@@ -119,7 +103,7 @@ public class KickoffTactician extends Tactician {
     return input.ball.position.plus(correction);
   }
 
-  private void mustyKicks(ControlsOutput output, DataPacket input) {
+  private void kickoffs(ControlsOutput output, DataPacket input) {
     BallData relativeData = NormalUtils.noseRelativeBall(input);
 
     JumpManager jumpManager = JumpManager.forCar(input.car);
@@ -194,131 +178,68 @@ public class KickoffTactician extends Tactician {
       } else {
         secondFlipLock = true;
       }
+    } else if (location == StartLocation.CENTER) {
+      centerKickOff(input, output);
     } else {
-      correctTowardBall(input, output);
-      output.withBoost();
-      output.withThrottle(1.0f);
+      float carX = Math.abs(input.car.position.x);
+      float leftRightMirror = location == StartLocation.FAR_LEFT ? -1 : 1;
 
-      if (relativeData.position.y < 400) {
-        secondFlipLock = true;
-      }
-    }
-  }
-
-  // Do not modify...
-
-  private void dumbKickoff(ControlsOutput output, DataPacket input) {
-    BallData relativeData = NormalUtils.noseRelativeBall(input);
-
-    tryFlipLock(input, relativeData);
-
-    JumpManager jumpManager = JumpManager.forCar(input.car);
-
-    if (flipLock) {
-      if (jumpManager.canFlip() && relativeData.position.y < getFlipDistance()) {
-        output.withPitch(NOSE_DOWN);
-        output.withJump();
-        flipLock = false;
-        bot.botRenderer.setBranchInfo("Flip");
-      } else {
-        output.withJump(input.car.position.z <= Constants.CAR_AT_REST + 2);
-        output.withThrottle(1.0f);
+      if (carX > 1900) { // Tilt in
+        bot.botRenderer.setBranchInfo("Tilt in");
+        StateLogger.log(input, "Tilt in");
+        output
+            .withThrottle(1.0f)
+            .withBoost()
+            .withSteer(Angles.flatCorrectionAngle(
+                input.car,
+                input.ball.position.addX(leftRightMirror * -600))
+                * 5);
+      } else if ((input.car.hasWheelContact || (input.car.position.z < 45 && jumpManager.elapsedJumpTime() < .1))
+          && carX > 1600) {
         bot.botRenderer.setBranchInfo("Jump");
-      }
-    } else {
-      if (!input.car.hasWheelContact) {
-        if (input.car.orientation.getNoseVector().z > .1) { // Nose vector is normalize
-          output.withPitch(NOSE_DOWN);
-        }
-      } else if (input.car.groundSpeed < 200) {
-        output.withSteer(getLocationTurnIn());
-        output.withThrottle(1.0f);
-        bot.botRenderer.setBranchInfo("Turn in.");
-      } else {
-        fullThrottle(input, output);
-        bot.botRenderer.setBranchInfo("Turn to ball.");
-      }
-
-      if (Math.abs(output.getSteer()) < 1
-          && input.car.orientation.getNoseVector().z > -.03
-          && input.car.orientation.getNoseVector().z < .1
-          && relativeData.position.y > 0) {
+        StateLogger.log(input, "Jump");
+        output
+            .withJump()
+            .withBoost()
+            .withYaw(leftRightMirror);
+      } else if (!jumpManager.hasReleasedJumpInAir() && carX > 1000) {
+        bot.botRenderer.setBranchInfo("Release button");
+        StateLogger.log(input, "Release");
         output.withBoost();
+      } else if (jumpManager.canFlip() && carX > 1000) {
+        bot.botRenderer.setBranchInfo("Flip");
+        StateLogger.log(input, "Flip");
+        output
+            .withJump()
+            .withBoost()
+            .withPitch(-.5) // Front flip
+            .withYaw(leftRightMirror * -.6)
+            .withThrottle(1.0);
+      } else if (jumpManager.isFlipping()) {
+        bot.botRenderer.setBranchInfo("Flip Cancel");
+        StateLogger.log(input, "Flip Cancel");
+        output
+            .withBoost()
+            .withPitch(1); // Flip cancel.
+      } else if (input.car.position.z > 25) {
+        bot.botRenderer.setBranchInfo("Land Cleanly");
+        StateLogger.log(input, "Land Cleanly");
+        output
+            .withBoost()
+            .withSlide();
+        Angles3.setControlsForFlatLanding(input.car, output);
+      } else {
+        bot.botRenderer.setBranchInfo("Turn toward ball");
+        StateLogger.log(input, "Turn toward ball");
+        output
+            .withThrottle(1.0)
+            .withSteer(
+                Angles.flatCorrectionAngle(input.car, input.ball.position.minus(Vector3.of(0, -120, 0))) * 5);
       }
-    }
-  }
-
-  private float getFlipDistance() {
-    if (location == null) return 4000f;
-    switch (location) {
-      case LEFT:
-      case RIGHT:
-        return 2000f;
-      case LEFT_CENTER:
-      case RIGHT_CENTER:
-        return 2500f;
-      default:
-      case CENTER:
-        return 4000f;
-    }
-  }
-
-  private float getLocationTurnIn() {
-    if (location == null) return 0f;
-    switch (location) {
-      case LEFT:
-      case LEFT_CENTER:
-        return 1.0f;
-      case RIGHT_CENTER:
-        return -1.0f;
-      case RIGHT:
-      default:
-      case CENTER:
-        return 0f;
-    }
-  }
-
-  private float getLocationYaw() {
-    if (location == null) return 1.0f;
-    switch (location) {
-      case LEFT:
-      case LEFT_CENTER:
-      case CENTER:
-        return 1.0f;
-      case RIGHT_CENTER:
-      case RIGHT:
-      default:
-        return -1.0f;
-    }
-  }
-
-  private void tryFlipLock(DataPacket input, BallData relativeData) {
-    // Do not alter flip lock in the air.
-    if (!input.car.hasWheelContact) {
-      return;
-    }
-
-    if (input.car.velocity.flatten().norm() > 1400 && relativeData.position.y > 2000) {
-      // First flip
-      flipLock = true;
-    } else if (relativeData.position.y < 700){
-      // Second flip
-      flipLock = true;
     }
   }
 
   private void correctTowardBall(DataPacket input, ControlsOutput output) {
-    double steer = Angles.flatCorrectionAngle(input.car, input.ball.position);
-    if (Math.abs(steer) > .05 && Math.abs(steer) < .1) {
-      steer = .1 * steer < 0 ? -1 : 1;
-    } else if (Math.abs(steer) < .05) {
-      steer = 0;
-    }
-    output.withSteer(steer);
-  }
-
-  private void fullThrottle(DataPacket input, ControlsOutput output) {
-    correctTowardBall(input, output);
-    output.withThrottle(1.0);
+    output.withSteer(Angles.flatCorrectionAngle(input.car, input.ball.position));
   }
 }

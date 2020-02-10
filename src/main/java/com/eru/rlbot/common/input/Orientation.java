@@ -36,6 +36,10 @@ public class Orientation {
         playerInfo.physics().rotation().roll());
   }
 
+  public static Orientation fromFlatOrientation(CarData car) {
+    return convert(0, car.orientation.toEuclidianVector().yaw, 0);
+  }
+
   public static Orientation fromFlatVelocity(CarData car) {
     return fromFlatVelocity(car.velocity);
   }
@@ -44,7 +48,9 @@ public class Orientation {
     return convert(0, Vector2.WEST.correctionAngle(velocity.flatten()), 0);
   }
 
-  /** The direction that the front of the car is facing */
+  /**
+   * The direction that the front of the car is facing
+   */
   public Vector3 getNoseVector() {
     return orientation.row(0);
   }

@@ -200,4 +200,23 @@ public class Vector3 extends rlbot.vector.Vector3 {
     // TODO: Check this.
     return this.cross(Vector3.of(0, 0, 1));
   }
+
+  public RoughComparator isWithin(double value) {
+    return this.new RoughComparator(value);
+  }
+
+  public class RoughComparator {
+
+    private final double tolerance;
+
+    private RoughComparator(double tolerance) {
+      this.tolerance = tolerance;
+    }
+
+    public boolean of(Vector3 vector3) {
+      return Math.abs(Vector3.this.x - vector3.x) < tolerance
+          && Math.abs(Vector3.this.y - vector3.y) < tolerance
+          && Math.abs(Vector3.this.z - vector3.z) < tolerance;
+    }
+  }
 }

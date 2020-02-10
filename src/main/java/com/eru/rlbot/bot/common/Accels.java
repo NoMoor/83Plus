@@ -4,6 +4,8 @@ import com.eru.rlbot.common.input.CarData;
 import com.eru.rlbot.common.input.Orientation;
 import com.eru.rlbot.common.jump.JumpManager;
 import com.eru.rlbot.common.vector.Vector3;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 
 public class Accels {
@@ -36,8 +38,10 @@ public class Accels {
     return boostedTimeToDistance(car.boost, velocity, targetSpeed, distance);
   }
 
-  private static final double STEP_SIZE = 1.0/120;
+  private static final double STEP_SIZE = 1.0 / 120;
+
   public static AccelResult timeToDistance(double velocity, double distance) {
+    double initialDistance = distance;
     float t = 0;
     while (distance > 0) {
       float nextAcceleration = acceleration(velocity);
@@ -47,10 +51,12 @@ public class Accels {
       velocity = newVelocity;
       t += STEP_SIZE;
     }
-    return new AccelResult(velocity, t);
+    return new AccelResult(velocity, t, initialDistance, 0);
   }
 
   public static AccelResult boostedTimeToDistance(double velocity, double distance) {
+    double boostUsed = 0;
+    double initialDistance = distance;
     float t = 0;
     while (distance > 0) {
       double nextAcceleration = acceleration(velocity) + Constants.BOOSTED_ACCELERATION;
@@ -59,11 +65,15 @@ public class Accels {
       distance -= ((velocity + newVelocity) / 2) * STEP_SIZE;
       velocity = newVelocity;
       t += STEP_SIZE;
+      boostUsed += Constants.BOOST_RATE / Constants.STEP_SIZE;
     }
-    return new AccelResult(velocity, t);
+    return new AccelResult(velocity, t, initialDistance, boostUsed);
   }
 
   public static AccelResult boostedTimeToDistance(double boost, double velocity, double distance) {
+    double initialDistance = distance;
+    double initialBoost = boost;
+
     float t = 0;
     while (distance > 0) {
       double nextAcceleration = acceleration(velocity) + ((boost > 0) ? Constants.BOOSTED_ACCELERATION : 0);
@@ -77,11 +87,15 @@ public class Accels {
         boost -= STEP_SIZE * 33;
       }
     }
-    return new AccelResult(velocity, t);
+    return new AccelResult(velocity, t, initialDistance, initialBoost - boost);
   }
 
   // TODO: Make more sophisticated. For now. Assume the we wont' exceed Max(velocity, targetVelocity)
-  public static AccelResult boostedTimeToDistance(double boost, double velocity, double targetVelocity, double distance) {
+  public static AccelResult boostedTimeToDistance(
+      double boost, double velocity, double targetVelocity, double distance) {
+    double initialDistance = distance;
+    double initialBoost = boost;
+
     float t = 0;
     while (distance > 0) {
       double nextAcceleration = 0;
@@ -95,10 +109,10 @@ public class Accels {
       t += STEP_SIZE;
 
       if (boost > 0) {
-        boost -= STEP_SIZE * 33;
+        boost -= STEP_SIZE * Constants.BOOST_RATE;
       }
     }
-    return new AccelResult(velocity, t);
+    return new AccelResult(velocity, t, initialDistance, initialBoost - boost);
   }
 
   public static Optional<Float> jumpTimeToHeight(double distance) {
@@ -159,22 +173,43 @@ public class Accels {
     }
   }
 
-  public static double distanceToSlow(double currentVelocity, double finalVelocity) {
+  public static final Map<Pair<Integer, Integer>, AccelResult> slowingDistances = new HashMap<>();
+
+  public static AccelResult distanceToSlow(double currentVelocity, double finalVelocity) {
+    Pair<Integer, Integer> key = Pair.of(fuzz(currentVelocity), fuzz(finalVelocity));
+
+    return slowingDistances.computeIfAbsent(key, Accels::computeSlowingDistance);
+  }
+
+  private static int fuzz(double value) {
+    return (int) ((value + 5) / 10) * 10;
+  }
+
+  private static AccelResult computeSlowingDistance(Pair<Integer, Integer> velocityPair) {
+    double currentVelocity = velocityPair.getFirst();
+    double finalVelocity = velocityPair.getSecond();
+
+    double time = 0;
     double d = 0;
     while (currentVelocity > finalVelocity) {
       d += currentVelocity * STEP_SIZE;
       currentVelocity -= Constants.BREAKING_DECELERATION * STEP_SIZE;
+      time += STEP_SIZE;
     }
-    return d;
+    return new AccelResult(finalVelocity, time, d, 0);
   }
 
   public static class AccelResult {
+    public final double distance;
     public final double speed;
     public final double time;
+    public final double boost;
 
-    private AccelResult(double speed, double time) {
+    private AccelResult(double speed, double time, double distance, double boost) {
       this.speed = speed;
       this.time = time;
+      this.distance = distance;
+      this.boost = boost;
     }
   }
 

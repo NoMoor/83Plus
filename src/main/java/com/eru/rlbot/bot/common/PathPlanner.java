@@ -1,9 +1,11 @@
 package com.eru.rlbot.bot.common;
 
 import com.eru.rlbot.bot.optimizer.CarBallOptimizer;
+import com.eru.rlbot.bot.strats.BallPredictionUtil;
 import com.eru.rlbot.common.input.*;
 import com.eru.rlbot.common.vector.Vector3;
 import com.eru.rlbot.common.vector.Vector3s;
+import com.google.common.collect.ImmutableList;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import rlbot.flat.BallPrediction;
@@ -14,33 +16,30 @@ public class PathPlanner {
 
   private static final Logger logger = LogManager.getLogger("PathPlanner");
 
-  // Indicates to always select the first path. This is useful when debugging path finding.
-  private static boolean ALWAYS_ON = false;
-
-  public static Path doShotPlanning(DataPacket input) {
+  public static Optional<Path> doShotPlanning(DataPacket input) {
     long startTime = System.nanoTime();
-    Optional<BallPrediction> optionalBallInfo = DllHelper.getBallPrediction();
-    if (!optionalBallInfo.isPresent()) {
-      return carBallPath(input);
-    }
-
-    BallPrediction prediction = optionalBallInfo.get();
-    // TODO: Don't step through every location.
-    for (int i = 0; i < prediction.slicesLength(); i += 10) {
-      PredictionSlice predictionSlice = prediction.slices(i);
-      if (predictionSlice.physics().location().z() > 110) {
+    for (BallPredictionUtil.ExaminedBallData examinedBall : BallPredictionUtil.getPredictions()) {
+      if (examinedBall.ball.position.z > 200 || !examinedBall.isHittable().orElse(Boolean.TRUE)) {
         continue;
       }
 
-      Path path = planShotOnGoal(input, predictionSlice);
-      double timeToBall = path.minimumTraverseTime();
-      if (ALWAYS_ON || timeToBall + input.car.elapsedSeconds < predictionSlice.gameSeconds()) {
-        logger.warn(String.format("Took %f ms to plan", (System.nanoTime() - startTime) / 1000000d));
-        return path;
+      Path path = planShotOnGoal(input, examinedBall.ball);
+
+      // TODO: Check a slower traverse time to use less boost.
+      Plan plan = path.fastestTraverseTime(0, input.car.boost);
+      if (plan.traverseTime * 1.05 < examinedBall.ball.elapsedSeconds - input.car.elapsedSeconds) {
+        logger.debug(String.format("Took %f ms to plan", (System.nanoTime() - startTime) / 1000000d));
+        examinedBall.addPath(path);
+        return Optional.of(path); // TODO: Remove
       }
     }
 
-    return carBallPath(input);
+    BallPredictionUtil.ExaminedBallData firstHittable = BallPredictionUtil.getFirstHittableLocation();
+    if (firstHittable == null) {
+      logger.debug("Return default value");
+      return Optional.empty();
+    }
+    return Optional.of(firstHittable.getPath());
   }
 
   public static Path doDefensePlanning(DataPacket input) {
@@ -50,8 +49,7 @@ public class PathPlanner {
     }
 
     BallPrediction prediction = optionalBallInfo.get();
-    // TODO: Don't step through every location.
-    for (int i = 0; i < prediction.slicesLength(); i++) {
+    for (int i = 0; i < prediction.slicesLength(); i += 5) {
       PredictionSlice predictionSlice = prediction.slices(i);
       if (predictionSlice.physics().location().z() > 110) {
         continue;
@@ -83,8 +81,8 @@ public class PathPlanner {
     return planPath(input.car, optimalCar);
   }
 
-  private static Path planShotOnGoal(DataPacket input, PredictionSlice predictionSlice) {
-    return plan(input.car, BallData.fromPredictionSlice(predictionSlice), Goal.opponentGoal(input.car.team).centerTop);
+  private static Path planShotOnGoal(DataPacket input, BallData ball) {
+    return plan(input.car, ball, Goal.opponentGoal(input.car.team).centerTop.addZ(-Constants.BALL_RADIUS));
   }
 
   private static Path plan(CarData currentCar, BallData targetBall, Vector3 target) {
@@ -164,44 +162,36 @@ public class PathPlanner {
 
     workingTarget = projectedCardData;
 
-    Circle closeApproachCircle = Paths.closeApproach(workingTarget, car);
-    Circle closeTurningRadius = Paths.closeTurningRadius(closeApproachCircle.center, car);
+    ImmutableList<Segment> shortestBiArc = Paths.shortestBiArc(workingTarget, car);
 
-    Paths.CircleTangents tangents = Paths.tangents(closeTurningRadius, closeApproachCircle);
-    Segment connectingSegment;
-    if (closeApproachCircle.isClockwise(workingTarget)) {
-      connectingSegment = closeTurningRadius.isClockwise(car) ? tangents.cwcw : tangents.ccwcw;
-    } else {
-      connectingSegment = closeTurningRadius.isClockwise(car) ? tangents.cwccw : tangents.ccwccw;
-    }
+    return pathBuilder.addEarlierSegments(shortestBiArc)
+        .build();
 
-    // Larger circle for???
-//    if (Math.signum(tangentCorrection) == Math.signum(approachCorrection)
-//        && Math.abs(tangentCorrection) < Math.abs(approachCorrection)) {
+//    Paths.CircleTangents tangents = Paths.tangents(closeTurningRadius, closeApproachCircle);
+//    Segment connectingSegment;
+//    if (closeApproachCircle.isClockwise(workingTarget)) {
+//      connectingSegment = closeTurningRadius.isClockwise(car) ? tangents.cwcw : tangents.ccwcw;
+//    } else {
+//      connectingSegment = closeTurningRadius.isClockwise(car) ? tangents.cwccw : tangents.ccwccw;
+//    }
 //
-//      Circle circle = getWideCircle(car, workingTarget);
+//    Segment approachArc =
+//        Segment.arc(connectingSegment.end, workingTarget.position, closeApproachCircle, closeApproachCircle.isClockwise(workingTarget));
+//    if (!addPathSegment(car, approachArc, pathBuilder)) {
 //      return pathBuilder
-//          .addEarlierSegment(Segment.arc(car.position, workingTarget, circle))
+//          .addEarlierSegment(Segment.arc(car.position, workingTarget.position, closeApproachCircle, closeApproachCircle.isClockwise(workingTarget)))
 //          .build();
 //    }
-
-    Segment approachArc =
-        Segment.arc(connectingSegment.end, workingTarget.position, closeApproachCircle, closeApproachCircle.isClockwise(workingTarget));
-    if (!addPathSegment(car, approachArc, pathBuilder)) {
-      return pathBuilder
-          .addEarlierSegment(Segment.arc(car.position, workingTarget.position, closeApproachCircle, closeApproachCircle.isClockwise(workingTarget)))
-          .build();
-    }
-
-    if (!addPathSegment(car, connectingSegment, pathBuilder)) {
-      return pathBuilder
-          .addEarlierSegment(Segment.straight(car.position, connectingSegment.end))
-          .build();
-    }
-
-    return pathBuilder
-        .addEarlierSegment(Segment.arc(car.position, connectingSegment.start, closeTurningRadius, closeTurningRadius.isClockwise(car)))
-        .build();
+//
+//    if (!addPathSegment(car, connectingSegment, pathBuilder)) {
+//      return pathBuilder
+//          .addEarlierSegment(Segment.straight(car.position, connectingSegment.end))
+//          .build();
+//    }
+//
+//    return pathBuilder
+//        .addEarlierSegment(Segment.arc(car.position, connectingSegment.start, closeTurningRadius, closeTurningRadius.isClockwise(car)))
+//        .build();
   }
 
   private static boolean addPathSegment(CarData car, Segment segment, Path.Builder pathBuilder) {

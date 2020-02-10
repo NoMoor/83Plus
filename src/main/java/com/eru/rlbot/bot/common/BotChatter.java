@@ -1,9 +1,9 @@
 package com.eru.rlbot.bot.common;
 
+import com.eru.rlbot.common.input.DataPacket;
 import rlbot.Bot;
 import rlbot.cppinterop.RLBotDll;
 import rlbot.flat.QuickChatSelection;
-import com.eru.rlbot.common.input.DataPacket;
 
 /** Chats stuff. */
 public class BotChatter {
@@ -18,11 +18,12 @@ public class BotChatter {
         this.bot = bot;
     }
 
-    private float lasChat;
+  private int chatNumber = 0;
+  private float lasChat;
     public void talk(DataPacket input) {
-        if (input.car.elapsedSeconds - lasChat < 5) {
-            return;
-        }
+      if (input.car.elapsedSeconds - lasChat < 1) {
+        return;
+      }
 
         // This is also optional!
         if (input.ball.position.y > Goal.opponentGoal(input.team).center.y) {

@@ -18,19 +18,22 @@ import com.eru.rlbot.common.output.ControlsOutput;
 import com.eru.rlbot.common.vector.Vector2;
 import com.eru.rlbot.common.vector.Vector3;
 import com.google.common.collect.ImmutableList;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import rlbot.Bot;
-import rlbot.cppinterop.RLBotDll;
-import rlbot.flat.BallPrediction;
-import rlbot.flat.PredictionSlice;
 import rlbot.manager.BotLoopRenderer;
 import rlbot.render.Renderer;
 import java.awt.*;
-import java.io.IOException;
 import java.util.*;
 import java.util.stream.IntStream;
 
-/** Renders extra information for the bot such as car path, ball path, etc. */
+/**
+ * Renders extra information for the bot such as car path, ball path, etc.
+ */
 public class BotRenderer {
+
+  private static final Logger logger = LogManager.getLogger("BotRenderer");
 
   private static final int SMOOTHING_INTERVAL = 5;
   private static final double FULL_CIRCLE = Math.PI * 2;
@@ -61,18 +64,6 @@ public class BotRenderer {
     return BOTS.get(botIndex);
   }
 
-  public void renderPath(ImmutableList<Vector3> locations) {
-    if (skipRendering) return;
-
-    Vector3 prev = null;
-    for (Vector3 location : locations) {
-      if (prev != null) {
-        getRenderer().drawLine3d(Color.pink, prev, location);
-      }
-      prev = location;
-    }
-  }
-
   private static class RenderRequest {
     private final float renderTimeEnd;
     private final Vector3 source;
@@ -92,28 +83,26 @@ public class BotRenderer {
   public void renderInfo(DataPacket input, ControlsOutput output) {
     if (skipRendering) return;
 
-//    renderDebug();
-//    renderText();
-//    renderAlert(input);
-//
-//    renderControls(output);
-//    renderAcceleration(input);
-//    renderLocation(input);
+    renderDebug();
+    renderText();
+    renderAlert(input);
+
+    renderControls(output);
+    renderAcceleration(input);
+    renderLocation(input);
 
 //    renderTacticLines(input.car);
-//    renderRefreshRate(input);
-//    renderBallPrediction();
+    renderRefreshRate(input);
 //    renderTurningRadius(input);
-    if (true) {
+
+
 //      renderPredictionDiff(input);
-    } else {
 //      renderRelativeBallData(input);
-    }
 
-//    renderProjections(input);
-//    renderTouchIndicator(input);
+    renderProjections(input);
+    renderTouchIndicator(input);
 
-//    renderHitBox(input.car);
+    renderHitBox(input.car);
   }
 
   private PriorityQueue<RenderRequest> renderRequests =
@@ -141,6 +130,18 @@ public class BotRenderer {
     }
   }
 
+  public void renderPath(ImmutableList<Vector3> locations) {
+    if (skipRendering) return;
+
+    Vector3 prev = null;
+    for (Vector3 location : locations) {
+      if (prev != null) {
+        getRenderer().drawLine3d(Color.pink, prev, location);
+      }
+      prev = location;
+    }
+  }
+
   public void renderPath(DataPacket input, Path path) {
     if (skipRendering) {
       return;
@@ -149,16 +150,16 @@ public class BotRenderer {
     ImmutableList<Segment> pathNodes = path.allNodes();
 
     Segment.Type previousType = null;
-    Color previousColor = null;
     for (int i = 0; i < pathNodes.size(); i++) {
       Segment segment = pathNodes.get(i);
 
-      Color color = i == path.getCurrentIndex() ? Color.ORANGE : segment.isComplete() ? Color.GREEN : Color.RED;
-//      color = segment.type == Segment.Type.JUMP ? Color.white : segment.type == Segment.Type.STRAIGHT ? Color.pink : color;
+//      Color color = i == path.getCurrentIndex() ? Color.ORANGE : segment.isComplete() ? Color.GREEN : Color.pink;
+      Color color = i == 0
+          ? Color.white
+          : pathNodes.get(i - 1).avgSpeed() < segment.avgSpeed() ? Color.GREEN : Color.RED;
 
-      if (segment.type == previousType) {
-//        color = previousColor.darker();
-      }
+      if (i % 20 == 0)
+        getRenderer().drawString3d(String.format("%d", segment.avgSpeed().intValue()), color, segment.start, 2, 2);
 
       switch (segment.type) {
         case JUMP:
@@ -169,17 +170,17 @@ public class BotRenderer {
           break;
         case ARC:
           renderArc(color, segment);
-          if (previousType != Segment.Type.ARC) {
-            getRenderer().drawString3d(String.format("%d", (int) segment.circle.maxSpeed), color, segment.start, 2, 2);
-          }
+//          if (previousType != Segment.Type.ARC) {
+//            getRenderer().drawString3d(String.format("%d", (int) segment.circle.maxSpeed), color, segment.start, 2, 2);
+//          }
           break;
       }
 
       previousType = segment.type;
-      previousColor = color;
     }
 
-    renderPoint(Color.GREEN, path.updateAndGetPidTarget(input), 10);
+    renderPoint(Color.GREEN, path.pidTarget(input), 10);
+    renderPoint(Color.ORANGE, path.currentTarget(input), 10);
 
     renderHitBox(Color.BLACK, path.getTarget());
   }
@@ -202,13 +203,13 @@ public class BotRenderer {
   }
 
   private void renderTurningRadius(DataPacket input) {
-    ImmutableList<Circle> radiusCircles = Paths.turningRadiusCircles(input.car);
+    Paths.Circles radiusCircles = Paths.turningRadiusCircles(input.car);
 
-    if (input.ball.position.distance(radiusCircles.get(0).center)
-        < input.ball.position.distance(radiusCircles.get(1).center)) {
-      renderCircle(Color.orange, radiusCircles.get(0));
+    if (input.ball.position.distance(radiusCircles.cw.center)
+        < input.ball.position.distance(radiusCircles.cw.center)) {
+      renderCircle(Color.orange, radiusCircles.cw);
     } else {
-      renderCircle(Color.blue, radiusCircles.get(1));
+      renderCircle(Color.blue, radiusCircles.ccw);
     }
   }
 
@@ -226,6 +227,9 @@ public class BotRenderer {
   }
 
   public void renderHitBox(Color color, CarData car) {
+    if (skipRendering)
+      return;
+
     BoundingBox hitbox = car.boundingBox;
 
     // Draw front box.
@@ -385,41 +389,6 @@ public class BotRenderer {
     getRenderer().drawString3d("Eru", Color.white, previousPrediction.position, 2, 2);
   }
 
-  private BallPrediction gamePrediction;
-  private void renderBallPrediction() {
-    Renderer renderer = getRenderer();
-
-    try {
-      if (predictionTrace != null && gamePrediction == null) {
-        gamePrediction = RLBotDll.getBallPrediction();
-      } else if (predictionTrace == null) {
-        gamePrediction = null;
-      }
-
-      final BallPrediction ballPrediction = gamePrediction != null ? gamePrediction : RLBotDll.getBallPrediction();
-
-      double firstVectorVelocity = Vector3.of(ballPrediction.slices(0).physics().velocity()).magnitude();
-      if (firstVectorVelocity < 55) {
-        return;
-      }
-
-      PredictionSlice previousDrawPrediction = null;
-      for (int i = 0 ; i < ballPrediction.slicesLength(); i++) {
-        PredictionSlice nextSlice = ballPrediction.slices(i);
-        if (previousDrawPrediction == null) {
-          previousDrawPrediction = nextSlice;
-        } else if (nextSlice.gameSeconds() - previousDrawPrediction.gameSeconds() > .1) {
-          renderer.drawLine3d(
-              Color.CYAN,
-              Vector3.of(nextSlice.physics().location()),
-              Vector3.of(previousDrawPrediction.physics().location()));
-          previousDrawPrediction = nextSlice;
-        }
-      }
-//      renderer.drawString3d("Actual", Color.CYAN, Vector3.of(previousDrawPrediction.physics().location()), 2, 2);
-    } catch (IOException e) {}
-  }
-
   private static class RenderedString {
     final String text;
     final Color color;
@@ -457,11 +426,17 @@ public class BotRenderer {
   }
 
   private void renderDebug() {
-    renderText(Color.PINK, 0, 300,"%s", strategist == null ? "NONE" : strategist.getType());
-    renderText(Color.CYAN, 150, 300,"%s", tactic == null ? "NONE" : tactic.tacticType);
-    renderText(Color.PINK, 400, 300,"%s",
+    renderText(Color.PINK, 0, 300, "%s", strategist == null ? "NONE" : strategist.getType());
+    renderText(Color.CYAN, 150, 300, "%s", tactic == null ? "NONE" : tactic.tacticType);
+    renderText(Color.PINK, 400, 300, "%s",
         tactician == null ? "NONE" : tactician.getClass().getSimpleName().replace("Tactician", ""));
     renderText(Color.CYAN, 0, 270, "%s", branch);
+
+    logger.log(Level.DEBUG, "{} {} {} {}",
+        strategist == null ? "NONE" : strategist.getType(),
+        tactic == null ? "NONE" : tactic.tacticType,
+        tactician == null ? "NONE" : tactician.getClass().getSimpleName().replace("Tactician", ""),
+        branch);
   }
 
   public void setStrategy(Strategist strategist) {
@@ -483,7 +458,7 @@ public class BotRenderer {
   }
 
   private static String lor(double value) {
-    return value > 0 ? "RIGHT" : value == 0 ? "NONE" : "LEFT";
+    return value > 0 ? "FAR_RIGHT" : value == 0 ? "NONE" : "FAR_LEFT";
   }
 
   private String ud(float value) {
@@ -505,9 +480,9 @@ public class BotRenderer {
   private void renderLocation(DataPacket input) {
     CarData car = input.car;
 
-    renderText(0, 340, String.format("X: %.0f", car.position.x));
-    renderText(0, 370, String.format("Y: %.0f", car.position.y));
-    renderText(0, 400, String.format("Z: %.0f", car.position.z));
+    renderText(0, 400, String.format("X: %.0f", car.position.x));
+    renderText(0, 430, String.format("Y: %.0f", car.position.y));
+    renderText(0, 460, String.format("Z: %.0f", car.position.z));
   }
 
   private void renderAcceleration(DataPacket input) {
@@ -574,8 +549,7 @@ public class BotRenderer {
     }
   }
 
-  private static final int POINT_COUNT = 40;
-
+  private static final int POINT_COUNT = 15;
   private ImmutableList<Vector3> toCirclePoints(Vector3 center, Vector3 initialPoint, double radius, double radians) {
     Vector2 ray = initialPoint.minus(center).flatten();
     double radianOffset = Vector2.WEST.correctionAngle(ray);

@@ -4,11 +4,9 @@ import static com.eru.rlbot.bot.common.Goal.opponentGoal;
 import static com.eru.rlbot.bot.common.Goal.ownGoal;
 
 import com.eru.rlbot.bot.CarBallContactManager;
-import com.eru.rlbot.bot.common.BotChatter;
-import com.eru.rlbot.bot.common.BotRenderer;
-import com.eru.rlbot.bot.common.Goal;
-import com.eru.rlbot.bot.common.TrailRenderer;
+import com.eru.rlbot.bot.common.*;
 import com.eru.rlbot.bot.prediction.NextFramePredictor;
+import com.eru.rlbot.bot.strats.BallPredictionUtil;
 import com.eru.rlbot.bot.strats.StrategyManager;
 import com.eru.rlbot.common.StateLogger;
 import com.eru.rlbot.common.boost.BoostManager;
@@ -30,7 +28,9 @@ import rlbot.gamestate.GameStatePacket;
 
 public final class Agc implements Bot {
 
-  private static final Logger logger = LogManager.getLogger("CollisionTimer");
+  private static final Logger logger = LogManager.getLogger("Agc");
+
+  private static final double NANOS = 1000000000d;
 
   public final Goal opponentsGoal;
   public final Goal ownGoal;
@@ -40,6 +40,7 @@ public final class Agc implements Bot {
   protected final BotChatter botChatter;
   private final StrategyManager strategyManager;
   private boolean allowStateSetting;
+  private final BallPredictionRenderer ballPredictionRenderer;
 
   public Agc(int playerIndex, int team) {
     this.playerIndex = playerIndex;
@@ -52,6 +53,7 @@ public final class Agc implements Bot {
     ownGoal = ownGoal(team);
 
     strategyManager = new StrategyManager(this);
+    ballPredictionRenderer = new BallPredictionRenderer(playerIndex);
   }
 
   /**
@@ -60,6 +62,8 @@ public final class Agc implements Bot {
    */
   @Override
   public ControllerState processInput(GameTickPacket packet) {
+    long startTime = System.nanoTime();
+
     if (packet.playersLength() <= playerIndex || packet.ball() == null || !packet.gameInfo().isRoundActive()) {
       // Just return immediately if something looks wrong with the data. This helps us avoid stack traces.
       return new ControlsOutput();
@@ -72,11 +76,13 @@ public final class Agc implements Bot {
     // Translate the raw packet data (which is in an unpleasant format) into our custom DataPacket class.
     // The DataPacket might not include everything from GameTickPacket, so improve it if you need to!
     DataPacket input = new DataPacket(packet, playerIndex);
+    BallPredictionUtil.refresh(input);
 
     JumpManager.forCar(input.car).loadCar(input.car);
     SpeedManager.trackSuperSonic(input);
     CarBallContactManager.loadDataPacket(input);
-    StateLogger.log(input);
+    StateLogger.track(input);
+    TrainingId.trackId(input.car);
 
     botChatter.talk(input);
 
@@ -89,17 +95,26 @@ public final class Agc implements Bot {
           .withSteer(0)
           .withBoost(false);
 
-    // Must do prediction before updating the jump manager
+    // Must do ball before updating the jump manager
     NextFramePredictor.nextFrame(input, output);
 
     JumpManager.forCar(input.car).processOutput(input.car, output);
+
+    // Do Rendering.
     TrailRenderer.recordAndRender(input, output);
     botRenderer.renderInfo(input, output);
+    ballPredictionRenderer.renderBallPrediction();
 
     RLBotDll.setGameState(new GameState()
         .withGameInfoState(new GameInfoState()
-            .withGameSpeed(0.1f))
+            .withGameSpeed(1f))
         .buildPacket());
+
+    long endTime = System.nanoTime();
+    double frameTime = (endTime - startTime) / NANOS;
+    if (frameTime > Constants.STEP_SIZE * 5) {
+      logger.error("Dropped frame: {}", frameTime);
+    }
 
     return output;
   }

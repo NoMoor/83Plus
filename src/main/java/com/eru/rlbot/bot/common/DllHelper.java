@@ -15,8 +15,8 @@ public class DllHelper {
       BallPrediction ballPrediction = RLBotDll.getBallPrediction();
 
       // TODO: Make this cleaner.
-      // TODO: Wrap ball prediction to have iterator and Vector types or at least easier operation.
-      // If the velocity is 0, pretend we don't have ball prediction.
+      // TODO: Wrap ball ball to have iterator and Vector types or at least easier operation.
+      // If the velocity is 0, pretend we don't have ball ball.
       // Vector3 ballVelocity = Vector3.of(ballPrediction.slices(0).physics().velocity());
 
       return Optional.of(ballPrediction);

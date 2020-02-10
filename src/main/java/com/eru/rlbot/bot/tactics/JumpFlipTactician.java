@@ -54,7 +54,7 @@ public class JumpFlipTactician extends Tactician {
         .collect(toImmutableList()));
     renderPredictionForFrame(input.car.elapsedSeconds);
 
-    // TODO: Use make prediction to check a prediction several frames out.
+    // TODO: Use make ball to check a ball several frames out.
     planFrame(input.car, input.ball, output, JumpManager.forCar(input.car));
   }
 
