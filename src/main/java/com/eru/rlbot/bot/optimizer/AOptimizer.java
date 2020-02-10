@@ -11,7 +11,7 @@ import com.google.common.collect.Range;
 public class AOptimizer extends Optimizer {
 
   private static final double A_PRECISION = .025f;
-  private static final double A_EPSILON = .05f;
+  private static final double A_EPSILON = .1f;
   private static final double A_GAMMA = .1f;
   private static final Range<Float> RANGE = Range.closed((float) -Math.PI, (float) Math.PI);
   private final BallData ball;

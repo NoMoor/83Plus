@@ -3,7 +3,9 @@ package com.eru.rlbot.bot.strats;
 import com.eru.rlbot.bot.common.Constants;
 import com.eru.rlbot.bot.common.DllHelper;
 import com.eru.rlbot.bot.common.Path;
+import com.eru.rlbot.bot.common.Plan;
 import com.eru.rlbot.common.input.BallData;
+import com.eru.rlbot.common.input.CarData;
 import com.eru.rlbot.common.input.DataPacket;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -89,6 +91,8 @@ public class BallPredictionUtil {
     private List<Path> paths = new ArrayList<>();
     private Optional<Boolean> hittable = Optional.empty();
     public final BallData ball;
+    private CarData fastTarget;
+    private Plan fastPlan;
 
     public ExaminedBallData(BallData ball) {
       this.ball = ball;
@@ -97,6 +101,10 @@ public class BallPredictionUtil {
     // TODO: This should be per pathing strategy
     public Optional<Boolean> isHittable() {
       return hittable;
+    }
+
+    public void setHittable(boolean value) {
+      hittable = Optional.of(value);
     }
 
     public void addPath(Path path) {
@@ -109,6 +117,22 @@ public class BallPredictionUtil {
 
     public Path getPath() {
       return paths.get(0);
+    }
+
+    public void setFastTarget(CarData targetCar) {
+      this.fastTarget = targetCar;
+    }
+
+    public CarData getFastTarget() {
+      return this.fastTarget;
+    }
+
+    public void addFastPlan(Plan time) {
+      this.fastPlan = time;
+    }
+
+    public Plan getFastPlan() {
+      return fastPlan;
     }
   }
 }

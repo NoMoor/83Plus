@@ -83,7 +83,7 @@ public class CarBallOptimizer {
   }
 
   // TODO: Create multiple optimizers out of this (order, clamp, range, precision, etc.)
-  public static CarData getOptimalApproach(BallData ball, Vector3 target, CarData car) {
+  public static CarData getOptimalApproach(BallData ball, Vector3 target, final CarData car) {
     // Optimize x offset.
     XOptimizer xOptimizer = new XOptimizer();
     ZOptimizer zOptimizer = new ZOptimizer(ball, car);
@@ -93,14 +93,17 @@ public class CarBallOptimizer {
     ImmutableList<Optimizer> optimizers = ImmutableList.of(xOptimizer, zOptimizer, aOptimizer, speedOptimizer);
 
     while (optimizers.stream().anyMatch(optimizer -> !optimizer.isDone())) {
-      final CarData tempCar = car;
       for (Optimizer optimizer : optimizers) {
-        optimizer.doStep(ball, tempCar, target);
-        car = optimizer.adjustCar(car, optimizer.currentValue);
+        optimizer.doStep(ball, car, target);
       }
     }
 
-    return car;
+    CarData optimalCar = car;
+    for (Optimizer optimizer : optimizers) {
+      optimalCar = optimizer.adjustCar(optimalCar, optimizer.currentValue);
+    }
+
+    return optimalCar;
   }
 
   private CarBallOptimizer() {

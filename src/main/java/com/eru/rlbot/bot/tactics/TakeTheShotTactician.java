@@ -91,7 +91,7 @@ public class TakeTheShotTactician extends Tactician {
           return;
         }
       } else {
-        logger.info("Replan path. None Found.");
+        logger.debug("Replan path. None Found.");
         return;
       }
     }

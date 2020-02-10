@@ -29,7 +29,7 @@ public abstract class Optimizer {
   }
 
   int getMaxSteps() {
-    return 10;
+    return 20;
   }
 
   public final boolean isDone() {
