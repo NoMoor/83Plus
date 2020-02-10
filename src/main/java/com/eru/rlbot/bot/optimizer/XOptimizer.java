@@ -8,8 +8,13 @@ import com.google.common.collect.Range;
 public class XOptimizer extends Optimizer {
 
   private static final double X_PRECISION = .1; // How accurate to get x.
-  private static final double X_EPSILON = 10; // Proportionate step size to take
-  private static final double X_GAMMA = 5; // How small of an area to evaluate x gradient
+  private static final double X_EPSILON = 150; // Proportionate step size to take
+  private static final double X_GAMMA = 15; // How small of an area to evaluate x gradient
+
+  @Override
+  int getMaxSteps() {
+    return 20;
+  }
 
   @Override
   public Range<Float> getRange() {

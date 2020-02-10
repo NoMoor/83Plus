@@ -10,6 +10,10 @@ import com.google.common.collect.Range;
 
 public abstract class Optimizer {
 
+  protected float currentValue = getInitialValue();
+  private int steps = 0;
+  private boolean isDone = false;
+
   abstract Range<Float> getRange();
 
   abstract double getEpsilon();
@@ -28,21 +32,29 @@ public abstract class Optimizer {
     return 10;
   }
 
-  public CarData optimize(BallData ball, CarData car, Vector3 target) {
-    double prevStepSize = getPrecision() + 1;
-    float currentValue = getInitialValue();
+  public final boolean isDone() {
+    return isDone;
+  }
 
-    int steps = 0;
-    while (prevStepSize > getPrecision() && getRange().contains(currentValue) && steps++ < getMaxSteps()) {
-      float prevValue = currentValue;
-      double gradient = getGradient(ball, target, car, currentValue);
-      currentValue -= getEpsilon() * gradient;
-      prevStepSize = Math.abs(currentValue - prevValue);
+  public CarData optimize(BallData ball, CarData car, Vector3 target) {
+    while (!isDone) {
+      doStep(ball, car, target);
+    }
+
+    return adjustCar(car, currentValue);
+  }
+
+  public void doStep(BallData ball, CarData car, Vector3 target) {
+    float prevValue = currentValue;
+    double gradient = getGradient(ball, target, car, currentValue);
+    currentValue -= getEpsilon() * gradient;
+    double stepSize = Math.abs(currentValue - prevValue);
+
+    if (steps++ > getMaxSteps() || stepSize < getPrecision() || !getRange().contains(currentValue)) {
+      isDone = true;
     }
 
     currentValue = Angles3.clip(currentValue, getRange().lowerEndpoint(), getRange().upperEndpoint());
-
-    return adjustCar(car, currentValue);
   }
 
   protected double getGradient(BallData ball, Vector3 target, CarData car, double currentValue) {
