@@ -3,6 +3,12 @@ from striking.striking_setups import GroundNonMoving
 bronze_striking = [
     # GroundNonMoving('Straight', ball_y=3500),
     GroundNonMoving('Hook left', ball_x=1000, ball_y=3500),
+    GroundNonMoving('Hook far left', ball_x=2000, ball_y=3500),
+    GroundNonMoving('Hook farfar left', ball_x=3000, ball_y=3500),
+    GroundNonMoving('Hook right', ball_x=-1000, ball_y=3500),
+    GroundNonMoving('Hook far right', ball_x=-2000, ball_y=3500),
+    GroundNonMoving('Hook farfar right', ball_x=-3000, ball_y=3500),
+
     # GroundNonMoving('Close Angle Left 5', ball_x=500, ball_y=3500),
     # GroundNonMoving('Close Angle Right 5', ball_x=-500, ball_y=3500),
     # GroundNonMoving('Close Angle Left 6', ball_x=600, ball_y=3500),
