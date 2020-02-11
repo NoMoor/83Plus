@@ -13,10 +13,26 @@ public class Circle {
   public final double radius;
   public final double maxSpeed;
 
-  public Circle(Vector3 center, double radius) {
+  private Circle(Vector3 center, double radius) {
     this.center = center;
     this.radius = radius;
-    this.maxSpeed = Constants.maxSpeed(radius) * .95;
+    this.maxSpeed = Constants.maxSpeed(radius);
+  }
+
+  public static Circle forPath(Vector3 center, double radius) {
+    return new Circle(center, radius);
+  }
+
+  public static double radiusForPath(double speed) {
+    return radius(speed) * 1.6;
+  }
+
+  private static double radius(double velocity) {
+    if (velocity <= 0) {
+      velocity = 1;
+    }
+
+    return (1 / Constants.curvature(velocity));
   }
 
   public static Vector3 pointOnCircle(Vector3 center, double radius, double radians) {

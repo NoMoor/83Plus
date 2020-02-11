@@ -78,26 +78,6 @@ public final class Constants {
   public static final double MAX_ROLL_ACCEL = 38.34;
   public static final double MAX_ANGULAR_VELOCITY = 5.5;
 
-  public static double turnDepth(double velocity, double angle) {
-    return radius(velocity) * Math.sin(angle);
-  }
-
-  public static double turnWidth(double velocity, double angle) {
-    return radius(velocity) * Math.cos(angle);
-  }
-
-  public static double arcLength(double velocity, double angle) {
-    return Math.abs(radius(velocity) * angle);
-  }
-
-  public static double radius(double velocity) {
-    if (velocity <= 0) {
-      velocity = 1;
-    }
-
-    return (1 / curvature(velocity));
-  }
-
   static double curvature(double velocity) {
     if (0.0 <= velocity && velocity < 500.0) {
       return 0.006900 - 5.84e-6 * velocity;

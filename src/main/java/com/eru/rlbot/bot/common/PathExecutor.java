@@ -28,7 +28,7 @@ public class PathExecutor {
     Vector3 target = path.pidTarget(input);
 
     Vector3 distanceDiff = target.minus(input.car.position);
-    if (distanceDiff.magnitude() > Constants.BOOSTED_MAX_SPEED * 1.1 * Path.LEAD_TIME) {
+    if (distanceDiff.magnitude() > Constants.BOOSTED_MAX_SPEED * 1.5 * Path.LEAD_TIME) {
       logger.debug("Off course: {}", distanceDiff.magnitude());
       path.markOffCourse();
     } else {
@@ -40,7 +40,7 @@ public class PathExecutor {
 
     // Determine the angular velocity to hit the point
     double correctionAngle = Angles.flatCorrectionAngle(input.car, target);
-    double correctionCurvature = 1 / (input.car.position.distance(target) / (2 * Math.signum(correctionAngle)));
+    double correctionCurvature = 1 / (input.car.position.distance(target) / (2 * Math.sin(correctionAngle)));
     double correctionAngularVelocity = correctionCurvature * input.car.groundSpeed;
 
     double maxCurvature = Constants.curvature(input.car.groundSpeed);

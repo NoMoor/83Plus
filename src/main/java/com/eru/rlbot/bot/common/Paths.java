@@ -16,13 +16,13 @@ public class Paths {
     Vector3 up = front.cross(Vector3.of(0, 0, 1).cross(front)).normalize();
     Vector3 left = up.cross(front).normalize();
 
-    double turnRadius = Constants.radius(car.groundSpeed);
+    double turnRadius = Circle.radiusForPath(car.groundSpeed);
 
     Vector3 centerOffset = left.toMagnitude(turnRadius);
 
     Vector3 center1 = car.position.plus(centerOffset);
     Vector3 center2 = car.position.minus(centerOffset);
-    return new Circle(center1.distance(targetLocation) < center2.distance(targetLocation) ? center1 : center2, turnRadius);
+    return Circle.forPath(center1.distance(targetLocation) < center2.distance(targetLocation) ? center1 : center2, turnRadius);
   }
 
   /**
@@ -33,7 +33,7 @@ public class Paths {
     Vector3 up = front.cross(Vector3.of(0, 0, 1).cross(front)).normalize();
     Vector3 left = up.cross(front).normalize();
 
-    double turnRadius = Constants.radius(target.groundSpeed) * 1.4;
+    double turnRadius = Circle.radiusForPath(target.groundSpeed);
 
     Vector3 centerOffset = left.toMagnitude(turnRadius);
 
@@ -41,8 +41,8 @@ public class Paths {
     Vector3 center2 = target.position.minus(centerOffset);
 
     return new Circles(
-        new Circle(center1, turnRadius),
-        new Circle(center2, turnRadius));
+        Circle.forPath(center1, turnRadius),
+        Circle.forPath(center2, turnRadius));
   }
 
   static Vector3 tangentForTargetDirection(Circle circle, Vector3 currentCarPos, CarData targetCar) {
@@ -97,7 +97,7 @@ public class Paths {
 
   public static CircleTangents tangents(Circle a, Circle b) {
     if (a.radius == b.radius) {
-      a = new Circle(a.center, a.radius + 1);
+      a = Circle.forPath(a.center, a.radius + 1);
     }
     Circle larger = a.radius > b.radius ? a : b;
     Circle smaller = larger == a ? b : a;
@@ -107,13 +107,13 @@ public class Paths {
 
     // Get inside tangents.
     ImmutableList<Segment> insideSegments =
-        tangents(new Circle(larger.center, larger.radius + smaller.radius), smaller.center).getPoints().stream()
+        tangents(Circle.forPath(larger.center, larger.radius + smaller.radius), smaller.center).getPoints().stream()
             .map(tangentPoint -> toInsideSegments(larger, smaller, aIsLarger, tangentPoint))
             .collect(toImmutableList());
 
     // Get outside tangents.
     ImmutableList<Segment> outsideSegments =
-        tangents(new Circle(larger.center, larger.radius - smaller.radius), smaller.center).getPoints().stream()
+        tangents(Circle.forPath(larger.center, larger.radius - smaller.radius), smaller.center).getPoints().stream()
             .map(tangentPoint -> toOutsideSegments(larger, smaller, aIsLarger, tangentPoint))
             .collect(toImmutableList());
 
@@ -160,11 +160,11 @@ public class Paths {
   }
 
   public static Circles turningRadiusCircles(Vector3 position, double speed, Vector3 noseVector) {
-    double radius = Constants.radius(speed);
+    double radius = Circle.radiusForPath(speed);
 
     Vector2 perpVelocity = noseVector.flatten().ClockwisePerpendicular();
-    Circle cw = new Circle(position.plus(perpVelocity.asVector3().toMagnitude(radius)), radius);
-    Circle ccw = new Circle(position.plus(perpVelocity.asVector3().toMagnitude(-radius)), radius);
+    Circle cw = Circle.forPath(position.plus(perpVelocity.asVector3().toMagnitude(radius)), radius);
+    Circle ccw = Circle.forPath(position.plus(perpVelocity.asVector3().toMagnitude(-radius)), radius);
 
     return new Circles(cw, ccw);
   }
