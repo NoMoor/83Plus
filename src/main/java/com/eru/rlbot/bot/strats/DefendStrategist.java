@@ -1,16 +1,24 @@
 package com.eru.rlbot.bot.strats;
 
-import com.eru.rlbot.bot.common.*;
+import com.eru.rlbot.bot.common.Angles;
+import com.eru.rlbot.bot.common.Constants;
+import com.eru.rlbot.bot.common.DllHelper;
+import com.eru.rlbot.bot.common.Goal;
+import com.eru.rlbot.bot.common.Locations;
+import com.eru.rlbot.bot.common.Pair;
+import com.eru.rlbot.bot.common.PredictionUtils;
 import com.eru.rlbot.bot.main.Agc;
 import com.eru.rlbot.bot.tactics.RotateTactician;
 import com.eru.rlbot.bot.tactics.Tactic;
 import com.eru.rlbot.common.Moment;
+import com.eru.rlbot.common.input.CarData;
 import com.eru.rlbot.common.input.DataPacket;
 import com.eru.rlbot.common.vector.Vector3;
+import java.util.Comparator;
+import java.util.Optional;
 import rlbot.flat.BallPrediction;
 import rlbot.flat.Physics;
 import rlbot.flat.PredictionSlice;
-import java.util.Optional;
 
 /** Responsible for shadowing, blocking, shots, and clearing. */
 public class DefendStrategist extends Strategist {
@@ -20,24 +28,22 @@ public class DefendStrategist extends Strategist {
   }
 
   static boolean shouldDefend(DataPacket input) {
-    if (true) {
-      return false;
-    }
-
-    return lastManBack(input) || ballNearGoal(input) || canClear(input);
+    return lastManBack(input) && (ballNearGoal(input) || canClear(input));
   }
 
   private static boolean lastManBack(DataPacket input) {
-    // Check how many people are on your team.
     int myTeam = input.car.team;
-    // TODO: Do something else here.
+    Vector3 ownGoal = Goal.ownGoal(myTeam).center;
 
-    // Check if ball is closer to your goal than you.
-    Vector3 centerGoal = Goal.ownGoal(myTeam).center;
-    double carToGoal = input.car.position.distance(centerGoal);
-    double ballToGoal = input.ball.position.distance(centerGoal);
+    // TODO: Look at momentum as well as position.
+    CarData lastManBack = input.allCars.stream()
+        .filter(car -> car.team == myTeam)
+        .map(car -> Pair.of(car, car.position.distance(ownGoal)))
+        .min(Comparator.comparing(Pair::getSecond))
+        .orElseThrow(IllegalStateException::new)
+        .getFirst();
 
-    return carToGoal > ballToGoal && false;
+    return lastManBack == input.car;
   }
 
   private static boolean shotOnGoal(DataPacket input) {

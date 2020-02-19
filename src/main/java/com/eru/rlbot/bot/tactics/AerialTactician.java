@@ -57,10 +57,10 @@ public class AerialTactician extends Tactician {
 
       // TODO: Figure out if we can hit a ball by jumping here.
       double flatTimeToBall = flatDistance / input.car.groundSpeed;
-      double airTime = target.ball.position.z * 3 / Constants.BOOSTED_ACCELERATION;
+      double airTime = target.ball.position.z * 3.5 / Constants.BOOSTED_ACCELERATION;
 
       bot.botRenderer.setBranchInfo("Drive toward ball");
-      if (airTime > flatTimeToBall) {
+      if (airTime > flatTimeToBall && Math.abs(Angles.flatCorrectionAngle(input.car, target.ball.position)) < .1) {
         tacticManager.preemptTactic(tactic.withType(Tactic.TacticType.FAST_AERIAL));
         useHumanExecution = !useHumanExecution;
       }
@@ -68,11 +68,7 @@ public class AerialTactician extends Tactician {
       bot.botRenderer.setBranchInfo("Plan / Execute aerial");
       Pair<FlightPlan, FlightLog> pair = makePlan(input, target, tactic.object);
 
-      if (true) {
-        humanExecution(input, output, pair.getFirst());
-      } else {
-        chipExecution(input, output, pair.getFirst(), pair.getSecond());
-      }
+      humanExecution(input, output, pair.getFirst());
     }
   }
 
@@ -81,7 +77,7 @@ public class AerialTactician extends Tactician {
   private static double FAST_AERIAL_BOOST = FAST_AERIAL_TIME * Constants.BOOST_RATE;
 
   private void checkTarget(DataPacket input) {
-    if (!DemoChecker.wasDemoed() && target != null && target.ball.elapsedSeconds < input.car.elapsedSeconds) {
+    if (!DemoChecker.wasDemoed(input.car) && target != null && target.ball.elapsedSeconds < input.car.elapsedSeconds) {
       return;
     }
 

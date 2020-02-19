@@ -13,13 +13,8 @@ import java.util.Map;
 public class StrategyManager {
 
   // Delay ~1 frame after a jump to allow ball propagation.
-  private static final float RESET_DELAY = .1f;
-
+  private static final float RESET_DELAY = .01f;
   private static final float STRATEGY_UPDATE_INTERVAL = .25F;
-
-  private static boolean grabBoostStrat = false;
-  private static boolean wallRideStrat = false;
-  private static boolean hitBallStrat = true;
 
   // DO NOT MODIFY
   private Map<Strategy.Type, Strategist> strategists = new HashMap<>();
@@ -44,22 +39,30 @@ public class StrategyManager {
 
     boolean timedUpdate = lastStrategyUpdateTime == 0
         || input.car.elapsedSeconds - lastStrategyUpdateTime > STRATEGY_UPDATE_INTERVAL;
-    boolean strategistUpdate = active == null || active.isComplete();
-    boolean strategistLocked = active != null && active.tacticManager.isTacticLocked();
 
-    if (!strategistLocked && (strategistUpdate || timedUpdate)) {
+    if (active == null || active.isComplete() || (timedUpdate && !active.tacticManager.isTacticLocked())) {
       lastStrategyUpdateTime = input.car.elapsedSeconds;
-      updateStrategy(input);
+
+      Strategist newStrategist = getNewStrategist(input);
+      if (active != null) {
+        active.abort();
+      }
+
+      newStrategist.assign(input);
+      active = newStrategist;
     }
 
     ControlsOutput output = active.execute(input);
-
     bot.botRenderer.setStrategy(active);
+
     return output;
   }
 
-  /** Called every x ticks to get the best strategy. */
-  private void updateStrategy(DataPacket input) {
+  /**
+   * Called every x ticks to get the best strategy.
+   */
+  private Strategist getNewStrategist(DataPacket input) {
+    // TODO: Use the ball prediction util.
     Strategist newStrategist;
     if (DefendStrategist.shouldDefend(input)) {
       newStrategist = strategists.get(Strategy.Type.DEFEND);
@@ -69,16 +72,11 @@ public class StrategyManager {
       newStrategist = strategists.get(Strategy.Type.SUPPORT);
     }
 
-    if (active != null) {
-      active.abort();
-    }
-
-    active = newStrategist;
-    active.assign(input);
+    return newStrategist;
   }
 
   private boolean checkReset(DataPacket input) {
-    if (active != null && DemoChecker.wasDemoed()) {
+    if (active != null && DemoChecker.wasDemoed(input.car)) {
       active.abort();
       active = null;
       resetTime = input.car.elapsedSeconds;
@@ -93,6 +91,7 @@ public class StrategyManager {
     return false;
   }
 
+  // TODO: Move this elsewhere.
   private static Comparator<? super BoostPad> selectBoost(DataPacket input) {
     Vector2 noseVector = input.car.orientation.getNoseVector().flatten();
     Vector2 flatPosition = input.car.position.flatten();
@@ -100,10 +99,10 @@ public class StrategyManager {
     return (a, b) -> {
       // Angle diff in radians
       int angleValue = (int) (Math.abs(noseVector.correctionAngle(a.getLocation().flatten()))
-                                  - Math.abs(noseVector.correctionAngle(b.getLocation().flatten())));
+          - Math.abs(noseVector.correctionAngle(b.getLocation().flatten())));
       // 750 units is worth a u-turn.
       int distanceValue = (int) (flatPosition.distance(a.getLocation().flatten())
-                                     - flatPosition.distance(b.getLocation().flatten())) / 2000;
+          - flatPosition.distance(b.getLocation().flatten())) / 2000;
       return angleValue + distanceValue;
     };
   }
