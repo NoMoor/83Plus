@@ -70,7 +70,7 @@ public class PathPlanner {
       logger.debug("Return default value");
       return Optional.empty();
     }
-    return Optional.of(firstHittable.getPath());
+    return Optional.ofNullable(firstHittable.getPath());
   }
 
   private static Path planShotOnGoal(DataPacket input, BallData ball) {

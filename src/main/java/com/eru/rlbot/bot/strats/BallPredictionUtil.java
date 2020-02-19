@@ -126,7 +126,7 @@ public class BallPredictionUtil {
   public static class ExaminedBallData {
 
     private List<Path> paths = new ArrayList<>();
-    private Optional<Boolean> hittable = Optional.empty();
+    private Boolean hittable = null;
     public final BallData ball;
     private CarData fastTarget;
     private Plan fastPlan;
@@ -137,12 +137,12 @@ public class BallPredictionUtil {
 
     // TODO: This should be per pathing strategy
     public Optional<Boolean> isHittable() {
-      return hittable;
+      return Optional.ofNullable(hittable);
     }
 
     public void setHittable(boolean value) {
-      if (!hittable.isPresent() || !hittable.get()) {
-        hittable = Optional.of(value);
+      if (hittable == null || !hittable) {
+        hittable = value;
       }
     }
 
@@ -155,7 +155,7 @@ public class BallPredictionUtil {
     }
 
     public Path getPath() {
-      return paths.get(0);
+      return paths.isEmpty() ? null : paths.get(0);
     }
 
     public void setFastTarget(CarData targetCar) {
