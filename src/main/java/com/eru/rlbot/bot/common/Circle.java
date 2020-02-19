@@ -12,11 +12,13 @@ public class Circle {
   public final Vector3 center;
   public final double radius;
   public final double maxSpeed;
+  public double circumference;
 
   private Circle(Vector3 center, double radius) {
     this.center = center;
     this.radius = radius;
     this.maxSpeed = Constants.maxSpeed(radius);
+    this.circumference = Math.PI * radius * 2;
   }
 
   public static Circle forPath(Vector3 center, double radius) {

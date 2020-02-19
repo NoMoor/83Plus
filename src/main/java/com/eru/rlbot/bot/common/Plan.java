@@ -9,7 +9,7 @@ public class Plan {
   public final Path path;
   public final double traverseTime;
   public final double boostUsed;
-  public final ImmutableList<ThrottleInput> throttleInputList;
+  public final ImmutableList<ControlInput> throttleInputList;
 
   public Plan(Builder builder) {
     traverseTime = builder.time;
@@ -22,27 +22,32 @@ public class Plan {
     return new Builder();
   }
 
-  public static class ThrottleInput {
+  public static class ControlInput {
+
+    public static final ControlInput NO_INPUTS = create(false, 0, false);
+
     public final boolean boost;
     public final double throttle;
+    public final boolean jump;
 
-    private ThrottleInput(boolean boost, double throttle) {
+    private ControlInput(boolean boost, double throttle, boolean jump) {
       this.boost = boost;
       this.throttle = throttle;
+      this.jump = jump;
     }
 
-    public static ThrottleInput create(boolean boost, double throttle) {
-      return new ThrottleInput(boost, boost ? 1.0 : throttle);
+    public static ControlInput create(boolean boost, double throttle, boolean jump) {
+      return new ControlInput(boost, boost ? 1.0 : throttle, jump);
     }
 
     @Override
     public String toString() {
-      return "b:" + boost + "t:" + throttle;
+      return "b:" + boost + "t:" + throttle + "j:" + jump;
     }
   }
 
   public static class Builder {
-    private List<ThrottleInput> inputList = new LinkedList<>();
+    private List<ControlInput> inputList = new LinkedList<>();
     private Path path;
     private double time;
     private double boostUsed;
@@ -53,7 +58,12 @@ public class Plan {
     }
 
     Builder addThrottleInput(boolean boost, double throttle) {
-      inputList.add(ThrottleInput.create(boost, throttle));
+      inputList.add(ControlInput.create(boost, throttle, false));
+      return this;
+    }
+
+    Builder addJumpInput(boolean jump) {
+      inputList.add(ControlInput.create(false, 0, jump));
       return this;
     }
 

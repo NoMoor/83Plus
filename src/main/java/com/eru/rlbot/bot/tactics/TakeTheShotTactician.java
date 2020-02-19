@@ -86,12 +86,12 @@ public class TakeTheShotTactician extends Tactician {
           path.lockAndSegment();
           path.extendThroughBall();
         } catch (IllegalStateException e) {
-          e.printStackTrace();
+//          e.printStackTrace();
           path = null;
           return;
         }
       } else {
-        logger.debug("Replan path. None Found.");
+        logger.info("Replan path. None Found.");
         return;
       }
     }

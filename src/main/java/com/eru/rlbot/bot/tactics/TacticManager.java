@@ -70,12 +70,16 @@ public class TacticManager {
   }
 
   public void execute(DataPacket input, ControlsOutput output) {
-    botRenderer.setTactic(getTactic());
-    botRenderer.setTactician(getTactician());
 
-    getTactician().execute(input, output, getTactic());
+    Tactician tactician = getTactician();
+    Tactic tactic = getTactic();
 
-    if (completedTactics.remove(getTactic()) && !tacticList.isEmpty()) {
+    tactician.execute(input, output, tactic);
+
+    botRenderer.setTactic(tactic);
+    botRenderer.setTactician(tactician);
+
+    if (completedTactics.remove(tactic) && !tacticList.isEmpty()) {
       tacticList.pop();
     }
   }

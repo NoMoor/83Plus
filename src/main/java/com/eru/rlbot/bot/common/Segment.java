@@ -1,6 +1,5 @@
 package com.eru.rlbot.bot.common;
 
-import com.eru.rlbot.common.input.CarData;
 import com.eru.rlbot.common.vector.Vector2;
 import com.eru.rlbot.common.vector.Vector3;
 import java.util.Objects;
@@ -25,19 +24,13 @@ public class Segment {
     return new Segment(start, end, Type.STRAIGHT);
   }
 
-  // TODO: Add speed?
   public static Segment jump(Vector3 start, Vector3 end) {
     return new Segment(start, end, Type.JUMP);
   }
 
-  private Segment(Vector3 start, CarData target, Circle circle) {
-    this.start = start;
-    this.end = target.position;
-    this.circle = circle;
-    this.clockWise = circle.isClockwise(target);
-    this.type = Type.ARC;
+  public static Segment flip(Vector3 start, Vector3 end) {
+    return new Segment(start, end, Type.FLIP);
   }
-
 
   public Segment(Vector3 start, Vector3 end, Circle circle, boolean clockWise) {
     this.start = start;
@@ -63,10 +56,18 @@ public class Segment {
     return this.isComplete;
   }
 
+  private Segment setType(Type type) {
+    if (this.type == Type.ARC) {
+      throw new IllegalStateException("Cannot convert arc to other type");
+    }
+    return new Segment(start, end, type);
+  }
+
   double maxSpeed() {
     switch (type) {
       case STRAIGHT:
       case JUMP:
+      case FLIP:
         return Constants.BOOSTED_MAX_SPEED;
       case ARC:
         return circle.maxSpeed;
@@ -84,6 +85,7 @@ public class Segment {
         return Circle.pointOnCircle(circle.center, circle.radius, radians + radianOffset);
       case STRAIGHT:
       case JUMP:
+      case FLIP:
         return end.minus(start).multiply(segmentCompletion).plus(start);
       default:
         throw new IllegalStateException("Doh!");
@@ -118,7 +120,8 @@ public class Segment {
   public enum Type {
     STRAIGHT,
     ARC,
-    JUMP
+    JUMP,
+    FLIP
   }
 
   public double getRadians() {
@@ -145,6 +148,7 @@ public class Segment {
       switch (type) {
         case STRAIGHT:
         case JUMP:
+        case FLIP:
           distance = start.flatten().distance(end.flatten());
           break;
         case ARC:
@@ -176,6 +180,10 @@ public class Segment {
         head = Segment.jump(this.start, splitPosition);
         tail = Segment.jump(splitPosition, this.end);
         break;
+      case FLIP:
+        head = Segment.flip(this.start, splitPosition);
+        tail = Segment.flip(splitPosition, this.end);
+        break;
       default:
         throw new IllegalStateException("Unsupported type: " + type);
     }
@@ -187,9 +195,15 @@ public class Segment {
     return Pair.of(head, tail);
   }
 
+  public Pair<Segment, Segment> splitSegmentWithFlip(double distance, double time) {
+    Pair<Segment, Segment> segments = splitSegment(distance, time);
+
+    return Pair.of(segments.getFirst(), segments.getSecond().setType(Type.FLIP));
+  }
+
   // Use GetProgress instead.
   private Vector3 getPosition(double distance) {
-    if (type == Type.STRAIGHT || type == Type.JUMP) {
+    if (type == Type.STRAIGHT || type == Type.JUMP || type == Type.FLIP) {
       return end.minus(start).multiply(distance / flatDistance()).plus(start);
     } else if (type == Type.ARC) {
       double partialRadians = getRadians() * distance / flatDistance();

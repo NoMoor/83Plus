@@ -4,12 +4,18 @@ import com.eru.rlbot.common.input.CarData;
 import com.eru.rlbot.common.input.Orientation;
 import com.eru.rlbot.common.output.ControlsOutput;
 import com.eru.rlbot.common.vector.Vector3;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import java.util.ArrayList;
 import java.util.List;
 
-/** Utilities for calculating rotations in 3d space. */
+/**
+ * Utilities for calculating rotations in 3d space.
+ */
 // https://github.com/samuelpmish/RLUtilities/blob/master/src/mechanics/aerial_turn.cc
 public class Angles3 {
+
+  private static final Logger logger = LogManager.getLogger("Angles3");
 
   // The allowed deviation of Phi
   private static final double EPSILON_PHI = .1f;
@@ -18,8 +24,15 @@ public class Angles3 {
 
   private static final double SCALE = 10.5f;
 
-  private static final Vector3 ANGULAR_ACCELERATION = Vector3.of(-400.0f, -130.0f, 95.0f).multiply(1/SCALE);
-  private static final Vector3 ANGULAR_DAMPING = Vector3.of(-50.0f, -30.0f, -20.0f).multiply(1/SCALE);
+  private static final Vector3 ANGULAR_ACCELERATION = Vector3.of(-400.0f, -130.0f, 95.0f).multiply(1 / SCALE);
+  //  private static final Vector3 ANGULAR_ACCELERATION = Vector3.of(-36.07955f, -12.1459978f, 8.9196280f);
+  public static final float ROLL_ACCELERATION = ANGULAR_ACCELERATION.x;
+  public static final float PITCH_ACCELERATION = ANGULAR_ACCELERATION.y;
+  public static final float YAW_ACCELERATION = ANGULAR_ACCELERATION.z;
+  private static final Vector3 ANGULAR_DAMPING = Vector3.of(-50.0f, -30.0f, -20.0f).multiply(1 / SCALE);
+  public static final float ROLL_DAMPEN = ANGULAR_DAMPING.x;
+  public static final float PITCH_DAMPEN = ANGULAR_DAMPING.y;
+  public static final float YAW_DAMPEN = ANGULAR_DAMPING.z;
 
   // How far ahead to look.
   private static final float HORIZON_TIME = .05f;
@@ -30,6 +43,16 @@ public class Angles3 {
 
   /** Returns controls to optimally rotate toward the subject orientation. */
   public static boolean setControlsFor(CarData car, Matrix3 target, ControlsOutput controls) {
+    try {
+      return setControlsForInternal(car, target, controls);
+    } catch (Exception e) {
+      logger.warn(e);
+    }
+
+    return false;
+  }
+
+  private static boolean setControlsForInternal(CarData car, Matrix3 target, ControlsOutput controls) {
     // Omega = Velocity
     Vector3 omega = target.transpose().dot(car.angularVelocity);
 

@@ -44,7 +44,8 @@ public class BotRenderer {
   private LinkedList<Vector3> previousVelocities = new LinkedList<>();
   private LinkedList<Float> previousVelocityTimes = new LinkedList<>();
 
-  private static final int TEXT_LIST_START_Y = 120;
+  private static final int TEXT_LIST_START_X = 300;
+  private static final int TEXT_LIST_START_Y = 300;
   private static final int TEXT_LIST_SPACING_Y = 26;
 
   private final boolean skipRendering;
@@ -62,6 +63,14 @@ public class BotRenderer {
 
   public static BotRenderer forIndex(int botIndex) {
     return BOTS.get(botIndex);
+  }
+
+  public static BotRenderer forCar(CarData car) {
+    return forIndex(car.playerIndex);
+  }
+
+  public void renderText(Color color, Vector3 location, String text) {
+    getRenderer().drawString3d(text, color, location, 2, 2);
   }
 
   private static class RenderRequest {
@@ -83,26 +92,25 @@ public class BotRenderer {
   public void renderInfo(DataPacket input, ControlsOutput output) {
     if (skipRendering) return;
 
-    renderDebug();
-    renderText();
-    renderAlert(input);
+    renderControlDebug();
+    renderDebugText();
+//    renderAlert(input);
 
-    renderControls(output);
-    renderAcceleration(input);
-    renderLocation(input);
+//    renderControls(output);
+//    renderAcceleration(input);
+//    renderLocation(input);
 
 //    renderTacticLines(input.car);
-    renderRefreshRate(input);
+//    renderRefreshRate(input);
 //    renderTurningRadius(input);
-
 
 //      renderPredictionDiff(input);
 //      renderRelativeBallData(input);
 
     renderProjections(input);
-    renderTouchIndicator(input);
+//    renderTouchIndicator(input);
 
-    renderHitBox(input.car);
+//    renderHitBox(input.car);
   }
 
   private PriorityQueue<RenderRequest> renderRequests =
@@ -130,22 +138,39 @@ public class BotRenderer {
     }
   }
 
-  public void renderPath(ImmutableList<Vector3> locations) {
+  public void renderTarget(Vector3 target) {
+    renderTarget(Color.white, target);
+  }
+
+  public void renderTarget(Color color, Vector3 target) {
+//    if (skipRendering) return;
+
+    int size = 50;
+    getRenderer().drawLine3d(color, target.addX(-size).addY(-size).addZ(-size), target.addX(size).addY(size).addZ(size));
+    getRenderer().drawLine3d(color, target.addX(-size).addY(size).addZ(-size), target.addX(size).addY(-size).addZ(size));
+    getRenderer().drawLine3d(color, target.addX(-size).addY(-size).addZ(size), target.addX(size).addY(size).addZ(-size));
+    getRenderer().drawLine3d(color, target.addX(-size).addY(size).addZ(size), target.addX(size).addY(-size).addZ(-size));
+  }
+
+  public void renderPath(ImmutableList<Vector3> path) {
+    renderPath(Color.pink, path);
+  }
+
+  public void renderPath(Color color, ImmutableList<Vector3> path) {
     if (skipRendering) return;
 
     Vector3 prev = null;
-    for (Vector3 location : locations) {
+    for (Vector3 location : path) {
       if (prev != null) {
-        getRenderer().drawLine3d(Color.pink, prev, location);
+        getRenderer().drawLine3d(color, prev, location);
       }
       prev = location;
     }
   }
 
   public void renderPath(DataPacket input, Path path) {
-    if (skipRendering) {
+    if (skipRendering || true)
       return;
-    }
 
     ImmutableList<Segment> pathNodes = path.allNodes();
 
@@ -174,6 +199,9 @@ public class BotRenderer {
 //            getRenderer().drawString3d(String.format("%d", (int) segment.circle.maxSpeed), color, segment.start, 2, 2);
 //          }
           break;
+        case FLIP:
+          render3DLine(Color.BLUE, segment.start, segment.end);
+          break;
       }
 
       previousType = segment.type;
@@ -185,7 +213,7 @@ public class BotRenderer {
     renderHitBox(Color.BLACK, path.getTarget());
   }
 
-  public void renderProjection(CarData car, Vector3 projectedVector, Color color) {
+  public void renderProjection(Color color, CarData car, Vector3 projectedVector) {
     if (skipRendering) {
       return;
     }
@@ -195,7 +223,7 @@ public class BotRenderer {
   }
 
   public void renderProjection(CarData car, Vector2 projectedVector) {
-    renderProjection(car, projectedVector.asVector3(), Color.CYAN);
+    renderProjection(Color.CYAN, car, projectedVector.asVector3());
   }
 
   private Renderer getRenderer() {
@@ -265,12 +293,12 @@ public class BotRenderer {
     renderText(0, 20, 1,"%.2f FPS", fps);
   }
 
-  private void renderText() {
+  private void renderDebugText() {
     Renderer renderer = getRenderer();
 
-    for (int i = 0 ; i < renderList.size(); i++) {
+    for (int i = 0; i < renderList.size(); i++) {
       RenderedString string = renderList.get(i);
-      renderer.drawString2d(string.text, string.color, new Point(0, TEXT_LIST_START_Y + (TEXT_LIST_SPACING_Y * i)), 2, 2);
+      renderer.drawString2d(string.text, string.color, new Point(TEXT_LIST_START_X, TEXT_LIST_START_Y + (TEXT_LIST_SPACING_Y * i)), 2, 2);
     }
 
     renderList.clear();
@@ -425,7 +453,7 @@ public class BotRenderer {
     }
   }
 
-  private void renderDebug() {
+  private void renderControlDebug() {
     renderText(Color.PINK, 0, 300, "%s", strategist == null ? "NONE" : strategist.getType());
     renderText(Color.CYAN, 150, 300, "%s", tactic == null ? "NONE" : tactic.tacticType);
     renderText(Color.PINK, 400, 300, "%s",

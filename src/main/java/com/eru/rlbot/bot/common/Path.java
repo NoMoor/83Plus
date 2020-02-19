@@ -290,11 +290,11 @@ public class Path {
   }
 
   @VisibleForTesting
-  Plan fastestTraverseTime(int startIndex, double startingBoost) {
+  Plan fastestTraverseTime(int startIndex, double boost) {
     Plan.Builder planBuilder = Plan.builder()
         .setPath(this);
 
-    double boostRemaining = startingBoost;
+    double boostRemaining = boost;
     double currentVelocity = start.groundSpeed;
     double time = 0;
 
@@ -309,21 +309,44 @@ public class Path {
 
       double segmentDistance = segment.flatDistance();
 
+      double flipTime = 0;
+      boolean flipImpulseUsed = false;
       while (segmentDistance > 0) {
         double nextAcceleration;
         boolean canGoFaster = canGoFaster(currentVelocity, segment.maxSpeed(), speedTarget, segmentDistance, segment.type);
-
         boolean isBoosting = false;
+        boolean jumpPressed = false;
         double throttle;
 
-        if (canGoFaster) {
-          isBoosting = boostRemaining > 0;
-          throttle = 1.0;
-          nextAcceleration = Accels.acceleration(currentVelocity) * ACCELERATION_BUFFER
-              + (isBoosting ? Constants.BOOSTED_ACCELERATION : 0);
+        if (flipTime > 0) {
+          nextAcceleration = 0;
+          throttle = 0;
+          if (flipTime + .25 > time && !flipImpulseUsed) {
+            nextAcceleration = 60000; // Flip impulse
+            flipImpulseUsed = true;
+          }
 
-          if (isBoosting) {
-            boostRemaining -= STEP_SIZE * 33;
+          // Car has landed. Reset values.
+          if (flipTime + FLIP_TIME > time) {
+            flipTime = 0;
+            flipImpulseUsed = false;
+          }
+        } else if (canGoFaster) {
+          double segmentTime = segmentDistance / currentVelocity;
+          if (currentVelocity > 1300 && segmentTime > FLIP_TIME && false) { // Figure out this flipping business
+            flipTime = time;
+            nextAcceleration = Accels.acceleration(currentVelocity);
+            throttle = 0;
+            jumpPressed = true;
+          } else {
+            isBoosting = boostRemaining > 0;
+            throttle = 1.0;
+            nextAcceleration = Accels.acceleration(currentVelocity) * ACCELERATION_BUFFER
+                + (isBoosting ? Constants.BOOSTED_ACCELERATION : 0);
+
+            if (isBoosting) {
+              boostRemaining -= STEP_SIZE * 33;
+            }
           }
         } else if (breakNow(currentVelocity, segmentDistance, speedTarget)) {
           throttle = -1;
@@ -334,24 +357,124 @@ public class Path {
         }
 
         double newVelocity = currentVelocity + (nextAcceleration * STEP_SIZE);
+        newVelocity = Angles3.clip(newVelocity, 0, Constants.BOOSTED_MAX_SPEED);
         segmentDistance -= ((currentVelocity + newVelocity) / 2) * STEP_SIZE;
         currentVelocity = newVelocity;
         time += STEP_SIZE;
-        planBuilder.addThrottleInput(isBoosting, throttle);
+        if (jumpPressed) {
+          planBuilder.addJumpInput(jumpPressed);
+        } else {
+          planBuilder.addThrottleInput(isBoosting, throttle);
+        }
       }
     }
 
     Plan plan = planBuilder
-        .setBoostUsed(startingBoost - boostRemaining)
+        .setBoostUsed(boost - boostRemaining)
         .build(time);
 
-    planMap.put(Pair.of(startingBoost, Double.MAX_VALUE), plan);
+    planMap.put(Pair.of(boost, Double.MAX_VALUE), plan);
+
+    return plan;
+  }
+
+  private static final double FLIP_TIME = .8d;
+
+  // TODO: Work in progress
+  @VisibleForTesting
+  Plan efficientTraverse(double boost, double targetTime) {
+    Plan fastestTraverse = fastestTraverseTime(0, boost);
+    double extraTime = fastestTraverse.traverseTime - targetTime;
+
+    Plan.Builder planBuilder = Plan.builder()
+        .setPath(this);
+
+    double boostRemaining = boost;
+    double currentVelocity = start.groundSpeed;
+    double time = 0;
+
+    ListIterator<Segment> segmentIterator = nodes.listIterator(0);
+    while (segmentIterator.hasNext()) {
+      Segment segment = segmentIterator.next();
+
+      double speedTarget = target.groundSpeed;
+      if (segmentIterator.hasNext()) {
+        speedTarget = nodes.get(segmentIterator.nextIndex()).maxSpeed();
+      }
+
+      double segmentDistance = segment.flatDistance();
+
+      double flipTime = 0;
+      boolean flipImpulseUsed = false;
+      while (segmentDistance > 0) {
+        double nextAcceleration;
+        boolean canGoFaster = canGoFaster(currentVelocity, segment.maxSpeed(), speedTarget, segmentDistance, segment.type);
+        boolean isBoosting = false;
+        boolean jumpPressed = false;
+        double throttle;
+
+        if (flipTime > 0) {
+          nextAcceleration = 0;
+          throttle = 0;
+          if (flipTime + .25 > time && !flipImpulseUsed) {
+            nextAcceleration = 60_000; // Flip impulse
+            flipImpulseUsed = true;
+          }
+
+          // Car has landed. Reset values.
+          if (flipTime + FLIP_TIME > time) {
+            flipTime = 0;
+            flipImpulseUsed = false;
+          }
+        } else if (canGoFaster) {
+          double segmentTime = segmentDistance / currentVelocity;
+          if (segment.type != Segment.Type.ARC && currentVelocity > 1300 && segmentTime > FLIP_TIME) {
+            flipTime = time;
+            nextAcceleration = Accels.acceleration(currentVelocity);
+            throttle = 0;
+            jumpPressed = true;
+          } else {
+            isBoosting = boostRemaining > 0;
+            throttle = 1.0;
+            nextAcceleration = Accels.acceleration(currentVelocity) * ACCELERATION_BUFFER
+                + (isBoosting ? Constants.BOOSTED_ACCELERATION : 0);
+
+            if (isBoosting) {
+              boostRemaining -= STEP_SIZE * 33;
+            }
+          }
+        } else if (breakNow(currentVelocity, segmentDistance, speedTarget)) {
+          throttle = -1;
+          nextAcceleration = -Constants.BREAKING_DECELERATION;
+        } else {
+          throttle = .02f;
+          nextAcceleration = Accels.acceleration(currentVelocity) * .02;
+        }
+
+        double newVelocity = currentVelocity + (nextAcceleration * STEP_SIZE);
+        newVelocity = Angles3.clip(newVelocity, 0, Constants.BOOSTED_MAX_SPEED);
+        segmentDistance -= ((currentVelocity + newVelocity) / 2) * STEP_SIZE;
+        currentVelocity = newVelocity;
+        time += STEP_SIZE;
+        if (jumpPressed) {
+          planBuilder.addJumpInput(jumpPressed);
+        } else {
+          planBuilder.addThrottleInput(isBoosting, throttle);
+        }
+      }
+    }
+
+    Plan plan = planBuilder
+        .setBoostUsed(boost - boostRemaining)
+        .build(time);
+
+    planMap.put(Pair.of(boost, Double.MAX_VALUE), plan);
 
     return plan;
   }
 
   private void segmentByPlan(Plan traversePlan) {
-    Iterator<Plan.ThrottleInput> inputs = traversePlan.throttleInputList.iterator();
+    Iterator<Plan.ControlInput> inputs = traversePlan.throttleInputList.iterator();
     ImmutableList.Builder<Segment> timedSegments = ImmutableList.builder();
 
     double currentVelocity = start.groundSpeed;
@@ -368,8 +491,10 @@ public class Path {
       while (segmentDistance > 0) {
         double nextAcceleration = 0;
 
+        Plan.ControlInput input = Plan.ControlInput.NO_INPUTS;
         if (inputs.hasNext()) {
-          nextAcceleration = getAcceleration(currentVelocity, inputs.next());
+          input = inputs.next();
+          nextAcceleration = getAcceleration(currentVelocity, input);
         }
 
         double newVelocity = currentVelocity + (nextAcceleration * STEP_SIZE);
@@ -377,17 +502,28 @@ public class Path {
         currentVelocity = newVelocity;
         time += STEP_SIZE;
 
-        // Split if significant acceleration
-        if (Math.abs(segmentStartSpeed - currentVelocity) > Accels.acceleration(segmentStartSpeed) / 4) {
+        // TODO: This doesn't work because it starts to slow down
+        if (input.jump) {
           double traveledSegmentDistance = nextSegment.flatDistance() - segmentDistance;
           Pair<Segment, Segment> segments =
-              nextSegment.splitSegment(traveledSegmentDistance, start.elapsedSeconds + time);
+              nextSegment.splitSegmentWithFlip(traveledSegmentDistance, start.elapsedSeconds + time);
 
           timedSegments.add(segments.getFirst());
           nextSegment = segments.getSecond();
           segmentDistance = nextSegment.flatDistance();
           segmentStartSpeed = currentVelocity;
-        }
+        } else
+          // Split if significant acceleration
+          if (Math.abs(segmentStartSpeed - currentVelocity) > Accels.acceleration(segmentStartSpeed) / 4) {
+            double traveledSegmentDistance = nextSegment.flatDistance() - segmentDistance;
+            Pair<Segment, Segment> segments =
+                nextSegment.splitSegment(traveledSegmentDistance, start.elapsedSeconds + time);
+
+            timedSegments.add(segments.getFirst());
+            nextSegment = segments.getSecond();
+            segmentDistance = nextSegment.flatDistance();
+            segmentStartSpeed = currentVelocity;
+          }
 
       }
 
@@ -398,7 +534,7 @@ public class Path {
     nodes = timedSegments.build();
   }
 
-  private double getAcceleration(double currentVelocity, Plan.ThrottleInput input) {
+  private double getAcceleration(double currentVelocity, Plan.ControlInput input) {
     if (input.boost) {
       return Accels.acceleration(currentVelocity) + Constants.BOOSTED_ACCELERATION;
     } else if (input.throttle > 0) {

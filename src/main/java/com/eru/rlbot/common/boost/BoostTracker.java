@@ -43,4 +43,8 @@ public class BoostTracker {
     boostTracker.boostTicks = this.boostTicks;
     return boostTracker;
   }
+
+  public int getCommitment() {
+    return Math.max(1, 12 - boostTicks);
+  }
 }

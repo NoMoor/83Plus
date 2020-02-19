@@ -2,6 +2,7 @@ package com.eru.rlbot.bot.common;
 
 import com.eru.rlbot.bot.tactics.Tactician;
 import com.eru.rlbot.common.input.DataPacket;
+import com.eru.rlbot.common.jump.JumpManager;
 import com.eru.rlbot.common.output.ControlsOutput;
 import com.eru.rlbot.common.vector.Vector3;
 import org.apache.logging.log4j.LogManager;
@@ -26,10 +27,11 @@ public class PathExecutor {
 
   public void executePath(DataPacket input, ControlsOutput output, Path path) {
     Vector3 target = path.pidTarget(input);
+    Segment currentSegment = path.getSegment(input);
 
     Vector3 distanceDiff = target.minus(input.car.position);
-    if (distanceDiff.magnitude() > Constants.BOOSTED_MAX_SPEED * 1.5 * Path.LEAD_TIME) {
-      logger.debug("Off course: {}", distanceDiff.magnitude());
+    if (distanceDiff.magnitude() > Constants.BOOSTED_MAX_SPEED * 2 * Path.LEAD_TIME) {
+      logger.info("Off course: {} {}", currentSegment.type, distanceDiff.magnitude());
       path.markOffCourse();
     } else {
       double delta = path.currentTarget(input).distance(input.car.position);
@@ -38,6 +40,32 @@ public class PathExecutor {
       }
     }
 
+    if (currentSegment.type == Segment.Type.FLIP) {
+      flip(input, output, path);
+    } else {
+      drive(input, output, target, currentSegment, distanceDiff);
+    }
+
+    if (STAND_STILL) {
+      output
+          .withSteer(0)
+          .withBoost(false)
+          .withThrottle(0);
+    }
+  }
+
+  private void flip(DataPacket input, ControlsOutput output, Path path) {
+    if (input.car.hasWheelContact) {
+      output.withJump();
+    } else if (JumpManager.forCar(input.car).hasReleasedJumpInAir()) {
+
+    } else if (JumpManager.forCar(input.car).canFlip()) {
+      output.withJump()
+          .withPitch(-1);
+    }
+  }
+
+  private void drive(DataPacket input, ControlsOutput output, Vector3 target, Segment currentSegment, Vector3 distanceDiff) {
     // Determine the angular velocity to hit the point
     double correctionAngle = Angles.flatCorrectionAngle(input.car, target);
     double correctionCurvature = 1 / (input.car.position.distance(target) / (2 * Math.sin(correctionAngle)));
@@ -75,16 +103,8 @@ public class PathExecutor {
       output.withThrottle(-1);
     }
 
-    Segment currentSegment = path.getSegment(input);
     if (currentSegment.type == Segment.Type.JUMP) {
       output.withJump();
-    }
-
-    if (STAND_STILL) {
-      output
-          .withSteer(0)
-          .withBoost(false)
-          .withThrottle(0);
     }
   }
 

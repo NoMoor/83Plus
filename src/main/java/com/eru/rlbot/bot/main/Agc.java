@@ -77,6 +77,7 @@ public final class Agc implements Bot {
     // The DataPacket might not include everything from GameTickPacket, so improve it if you need to!
     DataPacket input = new DataPacket(packet, playerIndex);
     BallPredictionUtil.refresh(input);
+    DemoChecker.track(input);
 
     JumpManager.forCar(input.car).loadCar(input.car);
     SpeedManager.trackSuperSonic(input);
@@ -96,7 +97,8 @@ public final class Agc implements Bot {
           .withBoost(false);
 
     // Must do ball before updating the jump manager
-    NextFramePredictor.nextFrame(input, output);
+    if (false)
+      NextFramePredictor.nextFrame(input, output);
 
     JumpManager.forCar(input.car).processOutput(input.car, output);
 

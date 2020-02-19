@@ -70,12 +70,38 @@ public class Paths {
         .get();
   }
 
+  private static double MIN_SEGMENT_LENGTH = 100;
   private static ImmutableList<Segment> biArcSegments(
       Vector3 start, Circle circle1, Vector3 end, Circle circle2, CircleTangents.Shape shape) {
     Segment connector = tangents(circle1, circle2).getSegment(shape);
-    Segment arc1 = Segment.arc(start, connector.start, circle1, shape == CircleTangents.Shape.CWCCW || shape == CircleTangents.Shape.CWCW);
-    Segment arc2 = Segment.arc(connector.end, end, circle2, shape == CircleTangents.Shape.CCWCW || shape == CircleTangents.Shape.CWCW);
-    return ImmutableList.of(arc1, connector, arc2);
+    Segment arc1 = Segment.arc(start, connector.start, circle1, shape.startsClockWise());
+    Segment arc2 = Segment.arc(connector.end, end, circle2, shape.endsClockWise());
+
+    ImmutableList.Builder<Segment> segmentListBuilder = ImmutableList.builder();
+
+    // Check arc 1 for inclusion
+    if (arc1.flatDistance() > MIN_SEGMENT_LENGTH &&
+        Math.abs(arc1.circle.circumference - arc1.flatDistance()) > MIN_SEGMENT_LENGTH) {
+
+      segmentListBuilder.add(arc1);
+    } else {
+      // Else amend the connector
+      connector = Segment.straight(start, connector.end);
+    }
+
+    if (arc2.flatDistance() > MIN_SEGMENT_LENGTH &&
+        Math.abs(arc2.circle.circumference - arc2.flatDistance()) > MIN_SEGMENT_LENGTH) {
+
+      segmentListBuilder
+          .add(connector)
+          .add(arc2);
+    } else {
+      // Add adjusted connector without the second arc.
+      segmentListBuilder
+          .add(Segment.straight(connector.start, arc2.end));
+    }
+
+    return segmentListBuilder.build();
   }
 
   public static TangentPoints tangents(Circle circle, Vector3 point) {
@@ -96,8 +122,8 @@ public class Paths {
   }
 
   public static CircleTangents tangents(Circle a, Circle b) {
-    if (a.radius == b.radius) {
-      a = Circle.forPath(a.center, a.radius + 1);
+    if (Math.abs(a.radius - b.radius) < 1) {
+      a = Circle.forPath(a.center, a.radius + 2);
     }
     Circle larger = a.radius > b.radius ? a : b;
     Circle smaller = larger == a ? b : a;
@@ -114,6 +140,7 @@ public class Paths {
     // Get outside tangents.
     ImmutableList<Segment> outsideSegments =
         tangents(Circle.forPath(larger.center, larger.radius - smaller.radius), smaller.center).getPoints().stream()
+//            .filter(tangentPoint -> !larger.center.equals(tangentPoint))
             .map(tangentPoint -> toOutsideSegments(larger, smaller, aIsLarger, tangentPoint))
             .collect(toImmutableList());
 
@@ -125,12 +152,16 @@ public class Paths {
   }
 
   private static Segment toOutsideSegments(Circle larger, Circle smaller, boolean aIsLarger, Vector3 tangentPoint) {
-    Vector3 offset = larger.center.minus(tangentPoint).toMagnitude(smaller.radius);
-    Vector3 largerTangent = tangentPoint.minus(offset);
-    Vector3 smallerTangent = smaller.center.minus(offset);
-    return Segment.straight(
-        aIsLarger ? largerTangent : smallerTangent,
-        aIsLarger ? smallerTangent : largerTangent);
+    try {
+      Vector3 offset = larger.center.minus(tangentPoint).toMagnitude(smaller.radius);
+      Vector3 largerTangent = tangentPoint.minus(offset);
+      Vector3 smallerTangent = smaller.center.minus(offset);
+      return Segment.straight(
+          aIsLarger ? largerTangent : smallerTangent,
+          aIsLarger ? smallerTangent : largerTangent);
+    } catch (IllegalStateException e) {
+      throw e;
+    }
   }
 
   private static Segment toInsideSegments(Circle larger, Circle smaller, boolean aIsLarger, Vector3 tangentPoint) {
@@ -221,7 +252,15 @@ public class Paths {
       CWCW,
       CCWCW,
       CWCCW,
-      CCWCCW
+      CCWCCW;
+
+      public boolean startsClockWise() {
+        return this == CWCW || this == CWCCW;
+      }
+
+      public boolean endsClockWise() {
+        return this == CWCW || this == CCWCW;
+      }
     }
   }
 

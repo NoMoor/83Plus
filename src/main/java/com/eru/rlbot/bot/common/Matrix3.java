@@ -69,14 +69,22 @@ public class Matrix3 {
     return transpose;
   }
 
-  /** Returns the inverse of the matrix. */
+  /**
+   * Returns the inverse of the matrix.
+   */
   private Matrix3 inverse;
+
+  @Override
+  public String toString() {
+    return "[" + a + "," + b + "," + c + "]";
+  }
+
   public Matrix3 inverse() {
     if (inverse == null) {
       float determinant = determinant();
 
       if (determinant() == 0) {
-        throw new IllegalArgumentException("There is no inverse for this matrix");
+        throw new IllegalArgumentException("There is no inverse for this matrix " + toString());
       }
 
       Matrix3 transposition = transpose();

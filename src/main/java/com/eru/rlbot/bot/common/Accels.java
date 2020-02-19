@@ -199,6 +199,17 @@ public class Accels {
     return new AccelResult(finalVelocity, time, d, 0);
   }
 
+  // TODO: Implement this.
+  public static double averageSpeed(double velocity, double time, double boost) {
+    if (time < .5) {
+      return velocity;
+    } else if (boost < 10) {
+      return Math.max(velocity, 1400);
+    }
+
+    return 2000;
+  }
+
   public static class AccelResult {
     public final double distance;
     public final double speed;

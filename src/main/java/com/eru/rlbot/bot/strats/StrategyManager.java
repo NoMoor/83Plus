@@ -1,13 +1,11 @@
 package com.eru.rlbot.bot.strats;
 
-import static com.eru.rlbot.bot.common.Constants.NORMAL_EXPECTED;
-
+import com.eru.rlbot.bot.common.DemoChecker;
 import com.eru.rlbot.bot.main.Agc;
 import com.eru.rlbot.common.boost.BoostPad;
 import com.eru.rlbot.common.input.DataPacket;
 import com.eru.rlbot.common.output.ControlsOutput;
 import com.eru.rlbot.common.vector.Vector2;
-import com.eru.rlbot.common.vector.Vector3;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
@@ -30,8 +28,6 @@ public class StrategyManager {
 
   private Agc bot;
 
-  private Vector3 lastBallPosition;
-  private Vector3 lastCarPosition;
   private float resetTime;
   private float lastStrategyUpdateTime;
 
@@ -44,9 +40,7 @@ public class StrategyManager {
   }
 
   public ControlsOutput executeStrategy(DataPacket input) {
-    if (checkReset(input) && active != null) {
-      active.abort();
-    }
+    checkReset(input);
 
     boolean timedUpdate = lastStrategyUpdateTime == 0
         || input.car.elapsedSeconds - lastStrategyUpdateTime > STRATEGY_UPDATE_INTERVAL;
@@ -61,8 +55,6 @@ public class StrategyManager {
     ControlsOutput output = active.execute(input);
 
     bot.botRenderer.setStrategy(active);
-
-    updateCarAndBallTracking(input);
     return output;
   }
 
@@ -86,9 +78,7 @@ public class StrategyManager {
   }
 
   private boolean checkReset(DataPacket input) {
-    boolean ballJumped = ballHasJumped(input);
-    boolean carJumped = carHasJumped(input);
-    if (active != null && (ballJumped || carJumped)) {
+    if (active != null && DemoChecker.wasDemoed()) {
       active.abort();
       active = null;
       resetTime = input.car.elapsedSeconds;
@@ -101,27 +91,6 @@ public class StrategyManager {
 
     resetTime = 0;
     return false;
-  }
-
-  private boolean carHasJumped(DataPacket input) {
-    if (lastCarPosition == null) {
-      return true;
-    }
-
-    return input.car.position.distance(lastCarPosition) > NORMAL_EXPECTED;
-  }
-
-  private boolean ballHasJumped(DataPacket input) {
-    if (lastBallPosition == null) {
-      return true;
-    }
-
-    return input.ball.position.distance(lastBallPosition) > NORMAL_EXPECTED;
-  }
-
-  private void updateCarAndBallTracking(DataPacket input) {
-    lastCarPosition = input.car.position;
-    lastBallPosition = input.ball.position;
   }
 
   private static Comparator<? super BoostPad> selectBoost(DataPacket input) {

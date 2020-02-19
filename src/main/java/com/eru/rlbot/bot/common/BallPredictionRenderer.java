@@ -7,6 +7,7 @@ import rlbot.cppinterop.RLBotDll;
 import rlbot.render.RenderPacket;
 import rlbot.render.Renderer;
 import java.awt.*;
+import java.util.Optional;
 
 public class BallPredictionRenderer extends Renderer {
 
@@ -34,17 +35,25 @@ public class BallPredictionRenderer extends Renderer {
   }
 
   public void renderBallPrediction() {
+    if (false)
+      return;
+
     if (!isInitialized()) {
       initTick();
     }
 
     ExaminedBallData prev = null;
+    Color color = Color.BLACK;
     for (ExaminedBallData next : BallPredictionUtil.getPredictions()) {
       if (prev == null) {
         prev = next;
       } else if (next.ball.elapsedSeconds - prev.ball.elapsedSeconds > .1) {
-        drawLine3d(
-            Color.RED,
+        Optional<Boolean> hittable = next.isHittable();
+        if (hittable.isPresent()) {
+          color = hittable.get() ? Color.GREEN : Color.RED;
+        }
+
+        drawLine3d(color,
             next.ball.position,
             prev.ball.position);
         prev = next;

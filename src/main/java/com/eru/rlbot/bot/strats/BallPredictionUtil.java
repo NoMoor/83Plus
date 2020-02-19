@@ -4,6 +4,7 @@ import com.eru.rlbot.bot.common.Constants;
 import com.eru.rlbot.bot.common.DllHelper;
 import com.eru.rlbot.bot.common.Path;
 import com.eru.rlbot.bot.common.Plan;
+import com.eru.rlbot.common.StateLogger;
 import com.eru.rlbot.common.input.BallData;
 import com.eru.rlbot.common.input.CarData;
 import com.eru.rlbot.common.input.DataPacket;
@@ -27,7 +28,15 @@ public class BallPredictionUtil {
   }
 
   public static ExaminedBallData getFirstHittableLocation() {
-    return examinedBallData.isEmpty() ? null : examinedBallData.stream().filter(ExaminedBallData::hasPath).findFirst().orElse(null);
+    if (examinedBallData.isEmpty()) {
+      return null;
+    }
+
+    Optional<ExaminedBallData> firstHittable = examinedBallData.stream()
+        .filter(data -> data.isHittable().orElse(false))
+        .findFirst();
+
+    return firstHittable.orElse(null);
   }
 
   public static boolean refresh(DataPacket input) {
@@ -70,10 +79,9 @@ public class BallPredictionUtil {
           return false;
         }
 
-        return !prediction.fuzzyEquals(nextBall.ball);
         // Logging to check the diffs when the ball prediction is refreshed.
-//        logger.warn(StateLogger.format(nextBall.ball) + " time: " + nextBall.ball.elapsedSeconds);
-//        logger.warn(StateLogger.format(prediction) + " time: " + prediction.elapsedSeconds);
+        logger.debug(StateLogger.format(nextBall.ball) + " time: " + nextBall.ball.elapsedSeconds);
+        return !prediction.fuzzyEquals(nextBall.ball);
       }
       ballIterator.remove();
     }

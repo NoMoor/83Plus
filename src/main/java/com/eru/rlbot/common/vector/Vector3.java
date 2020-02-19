@@ -1,6 +1,7 @@
 package com.eru.rlbot.common.vector;
 
 import com.eru.rlbot.bot.common.Matrix3;
+import com.google.common.base.Objects;
 import com.google.flatbuffers.FlatBufferBuilder;
 
 /**
@@ -149,6 +150,7 @@ public class Vector3 extends rlbot.vector.Vector3 {
     return new Vector3(tx, ty, tz);
   }
 
+  // TODO: Add hashcode.
   @Override
   public boolean equals(Object o) {
     if (o == this) return true;
@@ -159,7 +161,19 @@ public class Vector3 extends rlbot.vector.Vector3 {
     return false;
   }
 
-  /** Returns the i-th element of this vector. */
+  @Override
+  public int hashCode() {
+    return Objects.hashCode(x, y, z);
+  }
+
+  @Override
+  public String toString() {
+    return String.format("[%f,%f,%f]", x, y, z);
+  }
+
+  /**
+   * Returns the i-th element of this vector.
+   */
   public float get(int i) {
     switch (i) {
       case 0:

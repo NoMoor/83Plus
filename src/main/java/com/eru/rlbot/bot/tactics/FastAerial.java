@@ -17,15 +17,18 @@ public class FastAerial extends Tactician {
   // TODO: Measure how much velocity this adds.
   @Override
   void execute(DataPacket input, ControlsOutput output, Tactic nextTactic) {
+    if (isFinished) {
+      reset();
+    }
+
     if (input.car.hasWheelContact) {
       output
           .withJump()
           .withPitch(1.0)
           .withBoost();
-      hasJumpedTicks++;
 
       // If we haven't taken off yet, give up.
-      if (hasJumpedTicks > 5) {
+      if (hasJumpedTicks++ > 8) {
         isFinished = true;
       }
     } else if (!JumpManager.forCar(input.car).hasMaxJumpHeight()) {
@@ -42,8 +45,17 @@ public class FastAerial extends Tactician {
       output
           .withJump()
           .withBoost();
+    } else {
+      output
+          .withPitch(1)
+          .withBoost();
       isFinished = true;
     }
+  }
+
+  private void reset() {
+    isFinished = false;
+    hasJumpedTicks = 0;
   }
 
   @Override

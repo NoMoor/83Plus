@@ -2,6 +2,7 @@ package com.eru.rlbot.bot.common;
 
 import com.eru.rlbot.bot.optimizer.CarBallOptimizer;
 import com.eru.rlbot.bot.strats.BallPredictionUtil;
+import com.eru.rlbot.common.Lists;
 import com.eru.rlbot.common.input.*;
 import com.eru.rlbot.common.vector.Vector3;
 import com.eru.rlbot.common.vector.Vector3s;
@@ -11,7 +12,6 @@ import org.apache.logging.log4j.Logger;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 public class PathPlanner {
 
@@ -20,7 +20,7 @@ public class PathPlanner {
   public static Optional<Path> doShotPlanning(DataPacket input) {
     int frames = 0;
     long startTime = System.nanoTime();
-    List<BallPredictionUtil.ExaminedBallData> ballPredictions = everyNth(BallPredictionUtil.getPredictions(), 5);
+    List<BallPredictionUtil.ExaminedBallData> ballPredictions = Lists.everyNth(BallPredictionUtil.getPredictions(), 5);
 
     // Check if we can even get to the ball.
     for (BallPredictionUtil.ExaminedBallData examinedBall : ballPredictions) {
@@ -66,14 +66,6 @@ public class PathPlanner {
     return Optional.of(firstHittable.getPath());
   }
 
-  private static List<BallPredictionUtil.ExaminedBallData> everyNth(
-      List<BallPredictionUtil.ExaminedBallData> balls, int n) {
-    return IntStream.range(0, balls.size())
-        .filter(index -> index % n == 0)
-        .mapToObj(balls::get)
-        .collect(Collectors.toList());
-  }
-
   private static Path planShotOnGoal(DataPacket input, BallData ball) {
     return plan(input.car, ball, Goal.opponentGoal(input.car.team).centerTop.addZ(-Constants.BALL_RADIUS));
   }
@@ -87,6 +79,11 @@ public class PathPlanner {
     return planPath(currentCar, optimalCar);
   }
 
+  public static Path fastPath(CarData car, BallData ball) {
+    CarData targetCar = fastPlan(car, ball);
+    return planPath(car, targetCar);
+  }
+
   private static CarData fastPlan(CarData car, BallPredictionUtil.ExaminedBallData ball) {
     CarData fastPlan = fastPlan(car, ball.ball);
     ball.setFastTarget(fastPlan);
@@ -94,6 +91,7 @@ public class PathPlanner {
   }
 
   private static CarData fastPlan(CarData car, BallData ball) {
+    // TODO: This should return a Path.
     Circle turnToBall = Paths.closeTurningRadius(ball.position, car);
     Paths.TangentPoints tangentPoints = Paths.tangents(turnToBall, ball.position);
 
@@ -149,7 +147,7 @@ public class PathPlanner {
 
         workingTarget = tempTarget;
       } else {
-        logger.warn("Cannot plan jump for height: %f", workingTarget.position.z);
+        logger.debug("Cannot plan jump for height: {}", workingTarget.position.z);
       }
     }
 
