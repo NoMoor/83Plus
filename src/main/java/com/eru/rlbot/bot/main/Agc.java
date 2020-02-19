@@ -4,7 +4,14 @@ import static com.eru.rlbot.bot.common.Goal.opponentGoal;
 import static com.eru.rlbot.bot.common.Goal.ownGoal;
 
 import com.eru.rlbot.bot.CarBallContactManager;
-import com.eru.rlbot.bot.common.*;
+import com.eru.rlbot.bot.common.BallPredictionRenderer;
+import com.eru.rlbot.bot.common.BotChatter;
+import com.eru.rlbot.bot.common.BotRenderer;
+import com.eru.rlbot.bot.common.Constants;
+import com.eru.rlbot.bot.common.DemoChecker;
+import com.eru.rlbot.bot.common.Goal;
+import com.eru.rlbot.bot.common.TrailRenderer;
+import com.eru.rlbot.bot.common.TrainingId;
 import com.eru.rlbot.bot.prediction.NextFramePredictor;
 import com.eru.rlbot.bot.strats.BallPredictionUtil;
 import com.eru.rlbot.bot.strats.StrategyManager;
@@ -76,7 +83,7 @@ public final class Agc implements Bot {
     // Translate the raw packet data (which is in an unpleasant format) into our custom DataPacket class.
     // The DataPacket might not include everything from GameTickPacket, so improve it if you need to!
     DataPacket input = new DataPacket(packet, playerIndex);
-    BallPredictionUtil.refresh(input);
+    BallPredictionUtil.forIndex(input.car.playerIndex).refresh(input);
     DemoChecker.track(input);
 
     JumpManager.forCar(input.car).loadCar(input.car);

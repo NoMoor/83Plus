@@ -8,26 +8,54 @@ import com.eru.rlbot.common.StateLogger;
 import com.eru.rlbot.common.input.BallData;
 import com.eru.rlbot.common.input.CarData;
 import com.eru.rlbot.common.input.DataPacket;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import rlbot.flat.BallPrediction;
-import rlbot.flat.PredictionSlice;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import rlbot.Bot;
+import rlbot.flat.BallPrediction;
+import rlbot.flat.PredictionSlice;
 
 public class BallPredictionUtil {
 
   private static final Logger logger = LogManager.getLogger("BallPredictionUtil");
 
-  private static List<ExaminedBallData> examinedBallData = new LinkedList<>();
+  private static HashMap<Integer, BallPredictionUtil> BOTS = new HashMap<>();
 
-  public static List<ExaminedBallData> getPredictions() {
+  private final int index;
+
+  private BallPredictionUtil(int index) {
+    this.index = index;
+  }
+
+  public static BallPredictionUtil forBot(Bot bot) {
+    return forIndex(bot.getIndex());
+  }
+
+  public static BallPredictionUtil forIndex(int index) {
+    BOTS.computeIfAbsent(index, BallPredictionUtil::new);
+    return BOTS.get(index);
+  }
+
+  public static BallPredictionUtil forCar(CarData car) {
+    return forIndex(car.playerIndex);
+  }
+
+  // TODO: Make this non-static
+  private List<ExaminedBallData> examinedBallData = new LinkedList<>();
+
+  public List<ExaminedBallData> getPredictions() {
     return examinedBallData;
   }
 
-  public static ExaminedBallData getFirstHittableLocation() {
+  public ExaminedBallData getFirstHittableLocation() {
     if (examinedBallData.isEmpty()) {
       return null;
     }
@@ -39,7 +67,7 @@ public class BallPredictionUtil {
     return firstHittable.orElse(null);
   }
 
-  public static boolean refresh(DataPacket input) {
+  public boolean refresh(DataPacket input) {
     Optional<BallPrediction> predictionOptional = DllHelper.getBallPrediction();
     if (predictionOptional.isPresent()) {
       BallPrediction prediction = predictionOptional.get();
@@ -68,7 +96,8 @@ public class BallPredictionUtil {
     return false;
   }
 
-  private static boolean hasBeenTouched(PredictionSlice nextSlice) {
+  // TODO: This could be static.
+  private boolean hasBeenTouched(PredictionSlice nextSlice) {
     BallData prediction = BallData.fromPredictionSlice(nextSlice);
     Iterator<ExaminedBallData> ballIterator = examinedBallData.iterator();
     while (ballIterator.hasNext()) {
@@ -112,7 +141,9 @@ public class BallPredictionUtil {
     }
 
     public void setHittable(boolean value) {
-      hittable = Optional.of(value);
+      if (!hittable.isPresent() || !hittable.get()) {
+        hittable = Optional.of(value);
+      }
     }
 
     public void addPath(Path path) {

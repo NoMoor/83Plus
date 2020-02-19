@@ -5,15 +5,13 @@ import com.eru.rlbot.bot.common.NormalUtils;
 import com.eru.rlbot.bot.common.Path;
 import com.eru.rlbot.bot.common.PathPlanner;
 import com.eru.rlbot.bot.main.Agc;
-import com.eru.rlbot.bot.strats.BallPredictionUtil;
-import com.eru.rlbot.common.Moment;
 import com.eru.rlbot.common.input.BallData;
 import com.eru.rlbot.common.input.CarData;
 import com.eru.rlbot.common.input.DataPacket;
 import com.eru.rlbot.common.output.ControlsOutput;
+import java.util.Optional;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import java.util.Optional;
 
 // Relies on other low level tactical units to do the movement but this tactician is responsible for planning a shot on
 // goal.
@@ -58,12 +56,6 @@ public class TakeTheShotTactician extends Tactician {
     return car.boost > 40
         ? Accels.minTimeToDistance(car, relativeBall.position.flatten().norm()).time
         : Accels.timeToDistance(car.velocity.flatten().norm(), relativeBall.position.flatten().norm()).time;
-  }
-
-  public static Moment shotTarget(DataPacket input) {
-    BallPredictionUtil.ExaminedBallData ball = BallPredictionUtil.getFirstHittableLocation();
-
-    return ball != null ? new Moment(ball.ball) : new Moment(input.ball);
   }
 
   private Path path;

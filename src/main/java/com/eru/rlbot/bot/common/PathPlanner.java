@@ -3,24 +3,31 @@ package com.eru.rlbot.bot.common;
 import com.eru.rlbot.bot.optimizer.CarBallOptimizer;
 import com.eru.rlbot.bot.strats.BallPredictionUtil;
 import com.eru.rlbot.common.Lists;
-import com.eru.rlbot.common.input.*;
+import com.eru.rlbot.common.input.BallData;
+import com.eru.rlbot.common.input.BoundingBox;
+import com.eru.rlbot.common.input.CarData;
+import com.eru.rlbot.common.input.DataPacket;
+import com.eru.rlbot.common.input.Orientation;
 import com.eru.rlbot.common.vector.Vector3;
 import com.eru.rlbot.common.vector.Vector3s;
 import com.google.common.collect.ImmutableList;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public class PathPlanner {
 
   private static final Logger logger = LogManager.getLogger("PathPlanner");
 
   public static Optional<Path> doShotPlanning(DataPacket input) {
+    BallPredictionUtil ballPredictionUtil = BallPredictionUtil.forIndex(input.car.playerIndex);
+
     int frames = 0;
     long startTime = System.nanoTime();
-    List<BallPredictionUtil.ExaminedBallData> ballPredictions = Lists.everyNth(BallPredictionUtil.getPredictions(), 5);
+    List<BallPredictionUtil.ExaminedBallData> ballPredictions =
+        Lists.everyNth(ballPredictionUtil.getPredictions(), 5);
 
     // Check if we can even get to the ball.
     for (BallPredictionUtil.ExaminedBallData examinedBall : ballPredictions) {
@@ -58,7 +65,7 @@ public class PathPlanner {
       }
     }
 
-    BallPredictionUtil.ExaminedBallData firstHittable = BallPredictionUtil.getFirstHittableLocation();
+    BallPredictionUtil.ExaminedBallData firstHittable = ballPredictionUtil.getFirstHittableLocation();
     if (firstHittable == null) {
       logger.debug("Return default value");
       return Optional.empty();

@@ -3,19 +3,22 @@ package com.eru.rlbot.bot.common;
 import com.eru.rlbot.bot.strats.BallPredictionUtil;
 import com.eru.rlbot.bot.strats.BallPredictionUtil.ExaminedBallData;
 import com.google.flatbuffers.FlatBufferBuilder;
+import java.awt.Color;
+import java.util.Optional;
 import rlbot.cppinterop.RLBotDll;
 import rlbot.render.RenderPacket;
 import rlbot.render.Renderer;
-import java.awt.*;
-import java.util.Optional;
 
 public class BallPredictionRenderer extends Renderer {
 
   // Non-static members.
   private RenderPacket previousPacket;
 
+  private int playerIndex;
+
   public BallPredictionRenderer(int index) {
-    super(1 + index);
+    super(50 + index);
+    playerIndex = index;
   }
 
   private void initTick() {
@@ -44,7 +47,7 @@ public class BallPredictionRenderer extends Renderer {
 
     ExaminedBallData prev = null;
     Color color = Color.BLACK;
-    for (ExaminedBallData next : BallPredictionUtil.getPredictions()) {
+    for (ExaminedBallData next : BallPredictionUtil.forIndex(playerIndex).getPredictions()) {
       if (prev == null) {
         prev = next;
       } else if (next.ball.elapsedSeconds - prev.ball.elapsedSeconds > .1) {

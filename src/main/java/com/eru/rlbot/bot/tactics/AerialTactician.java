@@ -1,6 +1,14 @@
 package com.eru.rlbot.bot.tactics;
 
-import com.eru.rlbot.bot.common.*;
+import com.eru.rlbot.bot.common.Accels;
+import com.eru.rlbot.bot.common.AerialLookUp;
+import com.eru.rlbot.bot.common.Angles;
+import com.eru.rlbot.bot.common.Angles3;
+import com.eru.rlbot.bot.common.Constants;
+import com.eru.rlbot.bot.common.DemoChecker;
+import com.eru.rlbot.bot.common.Pair;
+import com.eru.rlbot.bot.common.Path;
+import com.eru.rlbot.bot.common.PathPlanner;
 import com.eru.rlbot.bot.main.Agc;
 import com.eru.rlbot.bot.strats.BallPredictionUtil;
 import com.eru.rlbot.common.Lists;
@@ -12,10 +20,10 @@ import com.eru.rlbot.common.input.Orientation;
 import com.eru.rlbot.common.output.ControlsOutput;
 import com.eru.rlbot.common.vector.Vector3;
 import com.google.common.collect.ImmutableList;
+import java.awt.Color;
+import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import java.awt.*;
-import java.util.List;
 
 /** Manages doing aerials. */
 public class AerialTactician extends Tactician {
@@ -77,9 +85,11 @@ public class AerialTactician extends Tactician {
       return;
     }
 
+    BallPredictionUtil ballPredictionUtil = BallPredictionUtil.forIndex(input.car.playerIndex);
+
     bot.botRenderer.addAlertText("Pick aerial target");
 
-    List<BallPredictionUtil.ExaminedBallData> predictions = Lists.everyNth(BallPredictionUtil.getPredictions(), 5);
+    List<BallPredictionUtil.ExaminedBallData> predictions = Lists.everyNth(ballPredictionUtil.getPredictions(), 5);
     for (BallPredictionUtil.ExaminedBallData prediction : predictions) {
       BallData ball = prediction.ball;
 
@@ -100,7 +110,7 @@ public class AerialTactician extends Tactician {
       prediction.setHittable(hittable);
     }
 
-    target = BallPredictionUtil.getFirstHittableLocation();
+    target = ballPredictionUtil.getFirstHittableLocation();
   }
 
   private boolean freestyle = false;
