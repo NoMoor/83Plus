@@ -71,6 +71,7 @@ public final class Constants {
   public static final double SUPER_SONIC = 2200;
   public static final double MAX_UNBOOSTED_SPEED = 1409;
   public static final double BOOST_RATE = 33.3;
+  public static final double MIN_BOOST_BURST = .1 * BOOST_RATE;
   public static final double FORWARD_DODGE_IMPULSE = 500;
 
   public static final double MAX_PITCH_ACCEL = 12.46;

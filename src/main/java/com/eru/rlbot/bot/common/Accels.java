@@ -199,18 +199,29 @@ public class Accels {
     return new AccelResult(finalVelocity, time, d, 0);
   }
 
-  // TODO: Implement this.
-  public static double averageSpeed(double velocity, double time, double boost) {
-    if (time < .5) {
-      return velocity;
-    } else if (boost < 10) {
-      return Math.max(velocity, 1400);
-    }
+  public static AccelResult accelerateForTime(double initialVelocity, double initialTime, double initialBoost) {
+    double boostRemaining = initialBoost;
+    double distanceTraveled = 0;
+    double timeRemaining = initialTime;
+    double currentVelocity = initialVelocity;
 
-    return 2000;
+    while (timeRemaining > 0) {
+      double nextAcceleration = acceleration(currentVelocity)
+          + ((boostRemaining > 0) ? Constants.BOOSTED_ACCELERATION : 0);
+      double newVelocity = currentVelocity + nextAcceleration * STEP_SIZE;
+      distanceTraveled += ((currentVelocity + newVelocity) / 2) * STEP_SIZE;
+      currentVelocity = newVelocity;
+      timeRemaining -= STEP_SIZE;
+
+      if (boostRemaining > 0) {
+        boostRemaining -= STEP_SIZE * Constants.BOOST_RATE;
+      }
+    }
+    return new AccelResult(currentVelocity, initialTime, distanceTraveled, initialBoost - boostRemaining);
   }
 
   public static class AccelResult {
+
     public final double distance;
     public final double speed;
     public final double time;

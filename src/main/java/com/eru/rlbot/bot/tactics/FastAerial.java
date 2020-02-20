@@ -1,5 +1,6 @@
 package com.eru.rlbot.bot.tactics;
 
+import com.eru.rlbot.bot.common.Monitor;
 import com.eru.rlbot.bot.main.Agc;
 import com.eru.rlbot.common.input.DataPacket;
 import com.eru.rlbot.common.jump.JumpManager;
@@ -10,6 +11,8 @@ public class FastAerial extends Tactician {
   private boolean isFinished;
   private int hasJumpedTicks;
 
+  private Monitor monitor;
+
   FastAerial(Agc bot, TacticManager tacticManager) {
     super(bot, tacticManager);
   }
@@ -17,6 +20,11 @@ public class FastAerial extends Tactician {
   // TODO: Measure how much velocity this adds.
   @Override
   void execute(DataPacket input, ControlsOutput output, Tactic nextTactic) {
+    if (monitor == null) {
+      monitor = Monitor.create(input);
+    }
+    monitor.trackWhile(!isFinished, input.car);
+
     if (isFinished) {
       reset();
     }
@@ -56,6 +64,7 @@ public class FastAerial extends Tactician {
   private void reset() {
     isFinished = false;
     hasJumpedTicks = 0;
+    monitor = null;
   }
 
   @Override

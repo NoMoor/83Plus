@@ -10,7 +10,7 @@ public class AerialLookUp {
 
   // Height rounded to nearest 50
   private static TreeMap<Long, List<AerialInfo>> APEX_MAP = new TreeMap<>();
-  private static final double FAST_AERIAL_VELOCITY = 717.0;
+  private static final Vector3 FAST_AERIAL_VELOCITY = Vector3.of(0, 240, 710);
 
   static {
     for (double r = .75; r <= Math.PI / 2; r += .1) {
@@ -47,7 +47,7 @@ public class AerialLookUp {
     double z = 0;
     double remainingBoost = initialBoostAmount;
 
-    Vector3 velocity = Vector3.of(0, 0, FAST_AERIAL_VELOCITY);
+    Vector3 velocity = FAST_AERIAL_VELOCITY;
     Vector3 stepVelocity =
         Vector3.of(
             0,
@@ -93,7 +93,7 @@ public class AerialLookUp {
       this.timeToApex = timeToApex;
       this.apexHeight = apexHeight;
       this.horizontalTravel = horizontalTravel;
-      this.nonBoostingTime = timeToApex - (boostAmount * Constants.BOOST_RATE);
+      this.nonBoostingTime = timeToApex - (boostAmount / Constants.BOOST_RATE);
     }
   }
 }

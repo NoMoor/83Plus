@@ -5,7 +5,6 @@ import com.eru.rlbot.bot.common.AerialLookUp;
 import com.eru.rlbot.bot.common.Angles;
 import com.eru.rlbot.bot.common.Angles3;
 import com.eru.rlbot.bot.common.Constants;
-import com.eru.rlbot.bot.common.DemoChecker;
 import com.eru.rlbot.bot.common.Pair;
 import com.eru.rlbot.bot.common.Path;
 import com.eru.rlbot.bot.common.PathPlanner;
@@ -34,35 +33,60 @@ public class AerialTactician extends Tactician {
     super(bot, tacticManager);
   }
 
-  private boolean useHumanExecution;
-
   private BallPredictionUtil.ExaminedBallData target;
 
   @Override
   public void execute(DataPacket input, ControlsOutput output, Tactic tactic) {
-    checkTarget(input);
+    target = getTarget(input);
 
     if (target == null) {
       bot.botRenderer.setBranchInfo("No Aerial target found");
       return; // TODO: Fix this.
     }
 
+    float timeToImpact = target.ball.elapsedSeconds - input.car.elapsedSeconds;
+
     bot.botRenderer.renderTarget(computeInterceptLocation(target.ball.position, tactic.object));
     if (input.car.hasWheelContact && input.car.position.z < 50) {
-      output
-          .withThrottle(1.0f)
-          .withSteer(Angles.flatCorrectionAngle(input.car, target.ball.position));
 
-      double flatDistance = target.ball.position.flatten().distance(input.car.position.flatten());
+      // TODO: Put this into a sort of aerial planning object.
+      Path fastPath = PathPlanner.fastPath(input.car, target.ball);
 
-      // TODO: Figure out if we can hit a ball by jumping here.
-      double flatTimeToBall = flatDistance / input.car.groundSpeed;
-      double airTime = target.ball.position.z * 3.5 / Constants.BOOSTED_ACCELERATION;
+      AerialLookUp.AerialInfo aerialProfile = AerialLookUp.averageBoost(target.ball.position.z);
+      double airTime = FAST_AERIAL_TIME + aerialProfile.timeToApex;
+      double groundTime = timeToImpact - airTime;
+
+      // The distance traveled if we jump at our current speed.
+      double carriedGroundDistance = airTime * input.car.groundSpeed;
+
+      // TODO: Move the Fast aerial boost into the aerial profile.
+      // The boost beyond what we need.
+      double boostReserves = input.car.boost - aerialProfile.boostAmount - FAST_AERIAL_BOOST;
+
+      double aerialMargin = aerialProfile.nonBoostingTime * (boostReserves * .15 / Constants.BOOST_RATE) * Constants.BOOSTED_ACCELERATION * AERIAL_EFFICIENCY;
+
+      // The distance to travel on the ground.
+      double groundDistance = fastPath.length() - carriedGroundDistance - aerialProfile.horizontalTravel - aerialMargin;
+
+      // The average speed needed to travel on the ground.
+      double requiredGroundSpeed = groundDistance / groundTime;
+
+      if (requiredGroundSpeed > input.car.groundSpeed) {
+        // Need to accelerate.
+        if (boostReserves > Constants.MIN_BOOST_BURST) {
+          output.withBoost();
+        }
+        output.withThrottle(1.0);
+      } else {
+        // TODO: Figure out how much to slow down.
+      }
+
+      double correctionAngle = Angles.flatCorrectionAngle(input.car, target.ball.position);
+      output.withSteer(correctionAngle * 5);
 
       bot.botRenderer.setBranchInfo("Drive toward ball");
-      if (airTime > flatTimeToBall && Math.abs(Angles.flatCorrectionAngle(input.car, target.ball.position)) < .1) {
+      if (boostReserves > 0 && (groundTime < Constants.STEP_SIZE) && Math.abs(correctionAngle) < .05) {
         tacticManager.preemptTactic(tactic.withType(Tactic.TacticType.FAST_AERIAL));
-        useHumanExecution = !useHumanExecution;
       }
     } else {
       bot.botRenderer.setBranchInfo("Plan / Execute aerial");
@@ -72,18 +96,18 @@ public class AerialTactician extends Tactician {
     }
   }
 
-  private static double ROTATION_TIME = .25;
+  private static double ROTATION_TIME = .5;
   private static double FAST_AERIAL_TIME = .25;
   private static double FAST_AERIAL_BOOST = FAST_AERIAL_TIME * Constants.BOOST_RATE;
+  private static double AERIAL_EFFICIENCY = .25;
 
-  private void checkTarget(DataPacket input) {
-    if (!DemoChecker.wasDemoed(input.car) && target != null && target.ball.elapsedSeconds < input.car.elapsedSeconds) {
-      return;
-    }
-
+  private BallPredictionUtil.ExaminedBallData getTarget(DataPacket input) {
     BallPredictionUtil ballPredictionUtil = BallPredictionUtil.forIndex(input.car.playerIndex);
 
-    bot.botRenderer.addAlertText("Pick aerial target");
+    BallPredictionUtil.ExaminedBallData firstHittable = ballPredictionUtil.getFirstHittableLocation();
+    if (firstHittable != null) {
+      return firstHittable;
+    }
 
     List<BallPredictionUtil.ExaminedBallData> predictions = Lists.everyNth(ballPredictionUtil.getPredictions(), 5);
     for (BallPredictionUtil.ExaminedBallData prediction : predictions) {
@@ -94,19 +118,23 @@ public class AerialTactician extends Tactician {
       // Path is turn + straight
       Path path = PathPlanner.fastPath(input.car, ball);
 
-      double timeToJump = ball.elapsedSeconds - input.car.elapsedSeconds - aerialInfo.timeToApex - ROTATION_TIME - FAST_AERIAL_TIME;
-      double averageSpeed =
-          Accels.averageSpeed(input.car.velocity.magnitude(), timeToJump, input.car.boost - aerialInfo.boostAmount - FAST_AERIAL_BOOST);
+      double jumpTime = aerialInfo.timeToApex + ROTATION_TIME + FAST_AERIAL_TIME;
+      double timeToImpact = ball.elapsedSeconds - input.car.elapsedSeconds;
+      double timeToJump = timeToImpact - jumpTime;
+      double boostReserve = input.car.boost - aerialInfo.boostAmount - FAST_AERIAL_BOOST;
+      Accels.AccelResult acceleration = Accels.accelerateForTime(input.car.groundSpeed, timeToJump, boostReserve);
 
       // Fast plan + .25 for fast aerial + .25 for rotation + aerialInfo time.
-      double groundDistance = path.length() - aerialInfo.horizontalTravel - (averageSpeed * aerialInfo.timeToApex);
-      double actualGroundTravel = timeToJump * averageSpeed;
+      double carriedDistance = acceleration.speed * jumpTime;
+      double groundDistance = path.length() - aerialInfo.horizontalTravel - carriedDistance;
 
-      boolean hittable = groundDistance < actualGroundTravel;
+      boolean hittable = timeToJump > 0
+          && groundDistance < acceleration.distance
+          && input.car.boost > aerialInfo.boostAmount;
       prediction.setHittable(hittable);
     }
 
-    target = ballPredictionUtil.getFirstHittableLocation();
+    return ballPredictionUtil.getFirstHittableLocation();
   }
 
   private boolean freestyle = false;
@@ -143,8 +171,6 @@ public class AerialTactician extends Tactician {
       bot.botRenderer.setBranchInfo("Boost not needed");
     }
 
-    Vector3 w = input.car.angularVelocity.multiply(-100);
-    bot.botRenderer.renderProjection(Color.CYAN, input.car, input.car.position.plus(w));
     renderHumanPath(input, plan, trajectory);
   }
 
@@ -169,30 +195,6 @@ public class AerialTactician extends Tactician {
     return new FlightTrajectory(flightTerminus, flightPathBuilder.build());
   }
 
-  // https://samuelpmish.github.io/notes/RocketLeague/aerial_hit/
-  private void chipExecution(DataPacket input, ControlsOutput output, FlightPlan plan, FlightLog flightLog) {
-    flightLog.manageCycle(input.car.elapsedSeconds);
-
-    double sensitivity = flightLog.getBoostAccel() / Constants.BOOSTED_ACCELERATION;
-    double offset = input.car.orientation.getNoseVector().angle(flightLog.averageBoostVector);
-
-    // If we are pointed roughly in the correct direction, boost.
-    if (offset < sensitivity) {
-      boolean pressBoost = flightLog.getBoostAccel() >
-          BoostTracker.forCar(input.car).getCommitment() * Constants.BOOSTED_ACCELERATION * Constants.STEP_SIZE;
-      output.withBoost(pressBoost);
-
-      // Accurately track boost cycles.
-      if (pressBoost || BoostTracker.forCar(input.car).isBoosting()) {
-        flightLog.trackBoostFrame();
-      }
-    }
-
-    pointAt(input.car, flightLog.averageBoostVector, output);
-
-    renderAveragePath(input, plan, flightLog);
-  }
-
   private void renderHumanPath(DataPacket input, FlightPlan plan, FlightTrajectory trajectory) {
     bot.botRenderer.renderTarget(Color.GREEN, trajectory.flightTerminus);
     bot.botRenderer.renderPath(Color.GREEN, Lists.everyNth(trajectory.flightPath, 10));
@@ -202,35 +204,10 @@ public class AerialTactician extends Tactician {
         input.car.position.plus(plan.computeDeviation(trajectory)));
 //    bot.botRenderer.addDebugText(Color.GREEN, "Target / current trajectory diff");
 
-//    Vector3 offSet = plan.interceptLocation.minus(trajectory.flightTerminus);
-//    bot.botRenderer.renderProjection(
-//        Color.white,
-//        input.car,
-//        input.car.position.plus(offSet));
-
     bot.botRenderer.renderProjection(
         Color.ORANGE,
         input.car,
         input.car.position.plus(input.car.orientation.getNoseVector().multiply(300)));
-  }
-
-  private void renderAveragePath(DataPacket input, FlightPlan plan, FlightLog flightLog) {
-    bot.botRenderer.renderTarget(Color.RED, plan.interceptLocation);
-    // Renders the boost vector
-    bot.botRenderer.renderProjection(
-        Color.RED,
-        input.car,
-        input.car.position.plus(flightLog.averageBoostVector));
-//    bot.botRenderer.addDebugText(Color.RED, "Feather boost\n  to target");
-  }
-
-  private void pointAt(CarData car, Vector3 desiredVector, ControlsOutput output) {
-    Vector3 nose = desiredVector.normalize();
-    Vector3 sideDoor = nose.cross(Vector3.of(0, 0, -1)).normalize();
-    Vector3 roofOrientation = nose.cross(sideDoor);
-    Orientation carOrientation = Orientation.noseRoof(nose, roofOrientation);
-
-    Angles3.setControlsFor(car, carOrientation.getOrientationMatrix(), output);
   }
 
   private void pointAnyDirection(CarData car, Vector3 desiredVector, ControlsOutput output) {

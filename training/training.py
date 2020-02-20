@@ -21,6 +21,6 @@ def make_default_playlist():
 
     for exercise in exercises:
         exercise.match_config.player_configs = [agc_config]
-        exercise.match_config.enable_lockstep = False
+        exercise.match_config.enable_lockstep = True
 
     return exercises

@@ -18,15 +18,20 @@ import com.eru.rlbot.common.output.ControlsOutput;
 import com.eru.rlbot.common.vector.Vector2;
 import com.eru.rlbot.common.vector.Vector3;
 import com.google.common.collect.ImmutableList;
+import java.awt.Color;
+import java.awt.Point;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.Map;
+import java.util.PriorityQueue;
+import java.util.stream.IntStream;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import rlbot.Bot;
 import rlbot.manager.BotLoopRenderer;
 import rlbot.render.Renderer;
-import java.awt.*;
-import java.util.*;
-import java.util.stream.IntStream;
 
 /**
  * Renders extra information for the bot such as car path, ball path, etc.
@@ -94,7 +99,7 @@ public class BotRenderer {
 
     renderControlDebug();
     renderDebugText();
-//    renderAlert(input);
+    renderAlert(input);
 
 //    renderControls(output);
 //    renderAcceleration(input);
@@ -315,13 +320,30 @@ public class BotRenderer {
   }
 
   private float alertTimeSeconds;
+  private Color[] alertColors = {Color.PINK, Color.WHITE, Color.CYAN};
   private String alertText;
+  private int alertColor;
 
   public void addAlertText(String alertText, Object... args) {
     this.alertText = String.format(alertText, args);
+    this.alertColor = ++alertColor % alertColors.length;
+  }
+
+  private void renderAlert(DataPacket input) {
+    if (alertText != null && alertTimeSeconds == 0) {
+      alertTimeSeconds = input.car.elapsedSeconds;
+    } else if (input.car.elapsedSeconds - alertTimeSeconds > 2) {
+      alertTimeSeconds = 0;
+      alertText = null;
+    }
+
+    if (alertText != null) {
+      renderText(alertColors[alertColor], 800, 400, 3, alertText);
+    }
   }
 
   private float lastTouch = -2;
+
   public void setTouchIndicator(DataPacket input) {
     lastTouch = input.car.elapsedSeconds;
   }
@@ -335,20 +357,6 @@ public class BotRenderer {
       render3DLine(Color.PINK, input.car.position, nearestHitboxPoint);
     }
   }
-
-  private void renderAlert(DataPacket input) {
-    if (alertText != null && alertTimeSeconds == 0) {
-      alertTimeSeconds = input.car.elapsedSeconds;
-    } else if (input.car.elapsedSeconds - alertTimeSeconds > 4) {
-      alertTimeSeconds = 0;
-      alertText = null;
-    }
-
-    if (alertText != null) {
-      renderText(Color.RED, 800, 400, 3, alertText);
-    }
-  }
-
 
   public void renderPoint(Color pink, Vector3 location, int size) {
     getRenderer().drawRectangle3d(pink, location, size, size, true);
