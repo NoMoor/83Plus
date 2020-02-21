@@ -19,7 +19,7 @@ public class JumpTactician extends Tactician {
   }
 
   @Override
-  public void execute(DataPacket input, ControlsOutput output, Tactic nextTactic) {
+  public void internalExecute(DataPacket input, ControlsOutput output, Tactic nextTactic) {
     if (input.car.position.distance(targetPosition) < 1000 && input.car.position.z > 1000) {
       output
           .withJump()

@@ -35,7 +35,7 @@ public class FlickTactician extends Tactician {
   }
 
   @Override
-  void execute(DataPacket input, ControlsOutput output, Tactic tactic) {
+  void internalExecute(DataPacket input, ControlsOutput output, Tactic tactic) {
     if (input.ball.position.z < 135) {
       // Delegate this back.
       tacticManager.setTacticComplete(tactic);

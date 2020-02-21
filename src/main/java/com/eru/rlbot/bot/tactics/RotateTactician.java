@@ -9,7 +9,7 @@ import com.eru.rlbot.common.input.DataPacket;
 import com.eru.rlbot.common.input.Orientation;
 import com.eru.rlbot.common.output.ControlsOutput;
 import com.eru.rlbot.common.vector.Vector3;
-import java.awt.*;
+import java.awt.Color;
 
 public class RotateTactician extends Tactician {
 
@@ -25,7 +25,7 @@ public class RotateTactician extends Tactician {
   }
 
   @Override
-  void execute(DataPacket input, ControlsOutput output, Tactic tactic) {
+  void internalExecute(DataPacket input, ControlsOutput output, Tactic tactic) {
     usingPathPlanner(input, output, tactic);
   }
 

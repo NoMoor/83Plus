@@ -11,7 +11,7 @@ public class RecoveryTactician extends Tactician {
   }
 
   @Override
-  public void execute(DataPacket input, ControlsOutput output, Tactic nextTactic) {
+  public void internalExecute(DataPacket input, ControlsOutput output, Tactic nextTactic) {
     // TODO(ahatfield): Update to use Angles3.
     // The car is falling.
     if (!input.car.hasWheelContact && input.car.velocity.z < 0) {

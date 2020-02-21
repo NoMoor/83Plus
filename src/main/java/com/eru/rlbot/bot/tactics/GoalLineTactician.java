@@ -14,7 +14,7 @@ public class GoalLineTactician extends Tactician {
   }
 
   @Override
-  public void execute(DataPacket input, ControlsOutput output, Tactic tactic) {
+  public void internalExecute(DataPacket input, ControlsOutput output, Tactic tactic) {
     // TODO: If this has an object, we should hit toward that.
     Optional<Path> planPath = PathPlanner.doShotPlanning(input);
 
@@ -23,7 +23,12 @@ public class GoalLineTactician extends Tactician {
     }
 
     Path path = planPath.get();
-    path.lockAndSegment();
+
+    try {
+      path.lockAndSegment();
+    } catch (IllegalStateException e) {
+      e.printStackTrace();
+    }
 
     bot.botRenderer.renderPath(input, path);
     pathExecutor.executePath(input, output, path);

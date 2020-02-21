@@ -1,6 +1,5 @@
-from aerials.aerial_exercises import aerial_exercises
 from agc_player_config import agc_config
-
+from kickoff.kickoff_exercises import kickoff_exercises
 
 def make_default_playlist():
     exercises = []
@@ -9,9 +8,9 @@ def make_default_playlist():
 
     # exercises += stone_exercises
     # exercises += bronze_exercises
-    exercises += aerial_exercises
+    # exercises += aerial_exercises
     # exercises += dribble_exercises
-    # exercises += kickoff_exercises
+    exercises += kickoff_exercises
     # exercises += wavedash_exercises
     # exercises += rebound_exercises
     # exercises += common_bronze_striker()

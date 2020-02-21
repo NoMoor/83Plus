@@ -140,7 +140,7 @@ public class DefendStrategist extends Strategist {
     boolean ballIsInFrontOfCar = Math.abs(Angles.flatCorrectionAngle(input.car, input.ball.position)) < .75;
     boolean ballNearGoal = ballNearGoal(input);
     boolean isPointedAwayFromGoal =
-        Math.abs(Locations.minCarTargetNotGoalCorrection(input, new Moment(input.ball, input.car.elapsedSeconds))) < .2;
+        Math.abs(Locations.minCarTargetNotGoalCorrection(input, Moment.from(input.ball))) < .2;
 
     return ballIsInFrontOfCar && ballNearGoal && isPointedAwayFromGoal;
   }

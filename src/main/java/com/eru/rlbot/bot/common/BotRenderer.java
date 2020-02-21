@@ -101,8 +101,8 @@ public class BotRenderer {
     renderDebugText();
     renderAlert(input);
 
-//    renderControls(output);
-//    renderAcceleration(input);
+    renderControls(output);
+    renderAcceleration(input);
 //    renderLocation(input);
 
 //    renderTacticLines(input.car);
@@ -529,7 +529,7 @@ public class BotRenderer {
       double deltaV = previousVelocities.peekLast().minus(previousVelocities.peekFirst()).flatten().norm();
       double deltaT = previousVelocityTimes.peekLast() - previousVelocityTimes.peekFirst();
 
-      int speed = (int) car.velocity.flatten().norm();
+      int speed = (int) car.velocity.magnitude();
       // Delta V / Delta T
       int acceleration = (int) (deltaV / deltaT);
 

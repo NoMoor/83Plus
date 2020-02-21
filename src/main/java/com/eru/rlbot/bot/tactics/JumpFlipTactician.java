@@ -16,7 +16,7 @@ import com.eru.rlbot.common.jump.JumpManager;
 import com.eru.rlbot.common.output.ControlsOutput;
 import com.eru.rlbot.common.vector.Vector3;
 import com.google.common.collect.ImmutableList;
-import java.awt.*;
+import java.awt.Color;
 import java.util.Optional;
 
 public class JumpFlipTactician extends Tactician {
@@ -33,7 +33,7 @@ public class JumpFlipTactician extends Tactician {
   private static int planningTicks = 0;
 
   @Override
-  void execute(DataPacket input, ControlsOutput output, Tactic nextTactic) {
+  void internalExecute(DataPacket input, ControlsOutput output, Tactic nextTactic) {
     if (resetTraining(input.car)) {
       plannedControls = null;
       planningTicks = 0;

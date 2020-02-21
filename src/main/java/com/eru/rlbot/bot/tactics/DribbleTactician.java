@@ -12,7 +12,7 @@ import com.eru.rlbot.common.input.CarData;
 import com.eru.rlbot.common.input.DataPacket;
 import com.eru.rlbot.common.output.ControlsOutput;
 import com.eru.rlbot.common.vector.Vector3;
-import java.awt.*;
+import java.awt.Color;
 
 public class DribbleTactician extends Tactician {
 
@@ -35,7 +35,7 @@ public class DribbleTactician extends Tactician {
   }
 
   @Override
-  public void execute(DataPacket input, ControlsOutput output, Tactic tactic) {
+  public void internalExecute(DataPacket input, ControlsOutput output, Tactic tactic) {
     BallData relativeBallData = NormalUtils.noseRelativeBall(input);
 
     if (input.car.velocity.magnitude() > 1550 && Math.abs(relativeBallData.velocity.y) < 50) {

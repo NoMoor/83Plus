@@ -1,11 +1,17 @@
 package com.eru.rlbot.bot.tactics;
 
-import com.eru.rlbot.bot.common.*;
+import com.eru.rlbot.bot.common.Angles;
+import com.eru.rlbot.bot.common.Angles3;
+import com.eru.rlbot.bot.common.Constants;
+import com.eru.rlbot.bot.common.Goal;
+import com.eru.rlbot.bot.common.NormalUtils;
 import com.eru.rlbot.bot.main.Agc;
+import com.eru.rlbot.bot.maneuver.FlipHelper;
 import com.eru.rlbot.common.StateLogger;
 import com.eru.rlbot.common.input.BallData;
 import com.eru.rlbot.common.input.CarData;
 import com.eru.rlbot.common.input.DataPacket;
+import com.eru.rlbot.common.input.Orientation;
 import com.eru.rlbot.common.jump.JumpManager;
 import com.eru.rlbot.common.output.ControlsOutput;
 import com.eru.rlbot.common.vector.Vector3;
@@ -16,10 +22,7 @@ public class KickoffTactician extends Tactician {
 
   private static final Logger logger = LogManager.getLogger("KickoffTactician");
 
-  private Tactic tactic;
-
   private StartLocation location;
-  private boolean secondFlipLock;
 
   private boolean hasFlipped; // Keeps track of the sequence
 
@@ -38,6 +41,7 @@ public class KickoffTactician extends Tactician {
     FAR_LEFT, LEFT_CENTER, CENTER, RIGHT_CENTER, FAR_RIGHT
   }
 
+  // TODO: Only update if you are close to a certain spot.
   private void setStartLocation(CarData car) {
     boolean rightPosition = (car.position.y > 0 ^ car.position.x < 0);
     if (Math.abs(car.position.x) < 1) {
@@ -47,195 +51,178 @@ public class KickoffTactician extends Tactician {
     } else {
       location = rightPosition ? StartLocation.RIGHT_CENTER : StartLocation.LEFT_CENTER;
     }
-
-    secondFlipLock = false;
   }
 
   @Override
-  public void execute(DataPacket input, ControlsOutput output, Tactic nextTactic) {
-    if (nextTactic != tactic) {
-      tactic = nextTactic;
-      setStartLocation(input.car);
-    }
+  public void internalExecute(DataPacket input, ControlsOutput output, Tactic tactic) {
+    checkTactic(input, tactic);
 
-    kickoffs(output, input);
+    if (location == StartLocation.LEFT_CENTER || location == StartLocation.RIGHT_CENTER) {
+      centerOffset(input, output);
+    } else if (location == StartLocation.CENTER) {
+      centerKickOff(input, output);
+    } else {
+      cornerSpeedFlip(output, input);
+    }
+    bot.botRenderer.setBranchInfo(location.name());
+  }
+
+  @Override
+  protected void reset(DataPacket input) {
+    setStartLocation(input.car);
+    hasFlipped = false;
   }
 
   private void centerKickOff(DataPacket input, ControlsOutput output) {
     Vector3 targetContact = getTargetContact(input);
     bot.botRenderer.setCarTarget(targetContact);
 
-    if (input.car.groundSpeed > 1800) {
-      bot.botRenderer.setBranchInfo("Second flip.");
-      output
-          .withBoost()
-          .withThrottle(1.0f);
+    double absY = Math.abs(input.car.position.y);
 
-      BallData relativeBall = NormalUtils.noseRelativeBall(input);
-      if (relativeBall.position.y < 600) {
-        tacticManager.preemptTactic(Tactic.builder()
-          .setSubject(targetContact)
-          .setTacticType(Tactic.TacticType.FLIP)
-          .setSubjectType(Tactic.SubjectType.BALL)
-          .build());
-      }
-    } else if (input.car.groundSpeed < 1400 && input.car.hasWheelContact) {
+    output.withSteer(Angles.flatCorrectionAngle(input.car, targetContact) * 10);
+
+    if (absY > 4200) {
       // Get Up to speed
       output
           .withBoost()
           .withThrottle(1.0f);
-    } else if (input.car.groundSpeed > 1400 && input.car.groundSpeed < 1600) {
+    } else if (absY > 3500) {
       output
           .withBoost()
           .withThrottle(1.0f);
-      tacticManager.preemptTactic(Tactic.builder()
-          .setSubject(targetContact)
-          .setTacticType(Tactic.TacticType.FLIP)
-          .build());
+
+      delegateTo(FlipHelper.builder(bot).build());
+    } else if (absY > 800) {
+      output
+          .withBoost(input.car.groundSpeed < Constants.BOOSTED_MAX_SPEED)
+          .withThrottle(1.0f);
+    } else if (absY > 600) {
+      delegateTo(FlipHelper.builder(bot).build());
     }
-    output.withSteer(Angles.flatCorrectionAngle(input.car, targetContact) * 10);
   }
 
   private Vector3 getTargetContact(DataPacket input) {
-    // TODO: Update this based on car / ball physics
     Vector3 correction = input.ball.position.minus(Goal.opponentGoal(input.car.team).center)
         .toMagnitude(Constants.BALL_RADIUS);
     return input.ball.position.plus(correction);
   }
 
-  private void kickoffs(ControlsOutput output, DataPacket input) {
-    BallData relativeData = NormalUtils.noseRelativeBall(input);
+  private void centerOffset(DataPacket input, ControlsOutput output) {
+    double initJump = 3200; // Turn in / boost
+    double releaseJump = initJump - 75; // Jump
+    double initFlip = releaseJump - 50; // Diagonal Flip
+    double prepLanding = initFlip - 380; // Straighten out
+    double releaseBoost = 1300; // Release the boost
+    double secondJump = 400; // Jump again
 
+    BallData relativeData = NormalUtils.noseRelativeBall(input);
     JumpManager jumpManager = JumpManager.forCar(input.car);
 
-    if (secondFlipLock) {
-      if (input.car.hasWheelContact) {
-        output.withJump();
-      } else if (jumpManager.canFlip()) {
-        secondFlipLock = false;
-        output
-            .withJump()
-            .withYaw(location == StartLocation.RIGHT_CENTER ? -1 : 1);
-      } else {
-        bot.botRenderer.setBranchInfo("Wait...");
-      }
-    } else if (location == StartLocation.LEFT_CENTER || location == StartLocation.RIGHT_CENTER) {
-      double initJump = 3200; // Turn in / boost
-      double releaseJump = initJump - 75; // Jump
-      double initFlip = releaseJump - 50; // Diagonal Flip
-      double prepLanding = initFlip - 400; // Straighten out
-      double releaseBoost = 1300; // Release the boost
-      double secondJump = 400; // Jump again
+    if (relativeData.position.y > initJump) {
+      // Turn in and boost
+      bot.botRenderer.setBranchInfo("Turn in!");
+      output
+          .withThrottle(1.0f)
+          .withBoost()
+          .withSteer((location == StartLocation.RIGHT_CENTER ? -1 : 1) * .21f);
+    } else if (relativeData.position.y > releaseJump) {
+      // Jump
+      bot.botRenderer.setBranchInfo("Jump!");
+      output
+          .withJump()
+          .withBoost()
+          .withThrottle(1.0f);
+    } else if (relativeData.position.y > initFlip) {
+      // Release Jump
+      bot.botRenderer.setBranchInfo("Release Jump!");
+      output
+          .withThrottle(1.0f)
+          .withBoost();
+      hasFlipped = false;
+    } else if (relativeData.position.y > prepLanding) {
+      // Diagonal Flip
+      bot.botRenderer.setBranchInfo("Diagonal Flip!");
+      output
+          .withThrottle(1.0f)
+          .withJump(!hasFlipped)
+          .withYaw(location == StartLocation.RIGHT_CENTER ? 1 : -1)
+          .withPitch(-1F)
+          .withBoost();
+      hasFlipped = true;
+    } else if (relativeData.position.y > releaseBoost) {
+      bot.botRenderer.setBranchInfo("Land Cleanly!");
+      output
+          .withThrottle(1.0f)
+          .withBoost(input.car.orientation.getNoseVector().z > -.1 && input.car.orientation.getNoseVector().z < .1);
+      Angles3.setControlsFor(input.car, Orientation.fromFlatVelocity(Angles.carBall(input)).getOrientationMatrix(), output);
+    } else if (relativeData.position.y > secondJump) {
+      bot.botRenderer.setBranchInfo("Prep second jump!");
 
-      if (relativeData.position.y > initJump) {
-        // Turn in and boost
-        output
-            .withThrottle(1.0f)
-            .withBoost()
-            .withSteer((location == StartLocation.RIGHT_CENTER ? -1 : 1) * .21f);
-      } else if (relativeData.position.y > releaseJump) {
-        // Jump
-        output
-            .withJump()
-            .withBoost()
-            .withThrottle(1.0f);
-      } else if (relativeData.position.y > initFlip) {
-        // Release Jump
-        output
-            .withThrottle(1.0f)
-            .withBoost();
-        hasFlipped = false;
-      } else if (relativeData.position.y > prepLanding) {
-        // Diagonal Flip
-        bot.botRenderer.setBranchInfo("Diagonal Flip!");
-        output
-            .withThrottle(1.0f)
-            .withJump(!hasFlipped)
-            .withYaw(location == StartLocation.RIGHT_CENTER ? 1 : -1)
-            .withPitch(-.5F)
-            .withBoost();
-        hasFlipped = true;
-      } else if (relativeData.position.y > releaseBoost) {
-        bot.botRenderer.setBranchInfo("Land Cleanly!");
-        output
-            .withThrottle(1.0f)
-            .withBoost();
-        if (Math.abs(relativeData.position.x) > 2) {
-          output
-              .withYaw(relativeData.position.x);
-//              .withSteer(-relativeData.position.x);
-        }
-        if (Math.abs(input.car.orientation.getLeftVector().z) > .05) {
-          output.withRoll(input.car.orientation.getLeftVector().z);
-        }
-        if (input.car.orientation.getNoseVector().z > .01) {
-          output.withPitch(-10 * input.car.orientation.getNoseVector().z);
-        }
-      } else if (relativeData.position.y > secondJump) {
-        // Land cleanly
-        output.withThrottle(1.0f);
-        correctTowardBall(input, output);
-      } else {
-        secondFlipLock = true;
-      }
-    } else if (location == StartLocation.CENTER) {
-      centerKickOff(input, output);
+      // Land cleanly
+      output.withThrottle(1.0f);
+      correctTowardBall(input, output);
     } else {
-      float carX = Math.abs(input.car.position.x);
-      float leftRightMirror = location == StartLocation.FAR_LEFT ? -1 : 1;
+      delegateTo(FlipHelper.builder(bot).build());
+    }
+  }
 
-      if (carX > 1900) { // Tilt in
-        bot.botRenderer.setBranchInfo("Tilt in");
-        StateLogger.log(input, "Tilt in");
-        output
-            .withThrottle(1.0f)
-            .withBoost()
-            .withSteer(Angles.flatCorrectionAngle(
-                input.car,
-                input.ball.position.addX(leftRightMirror * -600))
-                * 5);
-      } else if ((input.car.hasWheelContact || (input.car.position.z < 45 && jumpManager.elapsedJumpTime() < .1))
-          && carX > 1600) {
-        bot.botRenderer.setBranchInfo("Jump");
-        StateLogger.log(input, "Jump");
-        output
-            .withJump()
-            .withBoost()
-            .withYaw(leftRightMirror);
-      } else if (!jumpManager.hasReleasedJumpInAir() && carX > 1000) {
-        bot.botRenderer.setBranchInfo("Release button");
-        StateLogger.log(input, "Release");
-        output.withBoost();
-      } else if (jumpManager.canFlip() && carX > 1000) {
-        bot.botRenderer.setBranchInfo("Flip");
-        StateLogger.log(input, "Flip");
-        output
-            .withJump()
-            .withBoost()
-            .withPitch(-.5) // Front flip
-            .withYaw(leftRightMirror * -.6)
-            .withThrottle(1.0);
-      } else if (jumpManager.isFlipping()) {
-        bot.botRenderer.setBranchInfo("Flip Cancel");
-        StateLogger.log(input, "Flip Cancel");
-        output
-            .withBoost()
-            .withPitch(1); // Flip cancel.
-      } else if (input.car.position.z > 25) {
-        bot.botRenderer.setBranchInfo("Land Cleanly");
-        StateLogger.log(input, "Land Cleanly");
-        output
-            .withBoost()
-            .withSlide();
-        Angles3.setControlsForFlatLanding(input.car, output);
-      } else {
-        bot.botRenderer.setBranchInfo("Turn toward ball");
-        StateLogger.log(input, "Turn toward ball");
-        output
-            .withThrottle(1.0)
-            .withSteer(
-                Angles.flatCorrectionAngle(input.car, input.ball.position.minus(Vector3.of(0, -120, 0))) * 5);
-      }
+  private void cornerSpeedFlip(ControlsOutput output, DataPacket input) {
+    JumpManager jumpManager = JumpManager.forCar(input.car);
+    // Fast flip.
+    float carX = Math.abs(input.car.position.x);
+    float leftRightMirror = location == StartLocation.FAR_LEFT ? -1 : 1;
+
+    if (carX > 1900) { // Tilt in
+      bot.botRenderer.setBranchInfo("Tilt in");
+      StateLogger.log(input, "Tilt in");
+      output
+          .withThrottle(1.0f)
+          .withBoost()
+          .withSteer(Angles.flatCorrectionAngle(
+              input.car,
+              input.ball.position.addX(leftRightMirror * -600))
+              * 5);
+    } else if ((input.car.hasWheelContact || (input.car.position.z < 45 && jumpManager.elapsedJumpTime() < .1))
+        && carX > 1600) {
+      bot.botRenderer.setBranchInfo("Jump");
+      StateLogger.log(input, "Jump");
+      output
+          .withJump()
+          .withBoost()
+          .withYaw(leftRightMirror);
+    } else if (!jumpManager.hasReleasedJumpInAir() && carX > 1000) {
+      bot.botRenderer.setBranchInfo("Release button");
+      StateLogger.log(input, "Release");
+      output.withBoost();
+    } else if (jumpManager.canFlip() && carX > 1000) {
+      bot.botRenderer.setBranchInfo("Flip");
+      StateLogger.log(input, "Flip");
+      output
+          .withJump()
+          .withBoost()
+          .withPitch(-.5) // Front flip
+          .withYaw(leftRightMirror * -.6)
+          .withThrottle(1.0);
+    } else if (jumpManager.isFlipping()) {
+      bot.botRenderer.setBranchInfo("Flip Cancel");
+      StateLogger.log(input, "Flip Cancel");
+      output
+          .withBoost()
+          .withPitch(1); // Flip cancel.
+    } else if (input.car.position.z > 25) {
+      bot.botRenderer.setBranchInfo("Land Cleanly");
+      StateLogger.log(input, "Land Cleanly");
+      output
+          .withBoost()
+          .withSlide();
+      Angles3.setControlsForFlatLanding(input.car, output);
+    } else {
+      bot.botRenderer.setBranchInfo("Turn toward ball");
+      StateLogger.log(input, "Turn toward ball");
+      output
+          .withThrottle(1.0)
+          .withSteer(
+              Angles.flatCorrectionAngle(input.car, input.ball.position.minus(Vector3.of(0, -120, 0))) * 5);
     }
   }
 

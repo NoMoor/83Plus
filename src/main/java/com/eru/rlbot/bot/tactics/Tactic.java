@@ -2,9 +2,11 @@ package com.eru.rlbot.bot.tactics;
 
 import com.eru.rlbot.common.Moment;
 import com.eru.rlbot.common.vector.Vector3;
+import com.google.common.base.MoreObjects;
+import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableList;
-import rlbot.flat.PredictionSlice;
 import java.util.function.Function;
+import rlbot.flat.PredictionSlice;
 
 /**
  * Definition of the immediate unit of work to do. Specifies the nature of the work to allow tacticians latitude to
@@ -62,12 +64,17 @@ public class Tactic {
 
   @Override
   public String toString() {
-    return tacticType.name();
+    return MoreObjects.toStringHelper("Tactic")
+        .add("type", tacticType)
+        .add("subjectType", subjectType)
+        .add("subject", subject)
+        .add("object", object)
+        .toString();
   }
 
   @Override
   public int hashCode() {
-    return tacticType.hashCode();
+    return Objects.hashCode(tacticType, subject, subjectType, object);
   }
 
   @Override
@@ -75,7 +82,10 @@ public class Tactic {
     if (o == this) return true;
     if (o instanceof Tactic) {
       Tactic t = (Tactic) o;
-      return this.tacticType == t.tacticType && this.subject.equals(t.subject);
+      return Objects.equal(this.tacticType, t.tacticType)
+          && Objects.equal(this.subject, t.subject)
+          && Objects.equal(this.subjectType, t.subjectType)
+          && Objects.equal(this.object, t.object);
     }
 
     return false;

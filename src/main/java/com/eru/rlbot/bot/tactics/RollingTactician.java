@@ -9,9 +9,9 @@ import com.eru.rlbot.common.input.DataPacket;
 import com.eru.rlbot.common.output.ControlsOutput;
 import com.eru.rlbot.common.vector.Vector2;
 import com.eru.rlbot.common.vector.Vector3;
+import java.util.Optional;
 import rlbot.flat.BallPrediction;
 import rlbot.flat.PredictionSlice;
-import java.util.Optional;
 
 public class RollingTactician extends Tactician {
 
@@ -22,7 +22,7 @@ public class RollingTactician extends Tactician {
   }
 
   @Override
-  public void execute(DataPacket input, ControlsOutput output, Tactic tactic) {
+  public void internalExecute(DataPacket input, ControlsOutput output, Tactic tactic) {
     // TODO: Fix this
 
     Vector2 carDirection = input.car.orientation.getNoseVector().flatten();

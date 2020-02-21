@@ -8,8 +8,8 @@ import com.eru.rlbot.bot.main.Agc;
 import com.eru.rlbot.common.input.DataPacket;
 import com.eru.rlbot.common.output.ControlsOutput;
 import com.eru.rlbot.common.vector.Vector3;
-import rlbot.flat.PredictionSlice;
 import java.util.Optional;
+import rlbot.flat.PredictionSlice;
 
 public class ShadowTactician extends Tactician {
 
@@ -18,7 +18,7 @@ public class ShadowTactician extends Tactician {
   }
 
   @Override
-  public void execute(DataPacket input, ControlsOutput output, Tactic tactic) {
+  public void internalExecute(DataPacket input, ControlsOutput output, Tactic tactic) {
     double minCorrection = Locations.minCarTargetNotGoalCorrection(input, tactic.subject);
     double targetCorrectionAngle = Angles.flatCorrectionAngle(input.car, tactic.subject.position);
 

@@ -14,7 +14,7 @@ public class PassTactician extends Tactician {
   }
 
   @Override
-  public void execute(DataPacket input, ControlsOutput output, Tactic nextTactic) {
+  public void internalExecute(DataPacket input, ControlsOutput output, Tactic nextTactic) {
 
   }
 }

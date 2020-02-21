@@ -8,7 +8,7 @@ import com.eru.rlbot.bot.main.Agc;
 import com.eru.rlbot.common.input.BallData;
 import com.eru.rlbot.common.input.DataPacket;
 import com.eru.rlbot.common.output.ControlsOutput;
-import java.awt.*;
+import java.awt.Color;
 
 public class CatchTactician extends Tactician {
 
@@ -27,7 +27,7 @@ public class CatchTactician extends Tactician {
   }
 
   @Override
-  public void execute(DataPacket input, ControlsOutput output, Tactic nextTactic) {
+  public void internalExecute(DataPacket input, ControlsOutput output, Tactic nextTactic) {
     BallData relativeBallData = NormalUtils.noseRelativeBall(input);
     catchBall(input, relativeBallData, output);
     relativeAngleToBall(input, relativeBallData, output); // Set up the angle here too.

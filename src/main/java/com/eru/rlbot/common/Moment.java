@@ -2,6 +2,7 @@ package com.eru.rlbot.common;
 
 import com.eru.rlbot.common.input.BallData;
 import com.eru.rlbot.common.vector.Vector3;
+import com.google.common.base.Objects;
 import rlbot.flat.PredictionSlice;
 
 /** Represents a subject that will happen at a given time. */
@@ -36,12 +37,12 @@ public class Moment {
     this.time = time;
   }
 
-  public Moment(BallData ball) {
-    this(ball, 300);
+  private Moment(BallData ball) {
+    this(ball.position, ball.velocity, ball.elapsedSeconds);
   }
 
-  public Moment(BallData ball, float elapsedSeconds) {
-    this(ball.position, ball.velocity, elapsedSeconds);
+  public static Moment from(BallData ball) {
+    return new Moment(ball);
   }
 
   @Override
@@ -49,11 +50,16 @@ public class Moment {
     if (o == this) return true;
     if (o instanceof Moment) {
       Moment m = (Moment) o;
-      return m.position.equals(this.position)
-          && m.velocity.equals(this.velocity)
-          && m.time == this.time;
+      return Objects.equal(m.position, this.position)
+          && Objects.equal(m.velocity, this.velocity)
+          && Objects.equal(m.time, this.time);
     }
 
     return false;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hashCode(velocity, position, time);
   }
 }

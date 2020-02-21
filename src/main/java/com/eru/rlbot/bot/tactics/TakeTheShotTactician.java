@@ -66,7 +66,7 @@ public class TakeTheShotTactician extends Tactician {
   }
 
   @Override
-  public void execute(DataPacket input, ControlsOutput output, Tactic tactic) {
+  public void internalExecute(DataPacket input, ControlsOutput output, Tactic tactic) {
     bot.botRenderer.setIntersectionTarget(tactic.getTargetPosition());
 
     if (path == null || path.isOffCourse() || path.getEndTime() < input.car.elapsedSeconds) {

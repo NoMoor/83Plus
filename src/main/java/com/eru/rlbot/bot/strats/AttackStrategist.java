@@ -6,6 +6,7 @@ import com.eru.rlbot.bot.main.Agc;
 import com.eru.rlbot.bot.tactics.KickoffTactician;
 import com.eru.rlbot.bot.tactics.Tactic;
 import com.eru.rlbot.bot.tactics.TakeTheShotTactician;
+import com.eru.rlbot.common.Moment;
 import com.eru.rlbot.common.input.DataPacket;
 import com.eru.rlbot.common.vector.Vector3;
 
@@ -32,17 +33,18 @@ public class AttackStrategist extends Strategist {
 
   @Override
   public boolean assign(DataPacket input) {
+    // TODO: Use ball prediction util to plan shots/passes/aerials. Then pick the first one that is reachable and
+    // create the tactic.
+
     if (tacticManager.isTacticLocked()) {
       // Let the tactic finish it's motion.
       return true;
     }
 
-    PathPlanner planner = new PathPlanner(input);
-
     if (KickoffTactician.isKickOff(input)) {
       tacticManager.setTactic(
           Tactic.builder()
-              .setSubject(input.ball.position)
+              .setSubject(Moment.from(input.ball))
               .setTacticType(Tactic.TacticType.KICKOFF)
               .build());
       return true;
@@ -88,7 +90,7 @@ public class AttackStrategist extends Strategist {
     tacticManager.setTactic(Tactic.builder()
         .setSubject(PredictionUtils.getFirstHittableBall(input))
         .setTacticType(Tactic.TacticType.HIT_BALL)
-        .plan(planner::plan));
+        .plan(new PathPlanner(input)::plan));
     return true;
   }
 

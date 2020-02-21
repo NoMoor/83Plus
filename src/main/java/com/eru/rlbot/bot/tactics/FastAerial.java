@@ -19,14 +19,14 @@ public class FastAerial extends Tactician {
 
   // TODO: Measure how much velocity this adds.
   @Override
-  void execute(DataPacket input, ControlsOutput output, Tactic nextTactic) {
+  void internalExecute(DataPacket input, ControlsOutput output, Tactic nextTactic) {
     if (monitor == null) {
       monitor = Monitor.create(input);
     }
     monitor.trackWhile(!isFinished, input.car);
 
     if (isFinished) {
-      reset();
+      reset(input);
     }
 
     if (input.car.hasWheelContact) {
@@ -61,7 +61,8 @@ public class FastAerial extends Tactician {
     }
   }
 
-  private void reset() {
+  @Override
+  protected void reset(DataPacket input) {
     isFinished = false;
     hasJumpedTicks = 0;
     monitor = null;

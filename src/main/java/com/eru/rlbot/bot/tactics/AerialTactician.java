@@ -36,7 +36,7 @@ public class AerialTactician extends Tactician {
   private BallPredictionUtil.ExaminedBallData target;
 
   @Override
-  public void execute(DataPacket input, ControlsOutput output, Tactic tactic) {
+  public void internalExecute(DataPacket input, ControlsOutput output, Tactic tactic) {
     target = getTarget(input);
 
     if (target == null) {

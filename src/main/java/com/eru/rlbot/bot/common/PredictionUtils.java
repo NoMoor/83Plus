@@ -3,9 +3,9 @@ package com.eru.rlbot.bot.common;
 import com.eru.rlbot.common.Moment;
 import com.eru.rlbot.common.input.DataPacket;
 import com.eru.rlbot.common.vector.Vector3;
+import java.util.Optional;
 import rlbot.flat.BallPrediction;
 import rlbot.flat.PredictionSlice;
-import java.util.Optional;
 
 public class PredictionUtils {
 
@@ -13,7 +13,7 @@ public class PredictionUtils {
     Optional<BallPrediction> ballPredictionOptional = DllHelper.getBallPrediction();
 
     if (!ballPredictionOptional.isPresent()) {
-      return new Moment(input.ball, input.ball.elapsedSeconds);
+      return Moment.from(input.ball);
     }
 
     BallPrediction ballPrediction = ballPredictionOptional.get();
@@ -36,7 +36,7 @@ public class PredictionUtils {
       }
     }
 
-    return new Moment(input.ball, input.car.elapsedSeconds);
+    return Moment.from(input.ball);
   }
 
   public static Optional<PredictionSlice> getBallInGoalSlice() {

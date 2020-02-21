@@ -9,6 +9,8 @@ import com.eru.rlbot.common.output.ControlsOutput;
 
 public class WaveDashTactician extends Tactician {
 
+  // TODO: Make this a maneuver.
+
   private Tactic currentTactic;
 
   enum Stage {
@@ -25,7 +27,7 @@ public class WaveDashTactician extends Tactician {
   }
 
   @Override
-  public void execute(DataPacket input, ControlsOutput output, Tactic nextTactic) {
+  public void internalExecute(DataPacket input, ControlsOutput output, Tactic nextTactic) {
     if (!nextTactic.equals(currentTactic)) {
       currentTactic = nextTactic;
       if (input.car.hasWheelContact) {

@@ -4,10 +4,10 @@ import com.eru.rlbot.common.input.CarData;
 import com.eru.rlbot.common.input.Orientation;
 import com.eru.rlbot.common.output.ControlsOutput;
 import com.eru.rlbot.common.vector.Vector3;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import java.util.ArrayList;
 import java.util.List;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * Utilities for calculating rotations in 3d space.
@@ -41,7 +41,13 @@ public class Angles3 {
     setControlsFor(car, Orientation.fromFlatOrientation(car).getOrientationMatrix(), output);
   }
 
-  /** Returns controls to optimally rotate toward the subject orientation. */
+  public static boolean setControlsFor(CarData car, Orientation target, ControlsOutput controls) {
+    return setControlsFor(car, target.getOrientationMatrix(), controls);
+  }
+
+  /**
+   * Returns controls to optimally rotate toward the subject orientation.
+   */
   public static boolean setControlsFor(CarData car, Matrix3 target, ControlsOutput controls) {
     try {
       return setControlsForInternal(car, target, controls);

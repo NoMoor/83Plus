@@ -31,7 +31,7 @@ public class PickUpTactician extends Tactician {
   }
 
   @Override
-  void execute(DataPacket input, ControlsOutput output, Tactic tactic) {
+  void internalExecute(DataPacket input, ControlsOutput output, Tactic tactic) {
     CarData relativeCarData = NormalUtils.rollNormal(input);
 
     if (relativeCarData.position.y > 0) {

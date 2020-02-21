@@ -6,9 +6,9 @@ import com.eru.rlbot.common.input.CarData;
 import com.eru.rlbot.common.input.DataPacket;
 import com.eru.rlbot.common.vector.Vector2;
 import com.eru.rlbot.common.vector.Vector3;
+import java.util.Optional;
 import rlbot.flat.BallPrediction;
 import rlbot.flat.PredictionSlice;
-import java.util.Optional;
 
 public class Locations {
 
@@ -37,7 +37,7 @@ public class Locations {
   }
 
   public static boolean isOpponentSideOfBall(DataPacket input) {
-    double correctionAngle = minCarTargetGoalCorrection(input, new Moment(input.ball));
+    double correctionAngle = minCarTargetGoalCorrection(input, Moment.from(input.ball));
 
     boolean carFacingOwnGoal = Math.abs(correctionAngle) > Math.PI * .5;
 
