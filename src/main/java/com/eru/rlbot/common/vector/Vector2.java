@@ -1,6 +1,6 @@
 package com.eru.rlbot.common.vector;
 
-import java.awt.*;
+import java.awt.Point;
 
 /**
  * A vector that only knows about x and y components.
@@ -15,6 +15,10 @@ public class Vector2 {
 
   public final double x;
   public final double y;
+
+  public static Vector2 of(double x, double y) {
+    return new Vector2(x, y);
+  }
 
   public Vector2(double x, double y) {
     this.x = x;

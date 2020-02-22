@@ -13,7 +13,11 @@ public class Monitor {
   private CarData end;
 
   public static Monitor create(DataPacket input) {
-    return new Monitor(input.car);
+    return create(input.car);
+  }
+
+  public static Monitor create(CarData car) {
+    return new Monitor(car);
   }
 
   public Monitor(CarData initial) {
@@ -35,6 +39,7 @@ public class Monitor {
       logger.info("aVel: {}", end.angularVelocity.minus(start.angularVelocity));
       logger.info("Orientation: {}", end.orientation.getOrientationMatrix()
           .minus(start.orientation.getOrientationMatrix()));
+      logger.info("relative position: {}", NormalUtils.translateRelative(start.position, end.position, start.orientation.getNoseVector()));
     }
   }
 }

@@ -103,7 +103,7 @@ public class BotRenderer {
 
     renderControls(output);
     renderAcceleration(input);
-//    renderLocation(input);
+    renderLocation(input);
 
 //    renderTacticLines(input.car);
 //    renderRefreshRate(input);
@@ -174,7 +174,7 @@ public class BotRenderer {
   }
 
   public void renderPath(DataPacket input, Path path) {
-    if (skipRendering || true)
+    if (skipRendering)
       return;
 
     ImmutableList<Segment> pathNodes = path.allNodes();

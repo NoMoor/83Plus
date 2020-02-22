@@ -3,7 +3,6 @@ package com.eru.rlbot.bot.main;
 import static com.eru.rlbot.bot.common.Goal.opponentGoal;
 import static com.eru.rlbot.bot.common.Goal.ownGoal;
 
-import com.eru.rlbot.bot.CarBallContactManager;
 import com.eru.rlbot.bot.common.BallPredictionRenderer;
 import com.eru.rlbot.bot.common.BotChatter;
 import com.eru.rlbot.bot.common.BotRenderer;
@@ -17,19 +16,18 @@ import com.eru.rlbot.bot.strats.BallPredictionUtil;
 import com.eru.rlbot.bot.strats.StrategyManager;
 import com.eru.rlbot.common.StateLogger;
 import com.eru.rlbot.common.boost.BoostManager;
-import com.eru.rlbot.common.boost.SpeedManager;
 import com.eru.rlbot.common.dropshot.DropshotTileManager;
 import com.eru.rlbot.common.input.CarData;
 import com.eru.rlbot.common.input.DataPacket;
 import com.eru.rlbot.common.jump.JumpManager;
 import com.eru.rlbot.common.output.ControlsOutput;
+import com.eru.rlbot.testing.KickoffGameSetter;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import rlbot.Bot;
 import rlbot.ControllerState;
 import rlbot.cppinterop.RLBotDll;
 import rlbot.flat.GameTickPacket;
-import rlbot.gamestate.GameInfoState;
 import rlbot.gamestate.GameState;
 import rlbot.gamestate.GameStatePacket;
 
@@ -87,8 +85,7 @@ public final class Agc implements Bot {
     DemoChecker.track(input);
 
     JumpManager.forCar(input.car).loadCar(input.car);
-    SpeedManager.trackSuperSonic(input);
-    CarBallContactManager.loadDataPacket(input);
+//    CarBallContactManager.loadDataPacket(input);
     StateLogger.track(input);
     TrainingId.trackId(input.car);
 
@@ -103,6 +100,9 @@ public final class Agc implements Bot {
           .withSteer(0)
           .withBoost(false);
 
+
+    KickoffGameSetter.track(input);
+
     // Must do ball before updating the jump manager
     if (false)
       NextFramePredictor.nextFrame(input, output);
@@ -113,11 +113,6 @@ public final class Agc implements Bot {
     TrailRenderer.recordAndRender(input, output);
     botRenderer.renderInfo(input, output);
     ballPredictionRenderer.renderBallPrediction();
-
-    RLBotDll.setGameState(new GameState()
-        .withGameInfoState(new GameInfoState()
-            .withGameSpeed(1f))
-        .buildPacket());
 
     long endTime = System.nanoTime();
     double frameTime = (endTime - startTime) / NANOS;

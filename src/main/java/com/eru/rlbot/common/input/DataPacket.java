@@ -1,9 +1,10 @@
 package com.eru.rlbot.common.input;
 
-import rlbot.flat.GameTickPacket;
-
 import java.util.ArrayList;
 import java.util.List;
+import rlbot.flat.GameInfo;
+import rlbot.flat.GameTickPacket;
+import rlbot.flat.TeamInfo;
 
 /**
  * This class is here for your convenience, it is NOT part of the framework. You can change it as much
@@ -14,7 +15,9 @@ import java.util.List;
  */
 public class DataPacket {
 
-    /** Your own car, based on the playerIndex */
+    /**
+     * Your own car, based on the playerIndex
+     */
     public final CarData car;
 
     public final List<CarData> allCars;
@@ -22,11 +25,14 @@ public class DataPacket {
     public final BallData ball;
     public final int team;
 
-    /** The index of your player */
+    /**
+     * The index of your player
+     */
     public final int playerIndex;
+    public final GameInfo gameInfo;
+    public final List<TeamInfo> teamInfos;
 
     public DataPacket(GameTickPacket packet, int playerIndex) {
-
         this.playerIndex = playerIndex;
         this.ball = new BallData(packet.ball(), packet.gameInfo().secondsElapsed());
 
@@ -35,6 +41,11 @@ public class DataPacket {
             allCars.add(new CarData(packet.players(i), packet.gameInfo().secondsElapsed(), i));
         }
 
+        this.gameInfo = packet.gameInfo();
+        teamInfos = new ArrayList<>();
+        for (int i = 0; i < packet.teamsLength(); i++) {
+            teamInfos.add(packet.teams(i));
+        }
         this.car = allCars.get(playerIndex);
         this.team = this.car.team;
     }

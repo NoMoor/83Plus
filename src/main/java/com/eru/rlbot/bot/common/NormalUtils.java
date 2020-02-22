@@ -98,7 +98,7 @@ public class NormalUtils {
   }
 
   // TODO: Update this to use dot products...
-  private static Vector3 translateRelative(Vector3 source, Vector3 target, Vector3 referenceOrientation) {
+  public static Vector3 translateRelative(Vector3 source, Vector3 target, Vector3 referenceOrientation) {
     Vector3 relativeVector = target.minus(source);
 
     // Translate the vector relative to the reference orientation.

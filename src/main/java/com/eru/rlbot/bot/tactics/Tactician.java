@@ -22,6 +22,7 @@ public abstract class Tactician {
   }
 
   void execute(DataPacket input, ControlsOutput output, Tactic tactic) {
+    checkTactic(input, tactic);
     if (!useDelegate(input, output, tactic)) {
       internalExecute(input, output, tactic);
 
@@ -62,6 +63,11 @@ public abstract class Tactician {
     }
   }
 
+  protected void clearDelegate() {
+    delegate = null;
+  }
+
   protected void reset(DataPacket input) {
+    clearDelegate();
   }
 }

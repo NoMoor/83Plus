@@ -57,8 +57,7 @@ public class FlipHelper extends Maneuver {
             .withJump(!jumpManager.jumpPressedLastFrame())
             .withThrottle(1.0)
             .withBoost();
-      } else if (input.car.position.z < 50 && input.car.velocity.z >= 0 && !jumpManager.hasMaxJumpHeight()) {
-        // TODO: Use aggressiveness as the means for how high to jump.
+      } else if (jumpManager.getJumpCount() * (1 - aggressiveness) < JumpManager.MAX_HEIGHT_TICKS && input.car.velocity.z >= 0 && !jumpManager.hasMaxJumpHeight()) {
         bot.botRenderer.setBranchInfo("Hold Jump");
         output
             .withJump()

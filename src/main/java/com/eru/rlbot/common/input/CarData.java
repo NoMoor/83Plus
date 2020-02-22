@@ -3,11 +3,12 @@ package com.eru.rlbot.common.input;
 
 import com.eru.rlbot.bot.common.Constants;
 import com.eru.rlbot.common.vector.Vector3;
+import com.google.common.base.Preconditions;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import rlbot.gamestate.CarState;
 import rlbot.gamestate.DesiredVector3;
 import rlbot.gamestate.PhysicsState;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * Basic information about the car.
@@ -63,6 +64,7 @@ public class CarData {
   public final boolean jumped;
   public final boolean doubleJumped;
   public final BoundingBox boundingBox;
+  public final boolean isDemolished;
 
   public CarData(rlbot.flat.PlayerInfo playerInfo, float elapsedSeconds, int playerIndex) {
     this.position = Vector3.of(playerInfo.physics().location());
@@ -84,6 +86,7 @@ public class CarData {
 
     this.boundingBox = new BoundingBox(position, orientation);
     this.isLiveData = true;
+    this.isDemolished = playerInfo.isDemolished();
   }
 
   private CarData(Builder builder) {
@@ -104,6 +107,7 @@ public class CarData {
     this.boundingBox = new BoundingBox(position, orientation);
     this.playerIndex = builder.playerIndex;
     this.isLiveData = false;
+    this.isDemolished = false;
   }
 
   public static Builder builder() {
@@ -228,5 +232,11 @@ public class CarData {
       this.playerIndex = playerIndex;
       return this;
     }
+  }
+
+  public boolean noseIsBetween(double low, double high) {
+    Preconditions.checkArgument(low <= high, "Low should be less than high but was low: %f high: %f", low, high);
+    float noseZ = this.orientation.getNoseVector().z;
+    return low <= noseZ && noseZ <= high;
   }
 }

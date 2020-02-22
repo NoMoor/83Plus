@@ -7,6 +7,7 @@ import java.util.HashMap;
 
 public class JumpManager {
 
+  public static final double MAX_HEIGHT_TICKS = 100;
   private static final float MAX_JUMP_TIME = .2f;
 
   private static final int JUMP_RELEASE_COUNT = 1;
