@@ -28,7 +28,9 @@ public class FlipTactician extends Tactician {
 
   @Override
   protected void reset(DataPacket input) {
-    flipHelper = FlipHelper.builder().build();
+    flipHelper = FlipHelper.builder()
+        .setTarget(input.ball.position)
+        .build();
   }
 }
 

@@ -2,6 +2,7 @@ package com.eru.rlbot.bot.common;
 
 import static com.google.common.collect.ImmutableList.toImmutableList;
 
+import com.eru.rlbot.bot.flags.Flags;
 import com.eru.rlbot.bot.prediction.BallPredictor;
 import com.eru.rlbot.bot.strats.Strategist;
 import com.eru.rlbot.bot.tactics.Tactic;
@@ -58,7 +59,7 @@ public class BotRenderer {
 
   private BotRenderer(Bot bot) {
     this.bot = bot;
-    this.skipRendering = bot.getIndex() != 0;
+    this.skipRendering = Flags.bot_rendering_ids.contains(bot.getIndex());
   }
 
   public static BotRenderer forBot(Bot bot) {

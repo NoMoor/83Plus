@@ -3,6 +3,7 @@ package com.eru.rlbot.common.vector;
 import com.eru.rlbot.bot.common.Matrix3;
 import com.google.common.base.Objects;
 import com.google.flatbuffers.FlatBufferBuilder;
+import rlbot.gamestate.DesiredVector3;
 
 /**
  * A simple 3d vector class with the most essential operations.
@@ -217,6 +218,13 @@ public class Vector3 extends rlbot.vector.Vector3 {
 
   public RoughComparator isWithin(double value) {
     return this.new RoughComparator(value);
+  }
+
+  public DesiredVector3 toDesired() {
+    return new DesiredVector3()
+        .withX(x)
+        .withY(y)
+        .withZ(z);
   }
 
   public class RoughComparator {

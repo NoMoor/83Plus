@@ -25,7 +25,7 @@ public class DiagonalFlipCancel extends Maneuver {
 
   // Pitch/Yaw 1.0
   // 1060uu -> .239
-  public static final double MIN_DRIFT = .2;
+  public static final double MIN_DRIFT = .26;
   public static final ImmutableSortedMap<Double, Double> PITCH_ANGLE_OFFSET =
       ImmutableSortedMap.<Double, Double>naturalOrder()
           .put(.2, 1.0)
@@ -71,25 +71,34 @@ public class DiagonalFlipCancel extends Maneuver {
     botRenderer.renderTarget(Color.RED, target);
 
     double correctionAngle = Angles.flatCorrectionAngle(input.car, target);
+    correctionAngle += MIN_DRIFT * -Math.signum(correctionAngle);
     Vector3 noseRelative =
         NormalUtils.translateRelative(input.car.position, target, input.car.orientation.getNoseVector());
 
-    if (input.car.hasWheelContact && Math.abs(correctionAngle) < MIN_DRIFT * .8) {
+    if (input.car.hasWheelContact && Math.abs(correctionAngle) > .1) {
       output
           .withBoost(boost)
-          .withSteer(-Math.signum(correctionAngle) * .5);
-    } else if (input.car.hasWheelContact || (input.car.position.z < 40 && input.car.velocity.z > 0)) {
+          .withSteer(Math.signum(correctionAngle) * .6);
+    } else if (input.car.hasWheelContact || (input.car.position.z < 25 && input.car.velocity.z > 0)) {
       botRenderer.setBranchInfo("Jump");
       output
           .withJump()
           .withBoost(boost)
           .withPitch(1);
-    } else if (!jumpManager.hasReleasedJumpInAir()) {
+
+      if (Math.abs(correctionAngle) > .05) {
+        output.withYaw(Math.signum(correctionAngle) * .4);
+      }
+    } else if (!jumpManager.hasReleasedJumpInAir() || input.car.position.z < 54) {
       botRenderer.setBranchInfo("Release button");
       output
           .withBoost(boost)
           .withPitch(1);
+      if (Math.abs(correctionAngle) > .01) {
+        output.withYaw(Math.signum(correctionAngle) * .4);
+      }
     } else if (jumpManager.canFlip()) {
+      logger.debug("Deviation: {}", correctionAngle);
       monitor = Monitor.create(input);
       botRenderer.setBranchInfo("Flip");
 

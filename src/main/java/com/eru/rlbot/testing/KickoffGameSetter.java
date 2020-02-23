@@ -3,32 +3,30 @@ package com.eru.rlbot.testing;
 import static com.google.common.collect.ImmutableMap.toImmutableMap;
 
 import com.eru.rlbot.bot.common.Constants;
+import com.eru.rlbot.bot.flags.Flags;
 import com.eru.rlbot.common.input.DataPacket;
+import com.eru.rlbot.common.vector.Vector3;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import rlbot.cppinterop.RLBotDll;
 import rlbot.gamestate.BallState;
-import rlbot.gamestate.DesiredVector3;
 import rlbot.gamestate.GameInfoState;
 import rlbot.gamestate.GameState;
 import rlbot.gamestate.PhysicsState;
 
 public class KickoffGameSetter {
 
-  private static final boolean SLOW_TIME = true;
-  private static final boolean ENABLE_GAME = true;
-
   private static float kickOffTime;
 
   public static void track(DataPacket input) {
-    if (input.ball.position.magnitude() < 500 && carIsNearBall(input) && SLOW_TIME) {
+    if (input.ball.position.magnitude() < 500 && carIsNearBall(input) && Flags.slow_time_near_ball) {
       setSpeed(.1);
     } else {
       setSpeed(1);
     }
 
-    if (!ENABLE_GAME) {
+    if (!Flags.kickoff_game_enabled) {
       return;
     }
 
@@ -68,7 +66,8 @@ public class KickoffGameSetter {
         .entrySet().stream()
         .collect(toImmutableMap(
             Map.Entry::getKey,
-            entry -> entry.getValue().stream().allMatch(car -> car.isDemolished)))
+            entry -> entry.getValue().stream()
+                .allMatch(car -> car.isDemolished)))
         .entrySet().stream()
         .filter(Map.Entry::getValue)
         .findFirst();
@@ -80,16 +79,17 @@ public class KickoffGameSetter {
     RLBotDll.setGameState(new GameState()
         .withBallState(new BallState()
             .withPhysics(new PhysicsState()
-                .withLocation(of(0, Math.signum(loosingDirection) * Constants.HALF_LENGTH, Constants.BALL_RADIUS))
-                .withVelocity(of(0, loosingDirection, Constants.BALL_RADIUS))))
+                .withLocation(Vector3.of(
+                    0,
+                    Math.signum(loosingDirection) * Constants.HALF_LENGTH,
+                    Constants.BALL_RADIUS)
+                    .toDesired())
+                .withVelocity(Vector3.of(
+                    0,
+                    loosingDirection,
+                    Constants.BALL_RADIUS)
+                    .toDesired())))
         .buildPacket());
-  }
-
-  private static DesiredVector3 of(double x, double y, double z) {
-    return new DesiredVector3()
-        .withX((float) x)
-        .withY((float) y)
-        .withZ((float) z);
   }
 
   private KickoffGameSetter() {
