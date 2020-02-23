@@ -2,30 +2,40 @@ package com.eru.rlbot.bot.maneuver;
 
 import com.eru.rlbot.bot.common.Angles;
 import com.eru.rlbot.bot.common.Angles3;
-import com.eru.rlbot.bot.main.Agc;
+import com.eru.rlbot.bot.common.BotRenderer;
+import com.eru.rlbot.bot.common.Constants;
 import com.eru.rlbot.bot.tactics.Tactic;
 import com.eru.rlbot.common.input.DataPacket;
 import com.eru.rlbot.common.input.Orientation;
 import com.eru.rlbot.common.jump.JumpManager;
 import com.eru.rlbot.common.output.ControlsOutput;
+import com.eru.rlbot.common.vector.Vector3;
 
 public class FlipHelper extends Maneuver {
 
   private static final double EIGHTH = Math.PI / 4;
   private static final double QUARTER = Math.PI / 2;
   private final double aggressiveness;
+  private final Vector3 target;
 
-  private Agc bot;
+  // Null if they should be determined by the helper based on the target position.
+  private final Double yaw;
+  private final Double pitch;
+
   private boolean flipComplete;
   private boolean done;
+  private boolean flipAtTarget;
 
   public FlipHelper(Builder builder) {
-    this.bot = builder.bot;
     this.aggressiveness = builder.aggressiveness;
+    this.target = builder.target;
+    this.pitch = builder.pitch;
+    this.yaw = builder.yaw;
+    this.flipAtTarget = builder.flipAtTarget;
   }
 
-  public static Builder builder(Agc bot) {
-    return new Builder(bot);
+  public static Builder builder() {
+    return new Builder();
   }
 
   @Override
@@ -35,14 +45,18 @@ public class FlipHelper extends Maneuver {
       return;
     }
 
+    BotRenderer botRenderer = BotRenderer.forCar(input.car);
     JumpManager jumpManager = JumpManager.forCar(input.car);
+
+    double framesToTarget = (input.car.position.distance(target) / input.car.groundSpeed) * Constants.STEP_SIZE_COUNT;
+    boolean forceFlip = flipAtTarget && framesToTarget < 13;
 
     if (flipComplete) {
       if (input.car.hasWheelContact) {
-        bot.botRenderer.setBranchInfo("Flip complete");
+        botRenderer.setBranchInfo("Flip complete");
         done = true;
       } else {
-        bot.botRenderer.setBranchInfo("Waiting to land");
+        botRenderer.setBranchInfo("Waiting to land");
         float noseZ = input.car.orientation.getNoseVector().z;
         output
             .withBoost(-.1 < noseZ && noseZ < .2)
@@ -51,51 +65,69 @@ public class FlipHelper extends Maneuver {
       }
     } else {
       if (!input.car.jumped) {
-        bot.botRenderer.setBranchInfo("Initial Jump");
+        botRenderer.setBranchInfo("Initial Jump");
         // Jump now
         output
-            .withJump(!jumpManager.jumpPressedLastFrame())
+            .withJump()
             .withThrottle(1.0)
             .withBoost();
-      } else if (jumpManager.getJumpCount() * (1 - aggressiveness) < JumpManager.MAX_HEIGHT_TICKS && input.car.velocity.z >= 0 && !jumpManager.hasMaxJumpHeight()) {
-        bot.botRenderer.setBranchInfo("Hold Jump");
+      } else if (jumpManager.getElapsedJumpTime() < (JumpManager.MAX_JUMP_TIME * ((.8 * (1 - aggressiveness)) + .2))
+          && input.car.velocity.z >= 0
+          && !jumpManager.hasMaxJumpHeight()
+          && !forceFlip) {
+        botRenderer.setBranchInfo("Hold Jump");
         output
             .withJump()
             .withBoost();
       } else if (!jumpManager.hasReleasedJumpInAir()) {
-        bot.botRenderer.setBranchInfo("Quick release");
+        botRenderer.setBranchInfo("Quick release");
         output.withBoost();
         // Release Jump
       } else if (jumpManager.canFlip()) {
-        bot.botRenderer.setBranchInfo("Do flip");
-        // TODO: This doesn't work for half flips...
-        double velocityCorrectionAngle =
-            Angles.flatCorrectionAngle(input.car.position, input.car.velocity, tactic.subject.position);
-        // TODO: Adjust this correction based on how fast we are going and angle flipping.
-        velocityCorrectionAngle *= 2;
-
-        double noseVelocityAngle = input.car.orientation.getNoseVector().flatten()
-            .correctionAngle(input.car.velocity.flatten());
-        double totalCorrection = velocityCorrectionAngle + noseVelocityAngle;
-
-        double flipYaw, flipPitch;
-        if (Math.abs(totalCorrection) < EIGHTH) {
-          // Less than 45 degree flip.
-          flipPitch = -1;
-          flipYaw = totalCorrection / EIGHTH;
-        } else {
-          flipYaw = Math.signum(totalCorrection);
-          flipPitch = -(QUARTER - Math.abs(totalCorrection)) / EIGHTH;
+        if (flipAtTarget && !forceFlip) {
+          return;
         }
 
-        output
-            .withSteer(flipYaw)
-            .withYaw(flipYaw)
-            .withJump()
-            .withPitch(flipPitch);
+        botRenderer.setBranchInfo("Do flip");
+
+        if (pitch != null && yaw != null) {
+          output
+              .withJump()
+              .withPitch(pitch)
+              .withYaw(yaw);
+        } else {
+          double velocityCorrectionAngle =
+              Angles.flatCorrectionAngle(input.car.position, input.car.velocity, getTarget(tactic));
+          // TODO: Adjust this correction based on how fast we are going and angle flipping.
+          velocityCorrectionAngle *= 2;
+
+          double noseVelocityAngle = input.car.orientation.getNoseVector().flatten()
+              .correctionAngle(input.car.velocity.flatten());
+          double totalCorrection = velocityCorrectionAngle + noseVelocityAngle;
+
+          double flipYaw, flipPitch;
+          if (Math.abs(totalCorrection) < EIGHTH) {
+            // Less than 45 degree flip.
+            flipPitch = -1;
+            flipYaw = totalCorrection / EIGHTH;
+          } else {
+            flipYaw = Math.signum(totalCorrection);
+            flipPitch = -(QUARTER - Math.abs(totalCorrection)) / EIGHTH;
+          }
+
+          output
+              .withYaw(flipYaw)
+              .withJump()
+              .withPitch(flipPitch);
+        }
+
         flipComplete = true;
       }
     }
+  }
+
+  private Vector3 getTarget(Tactic tactic) {
+    return target != null ? target : tactic.subject.position;
   }
 
   @Override
@@ -104,15 +136,37 @@ public class FlipHelper extends Maneuver {
   }
 
   public static class Builder {
-    private final Agc bot;
+    private boolean flipAtTarget = true;
     private double aggressiveness;
+    private Vector3 target;
+    private Double yaw;
+    private Double pitch;
 
-    Builder(Agc bot) {
-      this.bot = bot;
+    private Builder() {
     }
 
     public Builder setAggressiveness(double aggressiveness) {
       this.aggressiveness = aggressiveness;
+      return this;
+    }
+
+    public Builder setTarget(Vector3 target) {
+      this.target = target;
+      return this;
+    }
+
+    public Builder withFixedYaw(double yaw) {
+      this.yaw = yaw;
+      return this;
+    }
+
+    public Builder withFixedPitch(double pitch) {
+      this.pitch = pitch;
+      return this;
+    }
+
+    public Builder flipEarly() {
+      this.flipAtTarget = false;
       return this;
     }
 

@@ -3,6 +3,7 @@ package com.eru.rlbot.bot.main;
 import static com.eru.rlbot.bot.common.Goal.opponentGoal;
 import static com.eru.rlbot.bot.common.Goal.ownGoal;
 
+import com.eru.rlbot.bot.CarBallContactManager;
 import com.eru.rlbot.bot.common.BallPredictionRenderer;
 import com.eru.rlbot.bot.common.BotChatter;
 import com.eru.rlbot.bot.common.BotRenderer;
@@ -85,7 +86,7 @@ public final class Agc implements Bot {
     DemoChecker.track(input);
 
     JumpManager.forCar(input.car).loadCar(input.car);
-//    CarBallContactManager.loadDataPacket(input);
+    CarBallContactManager.loadDataPacket(input);
     StateLogger.track(input);
     TrainingId.trackId(input.car);
 

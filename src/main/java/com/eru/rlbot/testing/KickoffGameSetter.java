@@ -16,11 +16,22 @@ import rlbot.gamestate.PhysicsState;
 
 public class KickoffGameSetter {
 
-  private static final boolean SLOW_TIME = false;
+  private static final boolean SLOW_TIME = true;
+  private static final boolean ENABLE_GAME = true;
 
   private static float kickOffTime;
 
   public static void track(DataPacket input) {
+    if (input.ball.position.magnitude() < 500 && carIsNearBall(input) && SLOW_TIME) {
+      setSpeed(.1);
+    } else {
+      setSpeed(1);
+    }
+
+    if (!ENABLE_GAME) {
+      return;
+    }
+
     if (!input.gameInfo.isKickoffPause() && kickOffTime == 0 && input.ball.position.magnitude() < 200) {
       kickOffTime = input.gameInfo.secondsElapsed();
     }
@@ -33,12 +44,6 @@ public class KickoffGameSetter {
     if ((isNotNearCenter && isNotNearGoal) || timeHasEllapsed) {
       renderJudgement(input);
       kickOffTime = 0;
-    }
-
-    if (input.ball.position.magnitude() < 500 && carIsNearBall(input) && SLOW_TIME) {
-      setSpeed(.1);
-    } else {
-      setSpeed(1);
     }
   }
 

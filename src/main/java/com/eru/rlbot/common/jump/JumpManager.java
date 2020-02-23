@@ -7,8 +7,7 @@ import java.util.HashMap;
 
 public class JumpManager {
 
-  public static final double MAX_HEIGHT_TICKS = 100;
-  private static final float MAX_JUMP_TIME = .2f;
+  public static final float MAX_JUMP_TIME = .2f;
 
   private static final int JUMP_RELEASE_COUNT = 1;
 
@@ -74,7 +73,7 @@ public class JumpManager {
       jumpInAirReleased++;
       // We've been bumped and we can flip whenever.
       if (hasReleasedJumpInAir() && secondJumpTime == 0) {
-        canFlip = true;
+        canFlip = car.position.z > 30;
       }
     } else if (car.hasWheelContact) {
       firstJumpTime = 0;
@@ -110,16 +109,16 @@ public class JumpManager {
         flipRoll = output.getRoll();
       }
     } else if (firstJumpTime > 0 && secondJumpTime == 0 && hasReleasedJumpInAir()) {
-      canFlip = true;
+      canFlip = car.position.z > 30;
     }
   }
 
   // Return false if we were bumped instead of jumping.
   public boolean hasMaxJumpHeight() {
-    return elapsedJumpTime() >= MAX_JUMP_TIME;
+    return getElapsedJumpTime() >= MAX_JUMP_TIME;
   }
 
-  public float elapsedJumpTime() {
+  public float getElapsedJumpTime() {
     return firstJumpTime == 0 ? 0 : inputCar.elapsedSeconds - firstJumpTime;
   }
 
@@ -129,10 +128,6 @@ public class JumpManager {
 
   public boolean hasReleasedJumpInAir() {
     return jumpInAirReleased >= JUMP_RELEASE_COUNT;
-  }
-
-  public int getJumpCount() {
-    return jumpInAirReleased;
   }
 
   public boolean jumpPressedLastFrame() {

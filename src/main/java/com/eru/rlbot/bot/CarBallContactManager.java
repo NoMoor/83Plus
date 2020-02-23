@@ -19,7 +19,6 @@ public final class CarBallContactManager {
   private static boolean headersLogged = false;
 
   private static float touchTime = -1;
-  private static BallData ballPrediction;
   private static CarData previousCarData;
   private static BallData previousBallData;
 
@@ -31,23 +30,27 @@ public final class CarBallContactManager {
     double distanceToBall = Vector3.from(nearestPointWorld, input.ball.position).magnitude() - Constants.BALL_COLLISION_RADIUS;
     botRenderer.setNearestHitboxPoint(nearestPointWorld);
 
-
-    if (distanceToBall < 2) {
-      botRenderer.setTouchIndicator(input);
-    }
-
     if (touchTime == -1 && distanceToBall < 2) {
       touchTime = input.car.elapsedSeconds;
-      ballPrediction = CarBallCollision.calculateCollision(input.ball, input.car);
       previousBallData = input.ball;
       previousCarData = input.car;
     } else if (touchTime != -1) {
-      botRenderer.setPredictionDiff(ballPrediction, input.ball);
-      logResult(ballPrediction, input);
-
       touchTime = -1;
-      ballPrediction = null;
     }
+  }
+
+  public static void renderAndLogPrediction(DataPacket input) {
+    if (touchTime != -1) {
+      BotRenderer botRenderer = BotRenderer.forCar(input.car);
+      BallData prediction = CarBallCollision.calculateCollision(input.ball, input.car);
+      botRenderer.setPredictionDiff(prediction, input.ball);
+      logResult(prediction, input);
+      botRenderer.setTouchIndicator(input);
+    }
+  }
+
+  public static boolean isTouched() {
+    return touchTime != -1;
   }
 
   private static void logResult(BallData ballPrediction, DataPacket input) {

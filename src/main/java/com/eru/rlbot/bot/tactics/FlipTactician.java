@@ -28,7 +28,7 @@ public class FlipTactician extends Tactician {
 
   @Override
   protected void reset(DataPacket input) {
-    flipHelper = FlipHelper.builder(bot).build();
+    flipHelper = FlipHelper.builder().build();
   }
 }
 

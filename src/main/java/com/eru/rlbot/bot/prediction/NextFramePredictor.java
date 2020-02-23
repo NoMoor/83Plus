@@ -88,7 +88,7 @@ public class NextFramePredictor {
 
       // Apply throttle acceleration
       double acceleration;
-      if (jumpManager.elapsedJumpTime() < JumpManager.GROUND_CONTACT_TIME) {
+      if (jumpManager.getElapsedJumpTime() < JumpManager.GROUND_CONTACT_TIME) {
         // Continue forward throttle
         acceleration = throttleAcceleration(car, output, boostTracker);
       } else {
@@ -128,7 +128,7 @@ public class NextFramePredictor {
             car.orientation, output.getPitch(), output.getYaw(), output.getRoll());
         // Hold Jump accelerate upward.
       } else if (!jumpManager.hasMaxJumpHeight() && output.holdJump()) {
-        int jumpTick = (int) (jumpManager.elapsedJumpTime() / Constants.STEP_SIZE);
+        int jumpTick = (int) (jumpManager.getElapsedJumpTime() / Constants.STEP_SIZE);
         Vector3 jumpAcceleration = car.orientation.getRoofVector()
             .toMagnitude(Constants.JUMP_ACCELERATION_FAST_HELD);
 

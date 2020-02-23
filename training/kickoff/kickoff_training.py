@@ -15,7 +15,7 @@ class KickOff(TrainingExercise):
     grader: Grader = field(default_factory=lambda: GameTickPacketWrapperGrader(
         StrikerGrader(timeout_seconds=8, ally_team=0)))
     car_start_x: float = 0
-    car_start_y: float = -4608
+    car_start_y: float = 0
     car_yaw: float = 0
 
     def make_game_state(self, rng: SeededRandomNumberGenerator) -> GameState:
@@ -29,6 +29,65 @@ class KickOff(TrainingExercise):
                     physics=Physics(
                         location=Vector3(self.car_start_x, self.car_start_y, 16.5),
                         rotation=Rotator(0, self.car_yaw, 0),
+                        velocity=Vector3(0, 0, 0),
+                        angular_velocity=Vector3(0, 0, 0)),
+                    boost_amount=33)
+            },
+        )
+
+
+@dataclass
+class KickOffOrange(TrainingExercise):
+    grader: Grader = field(default_factory=lambda: GameTickPacketWrapperGrader(
+        StrikerGrader(timeout_seconds=8, ally_team=1)))
+    car_start_x: float = 0
+    car_start_y: float = 0
+    car_yaw: float = 0
+
+    def make_game_state(self, rng: SeededRandomNumberGenerator) -> GameState:
+        return GameState(
+            ball=BallState(physics=Physics(
+                location=Vector3(0, 0, 100),
+                velocity=Vector3(0, 0, 0),
+                angular_velocity=Vector3(0, 0, 0))),
+            cars={
+                0: CarState(
+                    physics=Physics(
+                        location=Vector3(-self.car_start_x, -self.car_start_y, 16.5),
+                        rotation=Rotator(0, -self.car_yaw, 0),
+                        velocity=Vector3(0, 0, 0),
+                        angular_velocity=Vector3(0, 0, 0)),
+                    boost_amount=33)
+            },
+        )
+
+
+@dataclass
+class KickOff1v1(TrainingExercise):
+    grader: Grader = field(default_factory=lambda: GameTickPacketWrapperGrader(
+        StrikerGrader(timeout_seconds=8, ally_team=0)))
+    car_start_x: float = 0
+    car_start_y: float = 0
+    car_yaw: float = 0
+
+    def make_game_state(self, rng: SeededRandomNumberGenerator) -> GameState:
+        return GameState(
+            ball=BallState(physics=Physics(
+                location=Vector3(0, 0, 100),
+                velocity=Vector3(0, 0, 0),
+                angular_velocity=Vector3(0, 0, 0))),
+            cars={
+                0: CarState(
+                    physics=Physics(
+                        location=Vector3(self.car_start_x, self.car_start_y, 16.5),
+                        rotation=Rotator(0, self.car_yaw, 0),
+                        velocity=Vector3(0, 0, 0),
+                        angular_velocity=Vector3(0, 0, 0)),
+                    boost_amount=33),
+                1: CarState(
+                    physics=Physics(
+                        location=Vector3(-self.car_start_x, -self.car_start_y, 16.5),
+                        rotation=Rotator(0, -self.car_yaw, 0),
                         velocity=Vector3(0, 0, 0),
                         angular_velocity=Vector3(0, 0, 0)),
                     boost_amount=33)

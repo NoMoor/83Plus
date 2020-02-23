@@ -1,10 +1,12 @@
 package com.eru.rlbot.bot.tactics;
 
+import com.eru.rlbot.bot.CarBallContactManager;
 import com.eru.rlbot.bot.common.Angles;
 import com.eru.rlbot.bot.common.Angles3;
 import com.eru.rlbot.bot.common.Constants;
 import com.eru.rlbot.bot.common.Goal;
 import com.eru.rlbot.bot.common.Locations;
+import com.eru.rlbot.bot.common.Monitor;
 import com.eru.rlbot.bot.common.NormalUtils;
 import com.eru.rlbot.bot.main.Agc;
 import com.eru.rlbot.bot.maneuver.DiagonalFlipCancel;
@@ -13,12 +15,12 @@ import com.eru.rlbot.common.StateLogger;
 import com.eru.rlbot.common.input.BallData;
 import com.eru.rlbot.common.input.CarData;
 import com.eru.rlbot.common.input.DataPacket;
-import com.eru.rlbot.common.input.Orientation;
 import com.eru.rlbot.common.jump.JumpManager;
 import com.eru.rlbot.common.output.ControlsOutput;
 import com.eru.rlbot.common.vector.Vector3;
 import java.util.Comparator;
 import java.util.Optional;
+import java.util.Random;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -26,12 +28,15 @@ public class KickoffTactician extends Tactician {
 
   private static final Logger logger = LogManager.getLogger("KickoffTactician");
 
-  private Locations.KickoffLocation location = Locations.KickoffLocation.CENTER;
+  private Locations.KickoffLocation location;
 
   private boolean hasFlipped; // Keeps track of the sequence
+  private Vector3 target;
+  private Monitor monitor;
 
   KickoffTactician(Agc bot, TacticManager tacticManager) {
     super(bot, tacticManager);
+    location = Locations.KickoffLocation.defaultLocation(bot.team);
   }
 
   public static boolean isKickOff(DataPacket input) {
@@ -42,12 +47,24 @@ public class KickoffTactician extends Tactician {
   }
 
   @Override
+  void execute(DataPacket input, ControlsOutput output, Tactic tactic) {
+    super.execute(input, output, tactic);
+    if (monitor != null) {
+      monitor.trackWhile(CarBallContactManager.isTouched(), input.car);
+    }
+  }
+
+  @Override
   public void internalExecute(DataPacket input, ControlsOutput output, Tactic tactic) {
     checkTactic(input, tactic);
+    if (target == null) {
+      target = input.ball.position;
+    }
 
-    if (location == Locations.KickoffLocation.LEFT_CENTER || location == Locations.KickoffLocation.RIGHT_CENTER) {
+    if (location.station == Locations.KickoffStation.LEFT_CENTER
+        || location.station == Locations.KickoffStation.RIGHT_CENTER) {
       centerOffset(input, output);
-    } else if (location == Locations.KickoffLocation.CENTER) {
+    } else if (location.station == Locations.KickoffStation.CENTER) {
       centerKickOff(input, output);
     } else {
       cornerSpeedFlip(output, input);
@@ -63,18 +80,54 @@ public class KickoffTactician extends Tactician {
     if (optionalKickoffLocation.isPresent()) {
       hasFlipped = false;
       clearDelegate();
+      target = selectTarget(input);
+      monitor = Monitor.create(input);
+    }
+  }
+
+  @Override
+  public boolean isLocked() {
+    return delegate != null;
+  }
+
+  private Vector3 selectTarget(DataPacket input) {
+    Random random = new Random();
+    if (location.station == Locations.KickoffStation.RIGHT || location.station == Locations.KickoffStation.LEFT) {
+      if (random.nextBoolean() || true) {
+        // Aim for the goal.
+        Vector3 goalAngle = input.ball.position.minus(Goal.opponentGoal(input.team).getSameSidePost(input.car));
+        return input.ball.position.plus(goalAngle.toMagnitude(Constants.BALL_RADIUS));
+      } else {
+        // Hit it around the opponent.
+        return input.ball.position
+            .addX(Constants.BALL_RADIUS * Math.signum(input.car.position.x))
+            .addY(10 * -Math.signum(input.car.position.y));
+      }
+    } else if (location.station == Locations.KickoffStation.CENTER) {
+      // -1 or 1
+      int xInt = -1 + (random.nextInt(2) * 2);
+
+      return input.ball.position.addX(xInt * Constants.BALL_RADIUS * 1.2);
+    } else {
+      // -1 or 1
+      if (random.nextInt(10) >= 7) {
+        // Hook
+        return input.ball.position
+            .addX(-location.pushModifier * Constants.BALL_RADIUS * 2)
+            .addY(Math.signum(location.location.y) * Constants.BALL_RADIUS);
+      } else {
+        // PUsh
+        return input.ball.position.addX(location.pushModifier * Constants.BALL_RADIUS / 3);
+      }
     }
   }
 
   private void centerKickOff(DataPacket input, ControlsOutput output) {
-    Vector3 targetContact = getTargetContact(input);
-    bot.botRenderer.setCarTarget(targetContact);
+    bot.botRenderer.setCarTarget(target);
 
     double absY = Math.abs(input.car.position.y);
 
-    output.withSteer(Angles.flatCorrectionAngle(input.car, targetContact) * 10);
-
-    if (absY > 4200) {
+    if (absY > 4300) {
       // Get Up to speed
       output
           .withBoost()
@@ -84,27 +137,34 @@ public class KickoffTactician extends Tactician {
           .withBoost()
           .withThrottle(1.0f);
 
-      delegateTo(FlipHelper.builder(bot)
-          .setAggressiveness(1)
+      delegateTo(DiagonalFlipCancel.builder()
+          .setTarget(target)
           .build());
-    } else if (absY > 700) {
+    } else if (absY > 800) {
       output
-          .withBoost(input.car.groundSpeed < Constants.BOOSTED_MAX_SPEED && input.car.noseIsBetween(-.2, .1))
-          .withThrottle(1.0f);
+          .withSteer(Angles.flatCorrectionAngle(input.car, target) * 10)
+          .withThrottle(1);
     } else {
       CarData closestOpponent = closestOpponentToBall(input);
-      double aggressiveness = 1;
       if (closestOpponent != null) {
         // Need to get higher than the opponent.
         Vector3 oppBall = input.ball.position.minus(closestOpponent.position);
         Vector3 selfBall = input.ball.position.minus(input.car.position);
         double value = (slope(oppBall) - slope(selfBall)) / 10;
-        aggressiveness = Angles3.clip(value, 0, 1);
-      }
+        double aggressiveness = Angles3.clip(value, 0, 1);
 
-      delegateTo(FlipHelper.builder(bot)
-          .setAggressiveness(aggressiveness)
-          .build());
+        if (oppBall.magnitude() - selfBall.magnitude() < 200) {
+          delegateTo(FlipHelper.builder()
+              .setAggressiveness(aggressiveness)
+              .setTarget(target)
+              .build());
+        }
+      } else {
+        delegateTo(FlipHelper.builder()
+            .setAggressiveness(1)
+            .setTarget(target)
+            .build());
+      }
     }
   }
 
@@ -119,69 +179,36 @@ public class KickoffTactician extends Tactician {
         .orElse(null);
   }
 
-  private Vector3 getTargetContact(DataPacket input) {
-    Vector3 correction = input.ball.position.minus(Goal.opponentGoal(input.car.team).center)
-        .toMagnitude(Constants.BALL_RADIUS);
-    return input.ball.position.plus(correction);
-  }
-
   private void centerOffset(DataPacket input, ControlsOutput output) {
-    double initJump = 3100; // Turn in / boost
-    double releaseJump = initJump - 75; // Jump
-    double initFlip = releaseJump - 50; // Diagonal Flip
-    double prepLanding = initFlip - 380; // Straighten out
-    double releaseBoost = 1300; // Release the boost
-    double secondJump = 700; // Jump again
+    bot.botRenderer.renderTarget(target);
 
-    BallData relativeData = NormalUtils.noseRelativeBall(input);
-    JumpManager jumpManager = JumpManager.forCar(input.car);
+    double absY = Math.abs(input.car.position.y);
 
-    if (relativeData.position.y > initJump) {
-      // Turn in and boost
-      bot.botRenderer.setBranchInfo("Turn in!");
+    if (absY > 3250) {
+      // Get Up to speed
       output
-          .withThrottle(1.0f)
-          .withSteer((location == Locations.KickoffLocation.RIGHT_CENTER ? -1 : 1) * .20f)
-          .withBoost();
-    } else if (relativeData.position.y > releaseJump) {
-      // Jump
-      bot.botRenderer.setBranchInfo("Jump!");
-      output
-          .withJump()
+          .withSteer(location.turnModifier * .15)
           .withBoost()
           .withThrottle(1.0f);
-    } else if (relativeData.position.y > initFlip) {
-      // Release Jump
-      bot.botRenderer.setBranchInfo("Release Jump!");
+    } else if (absY > 2500) {
       output
-          .withThrottle(1.0f)
-          .withBoost();
-      hasFlipped = false;
-    } else if (relativeData.position.y > prepLanding) {
-      // Diagonal Flip
-      bot.botRenderer.setBranchInfo("Diagonal Flip!");
-      output
-          .withThrottle(1.0f)
-          .withJump(!hasFlipped)
-          .withYaw(location == Locations.KickoffLocation.RIGHT_CENTER ? 1 : -1)
-          .withPitch(-1F)
-          .withBoost();
-      hasFlipped = true;
-    } else if (relativeData.position.y > releaseBoost || !input.car.hasWheelContact) {
-      bot.botRenderer.setBranchInfo("Land Cleanly!");
-      output
-          .withThrottle(1.0f)
-          .withBoost(input.car.orientation.getNoseVector().z > -.1 && input.car.orientation.getNoseVector().z < .1);
-      Angles3.setControlsFor(input.car, Orientation.fromFlatVelocity(Angles.carBall(input)).getOrientationMatrix(), output);
-    } else {
-      bot.botRenderer.setBranchInfo("Prep second jump!");
+          .withBoost()
+          .withThrottle(1.0f);
 
-      // Land cleanly
-      output.withThrottle(1.0f)
-          .withBoost();
-      correctTowardBall(input, output);
-      delegateTo(FlipHelper.builder(bot)
-          .setAggressiveness(1.0)
+      delegateTo(DiagonalFlipCancel.builder()
+          .setTarget(target)
+          .build());
+    } else if (absY > 500) {
+      output
+          .withSteer(Angles.flatCorrectionAngle(input.car, target) * 10)
+          .withSlide()
+          .withThrottle(1);
+    } else {
+      BallData relativeBall = NormalUtils.noseRelativeBall(input);
+      delegateTo(FlipHelper.builder()
+          .setTarget(target)
+          .withFixedPitch(-1)
+          .withFixedYaw(relativeBall.position.x)
           .build());
     }
   }
@@ -190,30 +217,40 @@ public class KickoffTactician extends Tactician {
     JumpManager jumpManager = JumpManager.forCar(input.car);
     // Fast flip.
     float carX = Math.abs(input.car.position.x);
-    float leftRightMirror = location == Locations.KickoffLocation.LEFT ? -1 : 1;
+    double carTarget = input.car.position.distance(target);
 
-    if (carX > 1900) { // Tilt in
+    bot.botRenderer.renderTarget(target);
+
+    if (carX > 1950) { // Tilt in
       bot.botRenderer.setBranchInfo("Tilt in");
       StateLogger.log(input, "Tilt in");
+
+      double correctionAngle = Angles.flatCorrectionAngle(input.car, target);
+      // Aim offset depending on the side you are on.
+      correctionAngle += (DiagonalFlipCancel.MIN_DRIFT * -Math.signum(input.car.position.x));
       output
           .withThrottle(1.0f)
           .withBoost()
-          .withSteer(Angles.flatCorrectionAngle(
-              input.car,
-              input.ball.position.addX(leftRightMirror * -DiagonalFlipCancel.MIN_DRIFT * 1.2)) * 5);
-    } else if ((input.car.hasWheelContact || (input.car.position.z < 45 && jumpManager.elapsedJumpTime() < .1))
+          .withSteer(correctionAngle * 10);
+    } else if ((input.car.hasWheelContact || (input.car.position.z < 45 && jumpManager.getElapsedJumpTime() < .1))
         && carX > 1600) {
       bot.botRenderer.setBranchInfo("Jump");
       StateLogger.log(input, "Jump");
       delegateTo(DiagonalFlipCancel.builder()
-          .setTarget(input.ball.position)
+          .setTarget(target)
           .build());
-    } else {
-      Vector3 ballContactTarget = input.ball.position.addY(Math.signum(input.car.position.y) * Constants.BALL_RADIUS);
-      bot.botRenderer.renderTarget(ballContactTarget);
+    } else if (carTarget > 470) {
       output
-          .withSteer(Angles.flatCorrectionAngle(input.car, ballContactTarget) * 10)
-          .withThrottle(1.0);
+          .withBoost(!input.car.isSupersonic)
+          .withThrottle(1.0)
+          .withSteer(Angles.flatCorrectionAngle(input.car, target) * 5);
+    } else {
+      BallData relativeBall = NormalUtils.noseRelativeBall(input);
+      delegateTo(FlipHelper.builder()
+          .setTarget(target)
+          .withFixedPitch(-1)
+          .withFixedYaw(-relativeBall.position.x)
+          .build());
     }
   }
 

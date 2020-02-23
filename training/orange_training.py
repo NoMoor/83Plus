@@ -1,5 +1,6 @@
-from agc_player_config import agc_blue
+from agc_player_config import agc_orange
 from kickoff.kickoff_exercises import kickoff_exercises
+
 
 def make_default_playlist():
     exercises = []
@@ -19,7 +20,7 @@ def make_default_playlist():
     # exercises += common_silver_goalie()
 
     for exercise in exercises:
-        exercise.match_config.player_configs = [agc_blue]
+        exercise.match_config.player_configs = [agc_orange]
         exercise.match_config.enable_lockstep = True
 
     return exercises
