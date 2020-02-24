@@ -59,7 +59,7 @@ public class BotRenderer {
 
   private BotRenderer(Bot bot) {
     this.bot = bot;
-    this.skipRendering = Flags.bot_rendering_ids.contains(bot.getIndex());
+    this.skipRendering = !Flags.BOT_RENDERING_IDS.contains(bot.getIndex());
   }
 
   public static BotRenderer forBot(Bot bot) {

@@ -19,7 +19,6 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import rlbot.Bot;
 import rlbot.flat.BallPrediction;
 import rlbot.flat.PredictionSlice;
 
@@ -29,14 +28,10 @@ public class BallPredictionUtil {
 
   private static HashMap<Integer, BallPredictionUtil> BOTS = new HashMap<>();
 
-  private final int index;
+  private final int playerIndex;
 
   private BallPredictionUtil(int index) {
-    this.index = index;
-  }
-
-  public static BallPredictionUtil forBot(Bot bot) {
-    return forIndex(bot.getIndex());
+    this.playerIndex = index;
   }
 
   public static BallPredictionUtil forIndex(int index) {
@@ -48,7 +43,6 @@ public class BallPredictionUtil {
     return forIndex(car.playerIndex);
   }
 
-  // TODO: Make this non-static
   private List<ExaminedBallData> examinedBallData = new LinkedList<>();
 
   public List<ExaminedBallData> getPredictions() {
@@ -67,7 +61,11 @@ public class BallPredictionUtil {
     return firstHittable.orElse(null);
   }
 
-  public boolean refresh(DataPacket input) {
+  public static boolean refresh(DataPacket input) {
+    return forCar(input.car).refreshInternal(input.ball);
+  }
+
+  private boolean refreshInternal(BallData ball) {
     Optional<BallPrediction> predictionOptional = DllHelper.getBallPrediction();
     if (predictionOptional.isPresent()) {
       BallPrediction prediction = predictionOptional.get();
@@ -86,7 +84,7 @@ public class BallPredictionUtil {
     Iterator<ExaminedBallData> ballIterator = examinedBallData.iterator();
     while (ballIterator.hasNext()) {
       ExaminedBallData next = ballIterator.next();
-      if (next.ball.elapsedSeconds >= input.ball.elapsedSeconds) {
+      if (next.ball.elapsedSeconds >= ball.elapsedSeconds) {
         break;
       }
 
@@ -96,7 +94,6 @@ public class BallPredictionUtil {
     return false;
   }
 
-  // TODO: This could be static.
   private boolean hasBeenTouched(PredictionSlice nextSlice) {
     BallData prediction = BallData.fromPredictionSlice(nextSlice);
     Iterator<ExaminedBallData> ballIterator = examinedBallData.iterator();

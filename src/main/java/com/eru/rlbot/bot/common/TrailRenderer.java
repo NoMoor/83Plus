@@ -1,48 +1,66 @@
 package com.eru.rlbot.bot.common;
 
+import com.eru.rlbot.bot.flags.Flags;
 import com.eru.rlbot.common.input.DataPacket;
 import com.eru.rlbot.common.output.ControlsOutput;
 import com.eru.rlbot.common.vector.Vector3;
 import com.google.common.collect.ImmutableList;
 import com.google.flatbuffers.FlatBufferBuilder;
-import rlbot.cppinterop.RLBotDll;
-import rlbot.render.RenderPacket;
-import rlbot.render.Renderer;
-import java.awt.*;
+import java.awt.Color;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
+import rlbot.cppinterop.RLBotDll;
+import rlbot.render.RenderPacket;
+import rlbot.render.Renderer;
 
 public class TrailRenderer {
 
-  // Max legnth of trail to render.
-  private static final int MAX_SIZE = (Constants.STEP_SIZE_COUNT * 1);
-  private static final int GROUPING_SIZE = 10;
-
-  // Groupings of trail packets that are rendered together.
-  private static LinkedList<ImmutableList<Pair<DataPacket, ControlsOutput>>> TRAIL_PACKETS = new LinkedList<>();
-  private static LinkedList<Pair<DataPacket, ControlsOutput>> NEW_PACKETS = new LinkedList<>();
+  // Max length of trail to render.
+  private static final int MAX_SIZE = Constants.STEP_SIZE_COUNT;
+  private static final int GROUPING_SIZE = 40;
+  private static final float MAX_VEL_HEIGHT = Constants.BALL_RADIUS / 2;
 
   private static int nextTrailBotIndex = 100;
-  private static Map<ImmutableList<Pair<DataPacket, ControlsOutput>>, TrailRendererInternal> TRAIL_BOTS =
+
+  // Groupings of trail packets that are rendered together.
+  private LinkedList<ImmutableList<Pair<DataPacket, ControlsOutput>>> trailPackets = new LinkedList<>();
+  private LinkedList<Pair<DataPacket, ControlsOutput>> newPackets = new LinkedList<>();
+  private static Map<ImmutableList<Pair<DataPacket, ControlsOutput>>, TrailRendererInternal> packetRendererMap =
       new HashMap<>();
+
+  // A static pool of trail renderers that can be reused.
   private static LinkedList<TrailRendererInternal> RENDER_POOL = new LinkedList<>();
+  private static final HashMap<Integer, TrailRenderer> RENDERERS = new HashMap<>();
 
-  public static void recordAndRender(DataPacket input, ControlsOutput output) {
-    if (true)
-      return;
+  private final int playerIndex;
 
-    record(input, output);
-    renderTrail();
+  public TrailRenderer(int playerIndex) {
+    this.playerIndex = playerIndex;
   }
 
-  private static void renderTrail() {
-    TrailRendererInternal renderer = getTrailRenderer();
-    Pair<DataPacket, ControlsOutput> previous = TRAIL_PACKETS.isEmpty()
-        ? null
-        : TRAIL_PACKETS.getLast().get(TRAIL_PACKETS.getLast().size() - 1);
+  public static void recordAndRender(DataPacket input, ControlsOutput output) {
+    if (!Flags.ENABLE_TRAIL_RENDERING || !Flags.BOT_RENDERING_IDS.contains(input.car.playerIndex)) {
+      return;
+    }
 
-    for (Pair<DataPacket, ControlsOutput> trail : NEW_PACKETS) {
+    TrailRenderer renderer = getRenderer(input.car.playerIndex);
+
+    renderer.record(input, output);
+    renderer.renderTrail();
+  }
+
+  private static TrailRenderer getRenderer(int playerIndex) {
+    return RENDERERS.computeIfAbsent(playerIndex, TrailRenderer::new);
+  }
+
+  private void renderTrail() {
+    TrailRendererInternal renderer = getTrailRenderer();
+    Pair<DataPacket, ControlsOutput> previous = trailPackets.isEmpty()
+        ? null
+        : trailPackets.getLast().get(trailPackets.getLast().size() - 1);
+
+    for (Pair<DataPacket, ControlsOutput> trail : newPackets) {
       if (previous != null) {
         renderTrail(renderer, previous, trail);
       }
@@ -54,9 +72,7 @@ public class TrailRenderer {
     }
   }
 
-  private static final float MAX_VEL_HEIGHT = Constants.BALL_RADIUS / 2;
-
-  private static void renderTrail(
+  private void renderTrail(
       Renderer renderer,
       Pair<DataPacket, ControlsOutput> previous,
       Pair<DataPacket, ControlsOutput> next) {
@@ -159,21 +175,21 @@ public class TrailRenderer {
     return renderer;
   }
 
-  private static void record(DataPacket input, ControlsOutput output) {
-    if (NEW_PACKETS.size() > GROUPING_SIZE) {
-      ImmutableList<Pair<DataPacket, ControlsOutput>> packets = ImmutableList.copyOf(NEW_PACKETS);
-      TRAIL_PACKETS.addLast(packets);
-      TRAIL_BOTS.put(packets, RENDER_POOL.removeFirst());
+  private void record(DataPacket input, ControlsOutput output) {
+    if (newPackets.size() > GROUPING_SIZE) {
+      ImmutableList<Pair<DataPacket, ControlsOutput>> packets = ImmutableList.copyOf(newPackets);
+      trailPackets.addLast(packets);
+      packetRendererMap.put(packets, RENDER_POOL.removeFirst());
 
-      NEW_PACKETS.clear();
+      newPackets.clear();
     }
 
-    if (TRAIL_PACKETS.size() * GROUPING_SIZE > MAX_SIZE) {
-      ImmutableList<Pair<DataPacket, ControlsOutput>> removedPacket = TRAIL_PACKETS.removeFirst();
-      RENDER_POOL.add(TRAIL_BOTS.remove(removedPacket));
+    if (trailPackets.size() * GROUPING_SIZE > MAX_SIZE) {
+      ImmutableList<Pair<DataPacket, ControlsOutput>> removedPacket = trailPackets.removeFirst();
+      RENDER_POOL.add(packetRendererMap.remove(removedPacket));
     }
 
-    NEW_PACKETS.add(Pair.of(input, output));
+    newPackets.add(Pair.of(input, output));
   }
 
   // The offset in render group index to not collide with the cars.

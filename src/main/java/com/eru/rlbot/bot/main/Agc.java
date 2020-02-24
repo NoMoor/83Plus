@@ -12,13 +12,13 @@ import com.eru.rlbot.bot.common.DemoChecker;
 import com.eru.rlbot.bot.common.Goal;
 import com.eru.rlbot.bot.common.TrailRenderer;
 import com.eru.rlbot.bot.common.TrainingId;
+import com.eru.rlbot.bot.flags.Flags;
 import com.eru.rlbot.bot.prediction.NextFramePredictor;
 import com.eru.rlbot.bot.strats.BallPredictionUtil;
 import com.eru.rlbot.bot.strats.StrategyManager;
 import com.eru.rlbot.common.StateLogger;
 import com.eru.rlbot.common.boost.BoostManager;
 import com.eru.rlbot.common.dropshot.DropshotTileManager;
-import com.eru.rlbot.common.input.CarData;
 import com.eru.rlbot.common.input.DataPacket;
 import com.eru.rlbot.common.jump.JumpManager;
 import com.eru.rlbot.common.output.ControlsOutput;
@@ -27,16 +27,11 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import rlbot.Bot;
 import rlbot.ControllerState;
-import rlbot.cppinterop.RLBotDll;
 import rlbot.flat.GameTickPacket;
-import rlbot.gamestate.GameState;
-import rlbot.gamestate.GameStatePacket;
 
 public final class Agc implements Bot {
 
   private static final Logger logger = LogManager.getLogger("Agc");
-
-  private static final double NANOS = 1000000000d;
 
   public final Goal opponentsGoal;
   public final Goal ownGoal;
@@ -44,8 +39,8 @@ public final class Agc implements Bot {
   public final BotRenderer botRenderer;
   protected final int playerIndex;
   protected final BotChatter botChatter;
+
   private final StrategyManager strategyManager;
-  private boolean allowStateSetting;
   private final BallPredictionRenderer ballPredictionRenderer;
 
   public Agc(int playerIndex, int team) {
@@ -82,43 +77,42 @@ public final class Agc implements Bot {
     // Translate the raw packet data (which is in an unpleasant format) into our custom DataPacket class.
     // The DataPacket might not include everything from GameTickPacket, so improve it if you need to!
     DataPacket input = new DataPacket(packet, playerIndex);
-    BallPredictionUtil.forIndex(input.car.playerIndex).refresh(input);
+
+    // Checks to see if the ball has been touched.
+    BallPredictionUtil.refresh(input);
     DemoChecker.track(input);
 
-    JumpManager.forCar(input.car).loadCar(input.car);
-    CarBallContactManager.loadDataPacket(input);
+    JumpManager.trackInput(input);
+    CarBallContactManager.track(input);
     StateLogger.track(input);
-    TrainingId.trackId(input.car);
+    TrainingId.track(input);
 
     botChatter.talk(input);
 
     ControlsOutput output = strategyManager.executeStrategy(input);
 
-    // Uncomment to force car to stay still
-    if (false)
+    if (Flags.FREEZE_CAR_ENABLED)
       output = new ControlsOutput()
           .withThrottle(0f)
           .withSteer(0)
           .withBoost(false);
 
-
     KickoffGameSetter.track(input);
 
     // Must do ball before updating the jump manager
-    if (false)
-      NextFramePredictor.nextFrame(input, output);
-
-    JumpManager.forCar(input.car).processOutput(input.car, output);
+    NextFramePredictor.getPrediction(input, output);
+    JumpManager.trackOutput(input, output);
 
     // Do Rendering.
     TrailRenderer.recordAndRender(input, output);
     botRenderer.renderInfo(input, output);
+
     ballPredictionRenderer.renderBallPrediction();
 
     long endTime = System.nanoTime();
-    double frameTime = (endTime - startTime) / NANOS;
-    if (frameTime > Constants.STEP_SIZE * 5) {
-      logger.error("Dropped frame: {}", frameTime);
+    double frameTime = (endTime - startTime) / Constants.NANOS;
+    if (frameTime > Constants.STEP_SIZE) {
+      logger.error("Dropped frames: {}", (frameTime / Constants.STEP_SIZE));
     }
 
     return output;
@@ -131,19 +125,5 @@ public final class Agc implements Bot {
 
   public void retire() {
     System.out.println("Retiring BallChaser V1 bot " + playerIndex);
-  }
-
-  public void enableStateSetting() {
-    this.allowStateSetting = true;
-  }
-
-  public void setState(CarData carData) {
-    if (allowStateSetting) {
-      allowStateSetting = false;
-      GameStatePacket newState = new GameState()
-          .withCarState(this.playerIndex, carData.toCarState())
-          .buildPacket();
-      RLBotDll.setGameState(newState);
-    }
   }
 }

@@ -2,13 +2,18 @@ package com.eru.rlbot.bot.main;
 
 import com.eru.rlbot.bot.common.Constants;
 import com.eru.rlbot.common.util.PortReader;
-import rlbot.manager.BotManager;
-import rlbot.pyinterop.PythonServer;
-import javax.swing.*;
-import javax.swing.border.EmptyBorder;
 import java.awt.event.ActionListener;
 import java.util.OptionalInt;
 import java.util.Set;
+import javax.swing.BoxLayout;
+import javax.swing.JButton;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.Timer;
+import javax.swing.border.EmptyBorder;
+import rlbot.manager.BotManager;
+import rlbot.pyinterop.PythonServer;
 
 /**
  * See JavaAgent.py for usage instructions.
@@ -36,7 +41,7 @@ public class BotLauncher {
     JLabel botsRunning = new JLabel("Bots running: ");
     panel.add(botsRunning);
 
-    panel.add(stateSettingButtons(botManager, botMaker));
+//    panel.add(stateSettingButtons(botManager, botMaker));
 
     frame.add(panel);
 

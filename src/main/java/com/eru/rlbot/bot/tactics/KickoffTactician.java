@@ -10,7 +10,6 @@ import com.eru.rlbot.bot.common.NormalUtils;
 import com.eru.rlbot.bot.main.Agc;
 import com.eru.rlbot.bot.maneuver.DiagonalFlipCancel;
 import com.eru.rlbot.bot.maneuver.FlipHelper;
-import com.eru.rlbot.common.StateLogger;
 import com.eru.rlbot.common.input.CarData;
 import com.eru.rlbot.common.input.DataPacket;
 import com.eru.rlbot.common.jump.JumpManager;
@@ -49,7 +48,7 @@ public class KickoffTactician extends Tactician {
   @Override
   void execute(DataPacket input, ControlsOutput output, Tactic tactic) {
     super.execute(input, output, tactic);
-    if (monitor != null && CarBallContactManager.isTouched()) {
+    if (monitor != null && CarBallContactManager.isTouched(input)) {
       monitor.trackWhile(false, input.car);
     }
   }
@@ -220,7 +219,6 @@ public class KickoffTactician extends Tactician {
     if (input.car.groundSpeed < jumpSpeed) { // Tilt in
       double correctionAngle = 0;
       bot.botRenderer.setBranchInfo("Tilt in");
-      StateLogger.log(input, "Tilt in");
 
       output
           .withThrottle(1.0f)
@@ -231,7 +229,6 @@ public class KickoffTactician extends Tactician {
 
       // TODO: Select target here based on where the opponents are.
       bot.botRenderer.setBranchInfo("Jump");
-      StateLogger.log(input, "Jump");
       delegateTo(DiagonalFlipCancel.builder()
           .setTarget(target)
           .build());

@@ -20,14 +20,14 @@ public class KickoffGameSetter {
   private static float kickOffTime;
 
   public static void track(DataPacket input) {
-    if (input.ball.position.magnitude() < 500 && carIsNearBall(input) && Flags.slow_time_near_ball) {
+    if (!Flags.ENABLE_KICKOFF_GAME) {
+      return;
+    }
+
+    if (input.ball.position.magnitude() < 500 && carIsNearBall(input) && Flags.SLOW_TIME_NEAR_BALL_ENABLED) {
       setSpeed(.1);
     } else {
       setSpeed(1);
-    }
-
-    if (!Flags.kickoff_game_enabled) {
-      return;
     }
 
     if (!input.gameInfo.isKickoffPause() && kickOffTime == 0 && input.ball.position.magnitude() < 200) {

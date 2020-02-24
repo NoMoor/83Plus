@@ -2,6 +2,7 @@ package com.eru.rlbot.common.jump;
 
 import com.eru.rlbot.bot.common.Constants;
 import com.eru.rlbot.common.input.CarData;
+import com.eru.rlbot.common.input.DataPacket;
 import com.eru.rlbot.common.output.ControlsOutput;
 import java.util.HashMap;
 
@@ -47,7 +48,7 @@ public class JumpManager {
 
   public static JumpManager copyForCar(CarData car) {
     JumpManager copy = forCar(car).copy();
-    copy.loadCar(car);
+    copy.trackInput(car);
     return copy;
   }
 
@@ -65,7 +66,11 @@ public class JumpManager {
     return copy;
   }
 
-  public void loadCar(CarData car) {
+  public static void trackInput(DataPacket input) {
+    forCar(input.car).trackInput(input.car);
+  }
+
+  public void trackInput(CarData car) {
     // TODO: Update to use single / double jump bits...
     inputCar = car;
 
@@ -87,7 +92,11 @@ public class JumpManager {
     }
   }
 
-  public void processOutput(CarData car, ControlsOutput output) {
+  public static void trackOutput(DataPacket input, ControlsOutput output) {
+    forCar(input.car).trackOutput(input.car, output);
+  }
+
+  public void trackOutput(CarData car, ControlsOutput output) {
     jumpPressed = output.holdJump();
 
     if (car.hasWheelContact && jumpPressed && firstJumpTime == 0) {

@@ -31,7 +31,7 @@ public class PathExecutor {
 
     Vector3 distanceDiff = target.minus(input.car.position);
     if (distanceDiff.magnitude() > Constants.BOOSTED_MAX_SPEED * 2 * Path.LEAD_TIME) {
-      logger.info("Off course: {} {}", currentSegment.type, distanceDiff.magnitude());
+      logger.debug("Off course: {} {}", currentSegment.type, distanceDiff.magnitude());
       path.markOffCourse();
     } else {
       double delta = path.currentTarget(input).distance(input.car.position);

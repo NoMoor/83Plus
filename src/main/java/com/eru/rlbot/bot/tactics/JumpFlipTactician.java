@@ -89,13 +89,13 @@ public class JumpFlipTactician extends Tactician {
 
     int ticks = 0;
     while (car.position.distance(ball.position) > Constants.BALL_RADIUS * 1.5 && ticks < maxTicks) {
-      jumpManager.loadCar(car);
+      jumpManager.trackInput(car);
 
       ControlsOutput controls = new ControlsOutput();
       planFrame(car, ball, controls, jumpManager);
 
       CarData nextCar = NextFramePredictor.makePrediction(car, controls, boostTracker, jumpManager);
-      jumpManager.processOutput(car, controls);
+      jumpManager.trackOutput(car, controls);
 
       controlsListBuilder.add(Pair.of(controls, car));
 

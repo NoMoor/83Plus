@@ -95,6 +95,8 @@ public final class Constants {
     }
   }
 
+  public static final double NANOS = 1000000000d;
+
   private static double speedGranularity = .5;
 
   /**

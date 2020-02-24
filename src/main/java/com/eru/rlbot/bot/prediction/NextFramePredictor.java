@@ -3,6 +3,7 @@ package com.eru.rlbot.bot.prediction;
 import com.eru.rlbot.bot.common.Accels;
 import com.eru.rlbot.bot.common.BotRenderer;
 import com.eru.rlbot.bot.common.Constants;
+import com.eru.rlbot.bot.flags.Flags;
 import com.eru.rlbot.common.boost.BoostTracker;
 import com.eru.rlbot.common.input.CarData;
 import com.eru.rlbot.common.input.DataPacket;
@@ -21,7 +22,15 @@ public class NextFramePredictor {
   private static CarData lastFramePrediction;
   private static ControlsOutput lastFrameControls;
 
-  public static void nextFrame(DataPacket input, ControlsOutput output) {
+  public static void getPrediction(DataPacket input, ControlsOutput output) {
+    if (!Flags.PREDICT_AND_RENDER_NEXT_CAR_FRAME_ENABLED)
+      return;
+
+    // TODO: Update to support multiple cars
+    if (lastFramePrediction != null && lastFramePrediction.playerIndex != input.car.playerIndex) {
+      return;
+    }
+
     if (lastFramePrediction != null) {
       compareResult(lastFramePrediction, input.car);
     }
@@ -36,9 +45,9 @@ public class NextFramePredictor {
     JumpManager jumpManager = JumpManager.copyForCar(car);
 
     for (ControlsOutput controls : outputs) {
-      jumpManager.loadCar(car);
+      jumpManager.trackInput(car);
       boostTracker.update(car, controls);
-      jumpManager.processOutput(car, controls);
+      jumpManager.trackOutput(car, controls);
 
       car = makePrediction(car, controls, boostTracker, jumpManager);
     }

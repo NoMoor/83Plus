@@ -4,6 +4,7 @@ import static com.google.common.collect.ImmutableList.toImmutableList;
 
 import com.eru.rlbot.bot.common.Constants;
 import com.eru.rlbot.bot.common.TrainingId;
+import com.eru.rlbot.bot.flags.Flags;
 import com.eru.rlbot.common.input.BallData;
 import com.eru.rlbot.common.input.CarData;
 import com.eru.rlbot.common.input.DataPacket;
@@ -12,14 +13,14 @@ import com.eru.rlbot.common.vector.Vector3;
 import com.google.common.collect.ImmutableList;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.util.JsonFormat;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import rlbot.gamestate.DesiredRotation;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.LinkedList;
 import java.util.Queue;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import rlbot.gamestate.DesiredRotation;
 
 public class StateLogger {
 
@@ -35,11 +36,30 @@ public class StateLogger {
   private static final long BUFFER_LENGTH = 4 * Constants.STEP_SIZE_COUNT;
   private static final Queue<DataPacket> dataPacketBuffer = new LinkedList<>();
 
+  private static volatile int controllerPlayer = -1;
+
   public static void track(DataPacket input) {
+    if (!isControllingPlayer(input.car.playerIndex)) {
+      return;
+    }
+
     dataPacketBuffer.add(input);
     while (dataPacketBuffer.size() > BUFFER_LENGTH) {
       dataPacketBuffer.poll();
     }
+  }
+
+  private static boolean isControllingPlayer(int index) {
+    if (!Flags.STATE_LOGGER_ENABLED) {
+      return false;
+    }
+
+    if (controllerPlayer != -1 && controllerPlayer != index) {
+      return false;
+    }
+
+    controllerPlayer = index;
+    return true;
   }
 
   public static void capture() {
