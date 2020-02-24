@@ -22,6 +22,7 @@ public class FlipHelper extends Maneuver {
   private final Double yaw;
   private final Double pitch;
 
+  private boolean initialJump;
   private boolean flipComplete;
   private boolean done;
   private boolean flipAtTarget;
@@ -65,10 +66,14 @@ public class FlipHelper extends Maneuver {
       }
     } else {
       if (!input.car.jumped) {
+        if (initialJump) {
+          flipComplete = true;
+        }
         botRenderer.setBranchInfo("Initial Jump");
+        initialJump = !JumpManager.forCar(input.car).jumpPressedLastFrame();
         // Jump now
         output
-            .withJump()
+            .withJump(initialJump)
             .withThrottle(1.0)
             .withBoost();
       } else if (jumpManager.getElapsedJumpTime() < (JumpManager.MAX_JUMP_TIME * ((.8 * (1 - aggressiveness)) + .2))
@@ -77,6 +82,7 @@ public class FlipHelper extends Maneuver {
           && !forceFlip) {
         botRenderer.setBranchInfo("Hold Jump");
         output
+            .withThrottle(1.0)
             .withJump()
             .withBoost();
       } else if (!jumpManager.hasReleasedJumpInAir()) {
