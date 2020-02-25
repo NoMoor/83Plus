@@ -3,6 +3,7 @@ package com.eru.rlbot.bot.strats;
 import com.eru.rlbot.bot.common.Angles;
 import com.eru.rlbot.bot.common.Constants;
 import com.eru.rlbot.bot.tactics.Tactic;
+import com.eru.rlbot.common.Moment;
 import com.eru.rlbot.common.boost.BoostManager;
 import com.eru.rlbot.common.boost.BoostPad;
 import com.eru.rlbot.common.input.DataPacket;
@@ -24,15 +25,13 @@ public class PathPlanner {
     ImmutableList.Builder<Tactic> pathBuilder = ImmutableList.builder();
 
     Optional<BoostPad> optionalBoostPad = closestBoostPad(tactic, 250);
-    optionalBoostPad
-        .map(pad -> Tactic.builder()
-            .setSubject(getNearestBoostEdge(
-                pad.getLocation(), input.car.position, tactic.subject.position, pad.isLargeBoost()))
-            .setTacticType(tactic.tacticType)
-            .setSubjectType(pad.isLargeBoost() ? Tactic.SubjectType.LARGE_BOOST : Tactic.SubjectType.SMALL_BOOST)
-            .setTacticType(Tactic.TacticType.ROTATE)
-            .setObject(tactic.subject.position)
-            .build())
+    optionalBoostPad.map(pad -> Tactic.builder()
+        .setSubject(getNearestBoostEdge(
+            pad.getLocation(), input.car.position, tactic.subject.position, pad.isLargeBoost()))
+        .setTacticType(tactic.tacticType)
+        .setTacticType(Tactic.TacticType.ROTATE)
+        .setObject(tactic.subject.position)
+        .build())
         .ifPresent(pathBuilder::add);
 
     return pathBuilder
@@ -40,7 +39,7 @@ public class PathPlanner {
         .build();
   }
 
-  private Vector3 getNearestBoostEdge(Vector3 location, Vector3 start, Vector3 end, boolean isLargeBoost) {
+  private Moment getNearestBoostEdge(Vector3 location, Vector3 start, Vector3 end, boolean isLargeBoost) {
     Vector3 boostToShortestPath = Vector3.from(location, Vector3s.nearestPointOnLineSegment(location, start, end));
 
     double offsetMagnitude =
@@ -49,7 +48,7 @@ public class PathPlanner {
             isLargeBoost ? Constants.LARGE_BOOST_PICKUP_RADIUS : Constants.SMALL_BOOST_PICKUP_RADIUS);
 
     Vector3 pickUpOffset = boostToShortestPath.toMagnitude(offsetMagnitude);
-    return location.plus(pickUpOffset);
+    return new Moment(location.plus(pickUpOffset), isLargeBoost ? Moment.Type.LARGE_BOOST : Moment.Type.SMALL_BOOST);
   }
 
   private Optional<BoostPad> closestBoostPad(Tactic tactic, int maxOutOfWayTravel) {
@@ -75,17 +74,19 @@ public class PathPlanner {
 
       if (thisDistance < shortestDistance) {
         // Ensure the boost is good to pick up.
-        Vector3 pickupLocation =
+        Moment pickupLocation =
             getNearestBoostEdge(boostPad.getLocation(), carPosition, tacticPosition, boostPad.isLargeBoost());
 
-        boolean isTooCloseToTactic = tacticPosition.distance(pickupLocation) < maxOutOfWayTravel * 2;
+        boolean isTooCloseToTactic = tacticPosition.distance(pickupLocation.position) < maxOutOfWayTravel * 2;
 
         // TODO: This should depend on speed, distance, etc.
         boolean isTooWideToCar =
-            Math.abs(Angles.flatCorrectionAngle(carPosition, input.car.orientation.getNoseVector(), pickupLocation)) > .2;
+            Math.abs(Angles.flatCorrectionAngle(carPosition, input.car.orientation.getNoseVector(), pickupLocation.position)) > .2;
         boolean isTooWideToTactic =
             Math.abs(Angles.flatCorrectionAngle(
-                pickupLocation, Vector3.from(input.car.position, pickupLocation), tacticPosition)) > .2;
+                pickupLocation.position,
+                Vector3.from(input.car.position, pickupLocation.position),
+                tacticPosition)) > .2;
 
         if (!isTooCloseToTactic && !isTooWideToCar && !isTooWideToTactic) {
           shortestDistance = thisDistance;

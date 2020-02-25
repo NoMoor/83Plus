@@ -43,7 +43,7 @@ public class StrategyManager {
     if (active == null || active.isComplete() || (timedUpdate && !active.tacticManager.isTacticLocked())) {
       lastStrategyUpdateTime = input.car.elapsedSeconds;
 
-      Strategist newStrategist = getNewStrategist(input);
+      Strategist newStrategist = getNewStrategist();
       if (active != null) {
         active.abort();
       }
@@ -61,18 +61,8 @@ public class StrategyManager {
   /**
    * Called every x ticks to get the best strategy.
    */
-  private Strategist getNewStrategist(DataPacket input) {
-    // TODO: Use the ball prediction util.
-    Strategist newStrategist;
-    if (DefendStrategist.shouldDefend(input)) {
-      newStrategist = strategists.get(Strategy.Type.DEFEND);
-    } else if (AttackStrategist.shouldAttack(input)) {
-      newStrategist = strategists.get(Strategy.Type.ATTACK);
-    } else {
-      newStrategist = strategists.get(Strategy.Type.SUPPORT);
-    }
-
-    return newStrategist;
+  private Strategist getNewStrategist() {
+    return strategists.get(Strategy.Type.ATTACK);
   }
 
   private boolean checkReset(DataPacket input) {

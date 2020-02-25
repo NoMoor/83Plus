@@ -78,7 +78,7 @@ public class CarBallOptimizer {
         .setOrientation(carOrientation)
         .setVelocity(noseOrientation.toMagnitude(AVERAGE_SPEED))
         .setPosition(carPosition)
-        .setTime(ball.elapsedSeconds)
+        .setTime(ball.time)
         .build();
   }
 

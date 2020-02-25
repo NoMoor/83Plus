@@ -4,16 +4,20 @@ import com.eru.rlbot.bot.common.Constants;
 import com.eru.rlbot.bot.common.DllHelper;
 import com.eru.rlbot.bot.common.Path;
 import com.eru.rlbot.bot.common.Plan;
+import com.eru.rlbot.bot.tactics.Tactic;
 import com.eru.rlbot.common.StateLogger;
 import com.eru.rlbot.common.input.BallData;
 import com.eru.rlbot.common.input.CarData;
 import com.eru.rlbot.common.input.DataPacket;
+import com.google.common.collect.Iterables;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -55,7 +59,7 @@ public class BallPredictionUtil {
     }
 
     Optional<ExaminedBallData> firstHittable = examinedBallData.stream()
-        .filter(data -> data.isHittable().orElse(false))
+        .filter(ball -> ball.isHittable().orElse(false))
         .findFirst();
 
     return firstHittable.orElse(null);
@@ -84,7 +88,7 @@ public class BallPredictionUtil {
     Iterator<ExaminedBallData> ballIterator = examinedBallData.iterator();
     while (ballIterator.hasNext()) {
       ExaminedBallData next = ballIterator.next();
-      if (next.ball.elapsedSeconds >= ball.elapsedSeconds) {
+      if (next.ball.time >= ball.time) {
         break;
       }
 
@@ -99,14 +103,14 @@ public class BallPredictionUtil {
     Iterator<ExaminedBallData> ballIterator = examinedBallData.iterator();
     while (ballIterator.hasNext()) {
       ExaminedBallData nextBall = ballIterator.next();
-      if (nextBall.ball.elapsedSeconds >= prediction.elapsedSeconds) {
-        if (prediction.elapsedSeconds + Constants.STEP_SIZE * 1 < nextBall.ball.elapsedSeconds) {
+      if (nextBall.ball.time >= prediction.time) {
+        if (prediction.time + Constants.STEP_SIZE * 1 < nextBall.ball.time) {
           // This prediction is off-cycle of the ones we have. Don't worry about it.
           return false;
         }
 
         // Logging to check the diffs when the ball prediction is refreshed.
-        logger.debug(StateLogger.format(nextBall.ball) + " time: " + nextBall.ball.elapsedSeconds);
+        logger.debug(StateLogger.format(nextBall.ball) + " time: " + nextBall.ball.time);
         return !prediction.fuzzyEquals(nextBall.ball);
       }
       ballIterator.remove();
@@ -123,7 +127,8 @@ public class BallPredictionUtil {
   public static class ExaminedBallData {
 
     private List<Path> paths = new ArrayList<>();
-    private Boolean hittable = null;
+    private Set<Tactic.TacticType> hittableBy = new HashSet<>();
+    private Set<Tactic.TacticType> notHittableBy = new HashSet<>();
     public final BallData ball;
     private CarData fastTarget;
     private Plan fastPlan;
@@ -132,15 +137,20 @@ public class BallPredictionUtil {
       this.ball = ball;
     }
 
-    // TODO: This should be per pathing strategy
     public Optional<Boolean> isHittable() {
-      return Optional.ofNullable(hittable);
+      return hittableBy.isEmpty() && notHittableBy.isEmpty() ? Optional.empty() : Optional.of(!hittableBy.isEmpty());
     }
 
-    public void setHittable(boolean value) {
-      if (hittable == null || !hittable) {
-        hittable = value;
-      }
+    public Optional<Tactic.TacticType> isHittableBy() {
+      return hittableBy.isEmpty() ? Optional.empty() : Optional.of(Iterables.getOnlyElement(hittableBy));
+    }
+
+    public void setHittableBy(Tactic.TacticType type) {
+      hittableBy.add(type);
+    }
+
+    public void setNotHittableBy(Tactic.TacticType type) {
+      notHittableBy.add(type);
     }
 
     public void addPath(Path path) {
@@ -169,6 +179,15 @@ public class BallPredictionUtil {
 
     public Plan getFastPlan() {
       return fastPlan;
+    }
+
+    public Tactic.TacticType getTactic() {
+      return ball.position.z > 300 ? Tactic.TacticType.AERIAL : Tactic.TacticType.STRIKE;
+    }
+
+    @Override
+    public String toString() {
+      return "hittable: " + isHittable() + " location: " + ball.position;
     }
   }
 }

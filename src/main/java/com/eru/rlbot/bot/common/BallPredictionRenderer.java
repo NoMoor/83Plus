@@ -10,6 +10,9 @@ import rlbot.cppinterop.RLBotDll;
 import rlbot.render.RenderPacket;
 import rlbot.render.Renderer;
 
+/**
+ * Renders the ball prediction line.
+ */
 public class BallPredictionRenderer extends Renderer {
 
   // Non-static members.
@@ -22,24 +25,11 @@ public class BallPredictionRenderer extends Renderer {
     playerIndex = index;
   }
 
-  private void initTick() {
-    builder = new FlatBufferBuilder(1000);
-  }
-
-  private void sendData() {
-    RenderPacket packet = doFinishPacket();
-    if (!packet.equals(previousPacket)) {
-      RLBotDll.sendRenderPacket(packet);
-      previousPacket = packet;
-    }
-  }
-
-  boolean isInitialized() {
-    return builder != null;
-  }
-
+  /**
+   * Renders the ball prediction path.
+   */
   public void renderBallPrediction() {
-    if (Flags.BOT_RENDERING_IDS.contains(playerIndex))
+    if (!Flags.BOT_RENDERING_IDS.contains(playerIndex))
       return;
 
     if (!isInitialized()) {
@@ -47,15 +37,12 @@ public class BallPredictionRenderer extends Renderer {
     }
 
     ExaminedBallData prev = null;
-    Color color = Color.BLACK;
     for (ExaminedBallData next : BallPredictionUtil.forIndex(playerIndex).getPredictions()) {
       if (prev == null) {
         prev = next;
-      } else if (next.ball.elapsedSeconds - prev.ball.elapsedSeconds > .1) {
+      } else if (next.ball.time - prev.ball.time > .1) {
         Optional<Boolean> hittable = next.isHittable();
-        if (hittable.isPresent()) {
-          color = hittable.get() ? Color.GREEN : Color.RED;
-        }
+        Color color = !hittable.isPresent() ? Color.BLACK : hittable.get() ? Color.GREEN : Color.RED;
 
         drawLine3d(color,
             next.ball.position,
@@ -64,8 +51,31 @@ public class BallPredictionRenderer extends Renderer {
       }
     }
 
-    if (isInitialized()) {
-      sendData();
+    sendData();
+  }
+
+  /**
+   * Ensures that the flatbuffer is initialized.
+   */
+  private void initTick() {
+    builder = new FlatBufferBuilder(1000);
+  }
+
+  /**
+   * Sends the render data if it is different from the previous tick.
+   */
+  private void sendData() {
+    RenderPacket packet = doFinishPacket();
+    if (!packet.equals(previousPacket)) {
+      RLBotDll.sendRenderPacket(packet);
+      previousPacket = packet;
     }
+  }
+
+  /**
+   * Returns true if the render packet is initialized.
+   */
+  private boolean isInitialized() {
+    return builder != null;
   }
 }

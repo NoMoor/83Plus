@@ -104,7 +104,7 @@ public final class Agc implements Bot {
     JumpManager.trackOutput(input, output);
 
     // Do Rendering.
-    TrailRenderer.recordAndRender(input, output);
+    TrailRenderer.render(input, output);
     botRenderer.renderInfo(input, output);
 
     ballPredictionRenderer.renderBallPrediction();

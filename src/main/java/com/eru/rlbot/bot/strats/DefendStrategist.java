@@ -108,12 +108,12 @@ public class DefendStrategist extends Strategist {
     } else if (canClear(input)) {
       if (Locations.carToBall(input).magnitude() > 2000) {
         bot.botRenderer.addAlertText("Rotate clear");
-        tacticManager.setTactic(Tactic.ballTactic()
-          .setSubject(PredictionUtils.getFirstHittableBall(input))
-          .setTacticType(Tactic.TacticType.ROTATE)
-          .build());
+        tacticManager.setTactic(Tactic.builder()
+            .setSubject(PredictionUtils.getFirstHittableBall(input))
+            .setTacticType(Tactic.TacticType.ROTATE)
+            .build());
       } else {
-        tacticManager.setTactic(Tactic.ballTactic()
+        tacticManager.setTactic(Tactic.builder()
             .setSubject(input.ball.position)
             .setTacticType(Tactic.TacticType.DEFEND)
             .build());

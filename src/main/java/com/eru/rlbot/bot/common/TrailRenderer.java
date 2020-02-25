@@ -14,32 +14,43 @@ import rlbot.cppinterop.RLBotDll;
 import rlbot.render.RenderPacket;
 import rlbot.render.Renderer;
 
+/**
+ * Renders the trail of the car including speed and direction changes for easier debugging.
+ */
 public class TrailRenderer {
 
   // Max length of trail to render.
   private static final int MAX_SIZE = Constants.STEP_SIZE_COUNT;
+
+  // How to group render calls to ensure we don't overflow the flat buffer size.
   private static final int GROUPING_SIZE = 40;
+
+  // The height to draw the speed component of the trail when the car is traveling at max velocity.
   private static final float MAX_VEL_HEIGHT = Constants.BALL_RADIUS / 2;
 
+  // Counter used to assign trail renderers ids to send the data to the game.
   private static int nextTrailBotIndex = 100;
 
   // Groupings of trail packets that are rendered together.
   private LinkedList<ImmutableList<Pair<DataPacket, ControlsOutput>>> trailPackets = new LinkedList<>();
   private LinkedList<Pair<DataPacket, ControlsOutput>> newPackets = new LinkedList<>();
+
+  // Maps a list of input/output elements to the renderer that sent them to the game.
   private static Map<ImmutableList<Pair<DataPacket, ControlsOutput>>, TrailRendererInternal> packetRendererMap =
       new HashMap<>();
 
   // A static pool of trail renderers that can be reused.
   private static LinkedList<TrailRendererInternal> RENDER_POOL = new LinkedList<>();
+
+  // A mapping from a given bot to the trail renderer which captures its data.
   private static final HashMap<Integer, TrailRenderer> RENDERERS = new HashMap<>();
 
-  private final int playerIndex;
-
-  public TrailRenderer(int playerIndex) {
-    this.playerIndex = playerIndex;
+  /** Prevents direct instantiation. Use {@link #render(DataPacket, ControlsOutput)} instead. */
+  private TrailRenderer() {
   }
 
-  public static void recordAndRender(DataPacket input, ControlsOutput output) {
+  /** Renders the trail of the car. */
+  public static void render(DataPacket input, ControlsOutput output) {
     if (!Flags.ENABLE_TRAIL_RENDERING || !Flags.BOT_RENDERING_IDS.contains(input.car.playerIndex)) {
       return;
     }
@@ -51,7 +62,7 @@ public class TrailRenderer {
   }
 
   private static TrailRenderer getRenderer(int playerIndex) {
-    return RENDERERS.computeIfAbsent(playerIndex, TrailRenderer::new);
+    return RENDERERS.computeIfAbsent(playerIndex, i -> new TrailRenderer());
   }
 
   private void renderTrail() {
@@ -72,10 +83,8 @@ public class TrailRenderer {
     }
   }
 
-  private void renderTrail(
-      Renderer renderer,
-      Pair<DataPacket, ControlsOutput> previous,
-      Pair<DataPacket, ControlsOutput> next) {
+  private static void renderTrail(
+      Renderer renderer, Pair<DataPacket, ControlsOutput> previous, Pair<DataPacket, ControlsOutput> next) {
 
     Vector3 prevPosition = previous.getFirst().car.position;
     Vector3 nextPosition = next.getFirst().car.position;
@@ -92,6 +101,7 @@ public class TrailRenderer {
     drawAcceleration(renderer, previous.getFirst(), next.getFirst());
   }
 
+  /** Renders vertical steering trails representing the control outputs at a given point in time. */
   private static void drawSteering(
       Renderer renderer, Pair<DataPacket, ControlsOutput> previous, Pair<DataPacket, ControlsOutput> next) {
 
@@ -111,6 +121,25 @@ public class TrailRenderer {
     renderer.drawLine3d(getSteerColor(previous), prevPosition, prevPosition.plus(steeringVector));
   }
 
+  private static Color getSteerColor(Pair<DataPacket, ControlsOutput> previous) {
+    float steer = previous.getSecond().getSteer();
+    if (steer == 0f) {
+      // Straight.
+      return new Color(255, 255, 255);
+    } else if (steer > 0) {
+      // Right turn.
+      int shift = (int) (255 * (1 - Math.abs(steer)));
+      return new Color(shift, 255, shift);
+    } else {
+      // Left Turn.
+      int shift = (int) (255 * (1 - Math.abs(steer)));
+      return new Color(255, shift, shift);
+    }
+  }
+
+  /**
+   * Renders speed changes.
+   */
   private static void drawAcceleration(Renderer renderer, DataPacket previous, DataPacket next) {
     Vector3 prevPosition = previous.car.position;
 
@@ -147,22 +176,7 @@ public class TrailRenderer {
     }
   }
 
-  private static Color getSteerColor(Pair<DataPacket, ControlsOutput> previous) {
-    float steer = previous.getSecond().getSteer();
-    if (steer == 0f) {
-      // Straight.
-      return new Color(255, 255, 255);
-    } else if (steer > 0) {
-      // Right turn.
-      int shift = (int) (255 * (1 - Math.abs(steer)));
-      return new Color(shift, 255, shift);
-    } else {
-      // Left Turn.
-      int shift = (int) (255 * (1 - Math.abs(steer)));
-      return new Color(255, shift, shift);
-    }
-  }
-
+  /** Returns a trail renderer from the pool of renderers. */
   private static TrailRendererInternal getTrailRenderer() {
     if (RENDER_POOL.isEmpty()) {
       RENDER_POOL.add(new TrailRendererInternal(nextTrailBotIndex++));
@@ -175,6 +189,7 @@ public class TrailRenderer {
     return renderer;
   }
 
+  /** Adds the input/output data to the recorded list of entries. These are later used to render the trail. */
   private void record(DataPacket input, ControlsOutput output) {
     if (newPackets.size() > GROUPING_SIZE) {
       ImmutableList<Pair<DataPacket, ControlsOutput>> packets = ImmutableList.copyOf(newPackets);
@@ -192,10 +207,14 @@ public class TrailRenderer {
     newPackets.add(Pair.of(input, output));
   }
 
-  // The offset in render group index to not collide with the cars.
-  private static final int TRAIL_RENDERER_OFFSET = 100;
-
+  /**
+   * The actual renderer used to send data to the game.
+   */
   private static class TrailRendererInternal extends Renderer {
+
+    // The offset in render group index to not collide with the cars.
+    private static final int TRAIL_RENDERER_OFFSET = 100;
+
     // Non-static members.
     private RenderPacket previousPacket;
 

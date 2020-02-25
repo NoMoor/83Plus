@@ -17,14 +17,12 @@ public class Tactic {
   public final TacticType tacticType;
 
   public final Moment subject;
-  public final SubjectType subjectType;
   public final Vector3 object;
 
   public Tactic(Builder builder) {
     subject = builder.moment;
     tacticType = builder.tacticType;
     object = builder.object == null ? builder.moment.position : builder.object;
-    subjectType = builder.subjectType;
   }
 
   public Tactic withType(TacticType newTacticType) {
@@ -66,7 +64,6 @@ public class Tactic {
   public String toString() {
     return MoreObjects.toStringHelper("Tactic")
         .add("type", tacticType)
-        .add("subjectType", subjectType)
         .add("subject", subject)
         .add("object", object)
         .toString();
@@ -74,7 +71,7 @@ public class Tactic {
 
   @Override
   public int hashCode() {
-    return Objects.hashCode(tacticType, subject, subjectType, object);
+    return Objects.hashCode(tacticType, subject, object);
   }
 
   @Override
@@ -84,7 +81,6 @@ public class Tactic {
       Tactic t = (Tactic) o;
       return Objects.equal(this.tacticType, t.tacticType)
           && Objects.equal(this.subject, t.subject)
-          && Objects.equal(this.subjectType, t.subjectType)
           && Objects.equal(this.object, t.object);
     }
 
@@ -93,7 +89,6 @@ public class Tactic {
 
   private Builder toBuilder() {
     return new Builder()
-        .setSubjectType(this.subjectType)
         .setSubject(this.subject)
         .setTacticType(this.tacticType)
         .setObject(this.object);
@@ -103,32 +98,11 @@ public class Tactic {
     return new Builder();
   }
 
-  public static Builder ballTactic() {
-    return new Builder()
-        .setSubjectType(SubjectType.BALL);
-  }
-
-  public static Builder wayPointTactic() {
-    return new Builder()
-        .setSubjectType(SubjectType.WAY_POINT);
-  }
-
-  public static Builder waySmallBoostTactic() {
-    return new Builder()
-        .setSubjectType(SubjectType.SMALL_BOOST);
-  }
-
-  public static Builder wayLargeBoostTactic() {
-    return new Builder()
-        .setSubjectType(SubjectType.LARGE_BOOST);
-  }
-
   /** A builder pattern for creating tactics. */
   public static class Builder {
 
     private TacticType tacticType;
     private Moment moment;
-    private SubjectType subjectType;
 
     private Vector3 object;
 
@@ -152,11 +126,6 @@ public class Tactic {
       return this;
     }
 
-    public Builder setSubjectType(SubjectType subjectType) {
-      this.subjectType = subjectType;
-      return this;
-    }
-
     public Builder setObject(Vector3 object) {
       this.object = object;
       return this;
@@ -168,22 +137,6 @@ public class Tactic {
 
     public ImmutableList<Tactic> plan(Function<Tactic, ImmutableList<Tactic>> planner) {
       return planner.apply(new Tactic(this));
-    }
-  }
-
-  public enum SubjectType {
-    BALL,
-    CAR,
-    WAY_POINT,
-    SMALL_BOOST,
-    LARGE_BOOST;
-
-    boolean isBoost() {
-      return this == SMALL_BOOST || this == LARGE_BOOST;
-    }
-
-    boolean isBall() {
-      return this == BALL;
     }
   }
 }

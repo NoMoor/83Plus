@@ -402,7 +402,7 @@ public class BotRenderer {
 
     renderPrediction(predictionTrace);
 
-    if (prediction.elapsedSeconds + BALL_PREDICTION_TIME < input.car.elapsedSeconds) {
+    if (prediction.time + BALL_PREDICTION_TIME < input.car.elapsedSeconds) {
       prediction = null;
       actual = null;
       predictionTrace = null;
@@ -418,7 +418,7 @@ public class BotRenderer {
     for (BallData nextPrediction : trace) {
       if (previousPrediction == null) {
         previousPrediction = nextPrediction;
-      } else if (nextPrediction.elapsedSeconds - previousPrediction.elapsedSeconds > .1) {
+      } else if (nextPrediction.time - previousPrediction.time > .1) {
         render3DLine(Color.white, previousPrediction.position, nextPrediction.position);
         previousPrediction = nextPrediction;
       }

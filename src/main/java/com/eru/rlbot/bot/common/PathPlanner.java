@@ -2,7 +2,9 @@ package com.eru.rlbot.bot.common;
 
 import com.eru.rlbot.bot.optimizer.CarBallOptimizer;
 import com.eru.rlbot.bot.strats.BallPredictionUtil;
+import com.eru.rlbot.bot.tactics.Tactic;
 import com.eru.rlbot.common.Lists;
+import com.eru.rlbot.common.Moment;
 import com.eru.rlbot.common.input.BallData;
 import com.eru.rlbot.common.input.BoundingBox;
 import com.eru.rlbot.common.input.CarData;
@@ -31,25 +33,25 @@ public class PathPlanner {
 
     // Check if we can even get to the ball.
     for (BallPredictionUtil.ExaminedBallData examinedBall : ballPredictions) {
-      if (examinedBall.ball.position.z > 200 || !examinedBall.isHittable().orElse(Boolean.TRUE)) {
+      if (examinedBall.ball.position.z > 200 || examinedBall.isHittableBy().isPresent()) {
         continue;
       }
 
       CarData fastPlan = fastPlan(input.car, examinedBall);
       Path path = planPath(input.car, fastPlan);
       Plan time = path.fastestTraverseTime(0, input.car.boost);
-      if (time.traverseTime < examinedBall.ball.elapsedSeconds - input.car.elapsedSeconds) {
+      if (time.traverseTime < examinedBall.ball.time - input.car.elapsedSeconds) {
         examinedBall.addPath(path);
         examinedBall.addFastPlan(time);
-        examinedBall.setHittable(true);
+        examinedBall.setHittableBy(Tactic.TacticType.STRIKE);
       } else {
-        examinedBall.setHittable(false);
+//        examinedBall.setHittable(false);
       }
     }
 
     List<BallPredictionUtil.ExaminedBallData> hittablePositions =
         ballPredictions.stream()
-            .filter(ball -> ball.isHittable().orElse(false))
+            .filter(ball -> ball.isHittableBy().isPresent())
             .collect(Collectors.toList());
 
     for (BallPredictionUtil.ExaminedBallData hittableBall : hittablePositions) {
@@ -58,7 +60,7 @@ public class PathPlanner {
 
       // TODO: Check a slower traverse time to use less boost.
       Plan plan = path.fastestTraverseTime(0, input.car.boost);
-      if (plan.traverseTime * 1.05 < hittableBall.ball.elapsedSeconds - input.car.elapsedSeconds) {
+      if (plan.traverseTime * 1.05 < hittableBall.ball.time - input.car.elapsedSeconds) {
         logger.debug(String.format("Took %f ms to plan %d frames", (System.nanoTime() - startTime) / 1000000d, frames));
         hittableBall.addPath(path);
         return Optional.of(path); // TODO: Remove
@@ -86,9 +88,13 @@ public class PathPlanner {
     return planPath(currentCar, optimalCar);
   }
 
-  public static Path fastPath(CarData car, BallData ball) {
-    CarData targetCar = fastPlan(car, ball);
+  public static Path fastPath(CarData car, Moment moment) {
+    CarData targetCar = fastPlan(car, moment);
     return planPath(car, targetCar);
+  }
+
+  public static Path fastPath(CarData car, BallData ball) {
+    return fastPath(car, Moment.from(ball));
   }
 
   private static CarData fastPlan(CarData car, BallPredictionUtil.ExaminedBallData ball) {
@@ -97,22 +103,26 @@ public class PathPlanner {
     return fastPlan;
   }
 
-  private static CarData fastPlan(CarData car, BallData ball) {
+  private static CarData fastPlan(CarData car, Moment moment) {
     // TODO: This should return a Path.
-    Circle turnToBall = Paths.closeTurningRadius(ball.position, car);
-    Paths.TangentPoints tangentPoints = Paths.tangents(turnToBall, ball.position);
+    Circle turnToBall = Paths.closeTurningRadius(moment.position, car);
+    Paths.TangentPoints tangentPoints = Paths.tangents(turnToBall, moment.position);
 
     Vector3 approachSpot = turnToBall.isClockwise(car) ? tangentPoints.right : tangentPoints.left;
-    Vector3 approachBall = ball.position.minus(approachSpot);
+    Vector3 approachBall = moment.position.minus(approachSpot);
 
     Orientation orientation = Orientation.fromFlatVelocity(approachBall);
 
     return CarData.builder()
-        .setTime(ball.elapsedSeconds)
+        .setTime(moment.time)
         .setOrientation(orientation)
         .setVelocity(approachBall.toMagnitude(Math.max(car.groundSpeed, 1500)))
-        .setPosition(makeGroundCar(orientation, ball.position))
+        .setPosition(makeGroundCar(orientation, moment.position))
         .build();
+  }
+
+  private static CarData fastPlan(CarData car, BallData ball) {
+    return fastPlan(car, Moment.from(ball));
   }
 
   private static Vector3 makeGroundCar(Orientation orientation, Vector3 ballPosition) {

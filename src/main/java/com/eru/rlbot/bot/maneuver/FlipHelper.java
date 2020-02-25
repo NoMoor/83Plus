@@ -66,6 +66,7 @@ public class FlipHelper extends Maneuver {
       }
     } else {
       if (!input.car.jumped) {
+        // TODO: This doesn't work.
         if (initialJump) {
           flipComplete = true;
         }

@@ -16,7 +16,7 @@ public class BallPredictor {
   public static ImmutableList<BallData> makePrediction(BallData ball) {
     BallData currentBall = ball;
 
-    float currentTime = ball.elapsedSeconds;
+    float currentTime = ball.time;
     float endTime = currentTime + PREDICTION_TIME;
 
     ImmutableList.Builder<BallData> predictionBuilder = ImmutableList.builder();
@@ -53,7 +53,7 @@ public class BallPredictor {
         .setPosition(currentBall.position.plus(currentBall.velocity.multiply(Constants.STEP_SIZE)))
         .setVelocity(newVelocity)
         .setSpin(currentBall.spin)
-        .setTime(currentBall.elapsedSeconds + Constants.STEP_SIZE)
+        .setTime(currentBall.time + Constants.STEP_SIZE)
         .build();
   }
 }

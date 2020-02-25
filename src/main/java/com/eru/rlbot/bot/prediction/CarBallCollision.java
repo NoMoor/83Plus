@@ -1,13 +1,17 @@
 package com.eru.rlbot.bot.prediction;
 
-import com.eru.rlbot.bot.common.*;
+import com.eru.rlbot.bot.common.Angles3;
+import com.eru.rlbot.bot.common.BotRenderer;
+import com.eru.rlbot.bot.common.CarBall;
+import com.eru.rlbot.bot.common.Constants;
+import com.eru.rlbot.bot.common.Matrix3;
 import com.eru.rlbot.common.input.BallData;
 import com.eru.rlbot.common.input.CarData;
 import com.eru.rlbot.common.vector.Vector3;
+import java.awt.Color;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import java.awt.*;
 
 /**
  * A class for calculating collision interactions between car and ball.
@@ -84,7 +88,7 @@ public class CarBallCollision {
         .setPosition(ball.position) // TODO: Determine where the ball will be.
         .setSpin(ball.spin.plus(deltaSpin))
         .setVelocity(ball.velocity.plus(deltaVelocity))
-        .setTime(ball.elapsedSeconds + Constants.STEP_SIZE)
+        .setTime(ball.time + Constants.STEP_SIZE)
         .build();
   }
 
