@@ -12,12 +12,14 @@ import com.eru.rlbot.common.vector.Vector3s;
 import com.google.common.collect.ImmutableList;
 import java.util.Optional;
 
-/** Helps plan paths by adding way points and boost pickup. */
-public class PathPlanner {
+/**
+ * Helps plan paths by adding way points and boost pickup.
+ */
+public class LegacyPathPlanner {
 
   private DataPacket input;
 
-  PathPlanner(DataPacket input) {
+  LegacyPathPlanner(DataPacket input) {
     this.input = input;
   }
 

@@ -1,6 +1,6 @@
 package com.eru.rlbot.bot.strats;
 
-import com.eru.rlbot.bot.common.DemoChecker;
+import com.eru.rlbot.bot.common.StateSetChecker;
 import com.eru.rlbot.bot.main.Agc;
 import com.eru.rlbot.common.boost.BoostPad;
 import com.eru.rlbot.common.input.DataPacket;
@@ -66,7 +66,7 @@ public class StrategyManager {
   }
 
   private boolean checkReset(DataPacket input) {
-    if (active != null && DemoChecker.wasDemoed(input.car)) {
+    if (active != null && StateSetChecker.wasDemoed(input.car)) {
       active.abort();
       active = null;
       resetTime = input.car.elapsedSeconds;

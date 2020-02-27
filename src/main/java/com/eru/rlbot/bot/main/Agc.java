@@ -8,11 +8,11 @@ import com.eru.rlbot.bot.common.BallPredictionRenderer;
 import com.eru.rlbot.bot.common.BotChatter;
 import com.eru.rlbot.bot.common.BotRenderer;
 import com.eru.rlbot.bot.common.Constants;
-import com.eru.rlbot.bot.common.DemoChecker;
 import com.eru.rlbot.bot.common.Goal;
+import com.eru.rlbot.bot.common.StateSetChecker;
 import com.eru.rlbot.bot.common.TrailRenderer;
 import com.eru.rlbot.bot.common.TrainingId;
-import com.eru.rlbot.bot.flags.Flags;
+import com.eru.rlbot.bot.flags.PerBotDebugOptions;
 import com.eru.rlbot.bot.prediction.NextFramePredictor;
 import com.eru.rlbot.bot.strats.BallPredictionUtil;
 import com.eru.rlbot.bot.strats.StrategyManager;
@@ -23,6 +23,7 @@ import com.eru.rlbot.common.input.DataPacket;
 import com.eru.rlbot.common.jump.JumpManager;
 import com.eru.rlbot.common.output.ControlsOutput;
 import com.eru.rlbot.testing.KickoffGameSetter;
+import com.eru.rlbot.testing.SlowGameNearBall;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import rlbot.Bot;
@@ -35,16 +36,20 @@ public final class Agc implements Bot {
 
   public final Goal opponentsGoal;
   public final Goal ownGoal;
-  public final int team;
-  public final BotRenderer botRenderer;
+
   protected final int playerIndex;
+  public final String name;
+  public final int team;
+
+  public final BotRenderer botRenderer;
   protected final BotChatter botChatter;
 
   private final StrategyManager strategyManager;
   private final BallPredictionRenderer ballPredictionRenderer;
 
-  public Agc(int playerIndex, int team) {
+  public Agc(int playerIndex, String name, int team) {
     this.playerIndex = playerIndex;
+    this.name = name;
     this.team = team;
 
     this.botRenderer = BotRenderer.forBot(this);
@@ -80,7 +85,7 @@ public final class Agc implements Bot {
 
     // Checks to see if the ball has been touched.
     BallPredictionUtil.refresh(input);
-    DemoChecker.track(input);
+    StateSetChecker.track(input);
 
     JumpManager.trackInput(input);
     CarBallContactManager.track(input);
@@ -91,13 +96,14 @@ public final class Agc implements Bot {
 
     ControlsOutput output = strategyManager.executeStrategy(input);
 
-    if (Flags.FREEZE_CAR_ENABLED)
+    if (PerBotDebugOptions.get(input.car.playerIndex).isFreezeCar())
       output = new ControlsOutput()
           .withThrottle(0f)
           .withSteer(0)
           .withBoost(false);
 
     KickoffGameSetter.track(input);
+    SlowGameNearBall.track(input);
 
     // Must do ball before updating the jump manager
     NextFramePredictor.getPrediction(input, output);
@@ -124,6 +130,10 @@ public final class Agc implements Bot {
   }
 
   public void retire() {
-    System.out.println("Retiring BallChaser V1 bot " + playerIndex);
+    System.out.println(String.format("Retiring %s bot %d", name, playerIndex));
+  }
+
+  public String getName() {
+    return name;
   }
 }

@@ -2,7 +2,7 @@ package com.eru.rlbot.bot.common;
 
 import static com.google.common.collect.ImmutableList.toImmutableList;
 
-import com.eru.rlbot.bot.flags.Flags;
+import com.eru.rlbot.bot.flags.PerBotDebugOptions;
 import com.eru.rlbot.bot.prediction.BallPredictor;
 import com.eru.rlbot.bot.strats.Strategist;
 import com.eru.rlbot.bot.tactics.Tactic;
@@ -54,12 +54,10 @@ public class BotRenderer {
   private static final int TEXT_LIST_START_Y = 300;
   private static final int TEXT_LIST_SPACING_Y = 26;
 
-  private final boolean skipRendering;
   private final Bot bot;
 
   private BotRenderer(Bot bot) {
     this.bot = bot;
-    this.skipRendering = !Flags.BOT_RENDERING_IDS.contains(bot.getIndex());
   }
 
   public static BotRenderer forBot(Bot bot) {
@@ -79,6 +77,10 @@ public class BotRenderer {
     getRenderer().drawString3d(text, color, location, 2, 2);
   }
 
+  private boolean skipRendering() {
+    return !PerBotDebugOptions.get(bot.getIndex()).isRenderPlan();
+  }
+
   private static class RenderRequest {
     private final float renderTimeEnd;
     private final Vector3 source;
@@ -96,7 +98,7 @@ public class BotRenderer {
   }
 
   public void renderInfo(DataPacket input, ControlsOutput output) {
-    if (skipRendering) return;
+    if (skipRendering()) return;
 
     renderControlDebug();
     renderDebugText();
@@ -149,7 +151,7 @@ public class BotRenderer {
   }
 
   public void renderTarget(Color color, Vector3 target) {
-//    if (skipRendering) return;
+    if (skipRendering()) return;
 
     int size = 50;
     getRenderer().drawLine3d(color, target.addX(-size).addY(-size).addZ(-size), target.addX(size).addY(size).addZ(size));
@@ -163,7 +165,7 @@ public class BotRenderer {
   }
 
   public void renderPath(Color color, ImmutableList<Vector3> path) {
-    if (skipRendering) return;
+    if (skipRendering()) return;
 
     Vector3 prev = null;
     for (Vector3 location : path) {
@@ -175,7 +177,7 @@ public class BotRenderer {
   }
 
   public void renderPath(DataPacket input, Path path) {
-    if (skipRendering)
+    if (skipRendering())
       return;
 
     ImmutableList<Segment> pathNodes = path.allNodes();
@@ -220,7 +222,7 @@ public class BotRenderer {
   }
 
   public void renderProjection(Color color, CarData car, Vector3 projectedVector) {
-    if (skipRendering) {
+    if (skipRendering()) {
       return;
     }
 
@@ -261,7 +263,7 @@ public class BotRenderer {
   }
 
   public void renderHitBox(Color color, CarData car) {
-    if (skipRendering)
+    if (skipRendering())
       return;
 
     BoundingBox hitbox = car.boundingBox;
@@ -642,12 +644,12 @@ public class BotRenderer {
   }
 
   private void render3DLine(Color color, Vector3 loc1, Vector3 loc2) {
-    if (!skipRendering)
+    if (!skipRendering())
       getRenderer().drawLine3d(color, loc1, loc2);
   }
 
   private void render3DSquare(Color color, Vector3 center, float sideLength) {
-    if (!skipRendering)
+    if (!skipRendering())
       getRenderer().drawCenteredRectangle3d(
           color,
           center,

@@ -3,7 +3,7 @@ package com.eru.rlbot.bot.prediction;
 import com.eru.rlbot.bot.common.Accels;
 import com.eru.rlbot.bot.common.BotRenderer;
 import com.eru.rlbot.bot.common.Constants;
-import com.eru.rlbot.bot.flags.Flags;
+import com.eru.rlbot.bot.flags.PerBotDebugOptions;
 import com.eru.rlbot.common.boost.BoostTracker;
 import com.eru.rlbot.common.input.CarData;
 import com.eru.rlbot.common.input.DataPacket;
@@ -23,7 +23,7 @@ public class NextFramePredictor {
   private static ControlsOutput lastFrameControls;
 
   public static void getPrediction(DataPacket input, ControlsOutput output) {
-    if (!Flags.PREDICT_AND_RENDER_NEXT_CAR_FRAME_ENABLED)
+    if (!PerBotDebugOptions.get(input.car.playerIndex).isPredictAndRenderNextCarFrame())
       return;
 
     // TODO: Update to support multiple cars

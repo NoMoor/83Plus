@@ -15,7 +15,6 @@ import com.eru.rlbot.common.vector.Vector3s;
 import com.google.common.collect.ImmutableList;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -23,11 +22,14 @@ public class PathPlanner {
 
   private static final Logger logger = LogManager.getLogger("PathPlanner");
 
-  public static Optional<Path> doShotPlanning(DataPacket input) {
+  public static void doGroundShotPlanning(DataPacket input) {
+    // Only do planning when you are on the ground.
+    if (!input.car.hasWheelContact && input.car.position.z < 20) {
+      return;
+    }
+
     BallPredictionUtil ballPredictionUtil = BallPredictionUtil.forIndex(input.car.playerIndex);
 
-    int frames = 0;
-    long startTime = System.nanoTime();
     List<BallPredictionUtil.ExaminedBallData> ballPredictions =
         Lists.everyNth(ballPredictionUtil.getPredictions(), 5);
 
@@ -45,34 +47,9 @@ public class PathPlanner {
         examinedBall.addFastPlan(time);
         examinedBall.setHittableBy(Tactic.TacticType.STRIKE);
       } else {
-//        examinedBall.setHittable(false);
+        examinedBall.setNotHittableBy(Tactic.TacticType.STRIKE);
       }
     }
-
-    List<BallPredictionUtil.ExaminedBallData> hittablePositions =
-        ballPredictions.stream()
-            .filter(ball -> ball.isHittableBy().isPresent())
-            .collect(Collectors.toList());
-
-    for (BallPredictionUtil.ExaminedBallData hittableBall : hittablePositions) {
-      frames++;
-      Path path = planShotOnGoal(input, hittableBall.ball);
-
-      // TODO: Check a slower traverse time to use less boost.
-      Plan plan = path.fastestTraverseTime(0, input.car.boost);
-      if (plan.traverseTime * 1.05 < hittableBall.ball.time - input.car.elapsedSeconds) {
-        logger.debug(String.format("Took %f ms to plan %d frames", (System.nanoTime() - startTime) / 1000000d, frames));
-        hittableBall.addPath(path);
-        return Optional.of(path); // TODO: Remove
-      }
-    }
-
-    BallPredictionUtil.ExaminedBallData firstHittable = ballPredictionUtil.getFirstHittableLocation();
-    if (firstHittable == null) {
-      logger.debug("Return default value");
-      return Optional.empty();
-    }
-    return Optional.ofNullable(firstHittable.getPath());
   }
 
   private static Path planShotOnGoal(DataPacket input, BallData ball) {

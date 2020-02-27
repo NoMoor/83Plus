@@ -94,13 +94,17 @@ public class AerialTactician extends Tactician {
     }
   }
 
-  private static double ROTATION_TIME = .5;
   private static double FAST_AERIAL_TIME = .25;
   private static double FAST_AERIAL_BOOST = FAST_AERIAL_TIME * Constants.BOOST_RATE;
   private static double AERIAL_EFFICIENCY = .25;
 
   // TODO: Move this into a common planning location.
   public static void doAerialPlanning(DataPacket input) {
+    // Only do planning when you are on the ground.
+    if (!input.car.hasWheelContact && input.car.position.z < 20) {
+      return;
+    }
+
     BallPredictionUtil ballPredictionUtil = BallPredictionUtil.forIndex(input.car.playerIndex);
 
     List<BallPredictionUtil.ExaminedBallData> predictions = Lists.everyNth(ballPredictionUtil.getPredictions(), 5);
@@ -119,6 +123,8 @@ public class AerialTactician extends Tactician {
       double rotationTime = aerialInfo.boostAngle * 2 * .3; // Boost angle and back to flat with 2 radians per second
       double jumpTime = aerialInfo.timeToApex + rotationTime + FAST_AERIAL_TIME;
       double timeToImpact = ball.time - input.car.elapsedSeconds;
+
+      // TODO: Handle the case where we are already in the air.
       double timeToJump = timeToImpact - jumpTime;
       double boostReserve = input.car.boost - aerialInfo.boostAmount - FAST_AERIAL_BOOST;
       Accels.AccelResult acceleration = Accels.accelerateForTime(input.car.groundSpeed, timeToJump, boostReserve);

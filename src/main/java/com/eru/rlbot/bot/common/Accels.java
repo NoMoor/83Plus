@@ -4,9 +4,8 @@ import com.eru.rlbot.common.input.CarData;
 import com.eru.rlbot.common.input.Orientation;
 import com.eru.rlbot.common.jump.JumpManager;
 import com.eru.rlbot.common.vector.Vector3;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class Accels {
 
@@ -173,7 +172,8 @@ public class Accels {
     }
   }
 
-  public static final Map<Pair<Integer, Integer>, AccelResult> slowingDistances = new HashMap<>();
+  public static final ConcurrentHashMap<Pair<Integer, Integer>, AccelResult> slowingDistances
+      = new ConcurrentHashMap<>();
 
   public static AccelResult distanceToSlow(double currentVelocity, double finalVelocity) {
     Pair<Integer, Integer> key = Pair.of(fuzz(currentVelocity), fuzz(finalVelocity));

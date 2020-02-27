@@ -9,7 +9,6 @@ import com.eru.rlbot.common.input.BallData;
 import com.eru.rlbot.common.input.CarData;
 import com.eru.rlbot.common.input.DataPacket;
 import com.eru.rlbot.common.output.ControlsOutput;
-import java.util.Optional;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -69,24 +68,8 @@ public class TakeTheShotTactician extends Tactician {
   public void internalExecute(DataPacket input, ControlsOutput output, Tactic tactic) {
     bot.botRenderer.setIntersectionTarget(tactic.getTargetPosition());
 
-    if (path == null || path.isOffCourse() || path.getEndTime() < input.car.elapsedSeconds) {
-
-      Optional<Path> tempPath = PathPlanner.doShotPlanning(input);
-      if (tempPath.isPresent()) {
-        path = tempPath.get();
-        try {
-          path.lockAndSegment();
-          path.extendThroughBall();
-        } catch (IllegalStateException e) {
-//          e.printStackTrace();
-          path = null;
-          return;
-        }
-      } else {
-        logger.info("Replan path. None Found.");
-        return;
-      }
-    }
+    path = PathPlanner.fastPath(input.car, tactic.subject);
+    pathExecutor.executePath(input, output, path);
 
     bot.botRenderer.renderPath(input, path);
     pathExecutor.executePath(input, output, path);

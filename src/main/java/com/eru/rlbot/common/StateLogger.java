@@ -4,7 +4,7 @@ import static com.google.common.collect.ImmutableList.toImmutableList;
 
 import com.eru.rlbot.bot.common.Constants;
 import com.eru.rlbot.bot.common.TrainingId;
-import com.eru.rlbot.bot.flags.Flags;
+import com.eru.rlbot.bot.flags.GlobalDebugOptions;
 import com.eru.rlbot.common.input.BallData;
 import com.eru.rlbot.common.input.CarData;
 import com.eru.rlbot.common.input.DataPacket;
@@ -36,10 +36,16 @@ public class StateLogger {
   private static final long BUFFER_LENGTH = 4 * Constants.STEP_SIZE_COUNT;
   private static final Queue<DataPacket> dataPacketBuffer = new LinkedList<>();
 
-  private static volatile int controllerPlayer = -1;
+  private static volatile int controllingPlayer = -1;
 
   public static void track(DataPacket input) {
-    if (!isControllingPlayer(input.car.playerIndex)) {
+    if (!GlobalDebugOptions.isStateLoggerEnabled()) {
+      return;
+    }
+
+    if (controllingPlayer == -1) {
+      controllingPlayer = input.car.playerIndex;
+    } else if (controllingPlayer != input.car.playerIndex) {
       return;
     }
 
@@ -49,21 +55,8 @@ public class StateLogger {
     }
   }
 
-  private static boolean isControllingPlayer(int index) {
-    if (!Flags.STATE_LOGGER_ENABLED) {
-      return false;
-    }
-
-    if (controllerPlayer != -1 && controllerPlayer != index) {
-      return false;
-    }
-
-    controllerPlayer = index;
-    return true;
-  }
-
-  public static void capture() {
-    if (dataPacketBuffer.isEmpty()) {
+  public static void capture(DataPacket input) {
+    if (controllingPlayer != input.car.playerIndex || dataPacketBuffer.isEmpty()) {
       return;
     }
 

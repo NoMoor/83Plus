@@ -1,6 +1,6 @@
 package com.eru.rlbot.bot.common;
 
-import com.eru.rlbot.bot.flags.Flags;
+import com.eru.rlbot.bot.flags.PerBotDebugOptions;
 import com.eru.rlbot.bot.strats.BallPredictionUtil;
 import com.eru.rlbot.bot.strats.BallPredictionUtil.ExaminedBallData;
 import com.google.flatbuffers.FlatBufferBuilder;
@@ -29,8 +29,9 @@ public class BallPredictionRenderer extends Renderer {
    * Renders the ball prediction path.
    */
   public void renderBallPrediction() {
-    if (!Flags.BOT_RENDERING_IDS.contains(playerIndex))
+    if (!PerBotDebugOptions.get(playerIndex).isRenderBallPrediction()) {
       return;
+    }
 
     if (!isInitialized()) {
       initTick();

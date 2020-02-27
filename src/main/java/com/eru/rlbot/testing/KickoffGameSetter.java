@@ -3,7 +3,7 @@ package com.eru.rlbot.testing;
 import static com.google.common.collect.ImmutableMap.toImmutableMap;
 
 import com.eru.rlbot.bot.common.Constants;
-import com.eru.rlbot.bot.flags.Flags;
+import com.eru.rlbot.bot.flags.GlobalDebugOptions;
 import com.eru.rlbot.common.input.DataPacket;
 import com.eru.rlbot.common.vector.Vector3;
 import java.util.Map;
@@ -11,23 +11,23 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import rlbot.cppinterop.RLBotDll;
 import rlbot.gamestate.BallState;
-import rlbot.gamestate.GameInfoState;
 import rlbot.gamestate.GameState;
 import rlbot.gamestate.PhysicsState;
 
-public class KickoffGameSetter {
+public final class KickoffGameSetter {
 
   private static float kickOffTime;
+  private static int controllingPlayer = -1;
 
   public static void track(DataPacket input) {
-    if (!Flags.ENABLE_KICKOFF_GAME) {
+    if (!GlobalDebugOptions.isKickoffGameEnabled()) {
       return;
     }
 
-    if (input.ball.position.magnitude() < 500 && carIsNearBall(input) && Flags.SLOW_TIME_NEAR_BALL_ENABLED) {
-      setSpeed(.1);
-    } else {
-      setSpeed(1);
+    if (controllingPlayer == -1) {
+      controllingPlayer = input.car.playerIndex;
+    } else if (controllingPlayer != input.car.playerIndex) {
+      return;
     }
 
     if (!input.gameInfo.isKickoffPause() && kickOffTime == 0 && input.ball.position.magnitude() < 200) {
@@ -43,20 +43,6 @@ public class KickoffGameSetter {
       renderJudgement(input);
       kickOffTime = 0;
     }
-  }
-
-  private static boolean carIsNearBall(DataPacket input) {
-    double closestCar = input.allCars.stream()
-        .mapToDouble(car -> car.position.distance(input.ball.position))
-        .min().getAsDouble();
-    return closestCar < 500;
-  }
-
-  private static void setSpeed(double speed) {
-    RLBotDll.setGameState(new GameState()
-        .withGameInfoState(new GameInfoState()
-            .withGameSpeed((float) speed))
-        .buildPacket());
   }
 
   private static void renderJudgement(DataPacket input) {

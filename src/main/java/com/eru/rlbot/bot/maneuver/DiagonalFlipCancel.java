@@ -57,7 +57,7 @@ public class DiagonalFlipCancel extends Maneuver {
     }
 
     if (checkComplete(input)) {
-      logger.info("Pitch {} Jump {}", pitch, 30);
+      logger.debug("Pitch {} Jump {}", pitch, 30);
       if (monitor != null)
         monitor.trackWhile(!complete, input.car);
       return;

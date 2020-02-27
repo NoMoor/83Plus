@@ -3,13 +3,11 @@ package com.eru.rlbot.bot;
 import com.eru.rlbot.bot.common.BotRenderer;
 import com.eru.rlbot.bot.common.CarBall;
 import com.eru.rlbot.bot.common.Constants;
-import com.eru.rlbot.bot.flags.Flags;
 import com.eru.rlbot.bot.prediction.CarBallCollision;
 import com.eru.rlbot.common.input.BallData;
 import com.eru.rlbot.common.input.CarData;
 import com.eru.rlbot.common.input.DataPacket;
 import com.eru.rlbot.common.vector.Vector3;
-import java.util.Comparator;
 import java.util.HashMap;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
@@ -67,14 +65,12 @@ public final class CarBallContactManager {
     return touchTime != -1;
   }
 
+  private static volatile int renderIndex = -1;
   public void renderAndLogPrediction(DataPacket input) {
-    // Only render / log using the bot with the lowest index
-    int smallestRenderIndex = BOTS.keySet().stream()
-        .filter(Flags.BOT_RENDERING_IDS::contains)
-        .min(Comparator.naturalOrder()).get();
-
-    if (input.playerIndex != smallestRenderIndex) {
+    if (playerIndex != renderIndex && renderIndex != -1) {
       return;
+    } else {
+      renderIndex = playerIndex;
     }
 
     if (touchTime != -1) {

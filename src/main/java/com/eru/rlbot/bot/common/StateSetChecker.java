@@ -5,18 +5,21 @@ import static com.eru.rlbot.bot.common.Constants.NORMAL_EXPECTED;
 import com.eru.rlbot.common.input.CarData;
 import com.eru.rlbot.common.input.DataPacket;
 import com.eru.rlbot.common.vector.Vector3;
-import java.util.HashMap;
+import java.util.concurrent.ConcurrentHashMap;
 
-public class DemoChecker {
+/**
+ * Tracks when a car or ball has been state-set.
+ */
+public class StateSetChecker {
 
-  private static HashMap<Integer, DemoChecker> BOTS = new HashMap<>();
+  private static ConcurrentHashMap<Integer, StateSetChecker> BOTS = new ConcurrentHashMap<>();
 
-  public static DemoChecker forIndex(int index) {
-    BOTS.computeIfAbsent(index, DemoChecker::new);
+  public static StateSetChecker forIndex(int index) {
+    BOTS.computeIfAbsent(index, StateSetChecker::new);
     return BOTS.get(index);
   }
 
-  public static DemoChecker forCar(CarData car) {
+  public static StateSetChecker forCar(CarData car) {
     return forIndex(car.playerIndex);
   }
 
@@ -31,7 +34,7 @@ public class DemoChecker {
 
   private final int index;
 
-  private DemoChecker(int index) {
+  private StateSetChecker(int index) {
     this.index = index;
   }
 

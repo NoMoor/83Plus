@@ -1,6 +1,6 @@
 package com.eru.rlbot.bot.common;
 
-import com.eru.rlbot.bot.flags.Flags;
+import com.eru.rlbot.bot.flags.PerBotDebugOptions;
 import com.eru.rlbot.common.input.DataPacket;
 import com.eru.rlbot.common.output.ControlsOutput;
 import com.eru.rlbot.common.vector.Vector3;
@@ -10,6 +10,8 @@ import java.awt.Color;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import rlbot.cppinterop.RLBotDll;
 import rlbot.render.RenderPacket;
 import rlbot.render.Renderer;
@@ -29,36 +31,47 @@ public class TrailRenderer {
   private static final float MAX_VEL_HEIGHT = Constants.BALL_RADIUS / 2;
 
   // Counter used to assign trail renderers ids to send the data to the game.
-  private static int nextTrailBotIndex = 100;
+  private static volatile int nextTrailBotIndex = 100;
 
   // Groupings of trail packets that are rendered together.
   private LinkedList<ImmutableList<Pair<DataPacket, ControlsOutput>>> trailPackets = new LinkedList<>();
   private LinkedList<Pair<DataPacket, ControlsOutput>> newPackets = new LinkedList<>();
 
   // Maps a list of input/output elements to the renderer that sent them to the game.
-  private static Map<ImmutableList<Pair<DataPacket, ControlsOutput>>, TrailRendererInternal> packetRendererMap =
+  private Map<ImmutableList<Pair<DataPacket, ControlsOutput>>, TrailRendererInternal> packetRendererMap =
       new HashMap<>();
 
   // A static pool of trail renderers that can be reused.
-  private static LinkedList<TrailRendererInternal> RENDER_POOL = new LinkedList<>();
+  private static final ConcurrentLinkedDeque<TrailRendererInternal> RENDER_POOL = new ConcurrentLinkedDeque<>();
 
   // A mapping from a given bot to the trail renderer which captures its data.
-  private static final HashMap<Integer, TrailRenderer> RENDERERS = new HashMap<>();
+  private static final ConcurrentHashMap<Integer, TrailRenderer> RENDERERS = new ConcurrentHashMap<>();
 
-  /** Prevents direct instantiation. Use {@link #render(DataPacket, ControlsOutput)} instead. */
+  private TrailRendererInternal currentRenderer;
+
+  /**
+   * Prevents direct instantiation. Use {@link #render(DataPacket, ControlsOutput)} instead.
+   */
   private TrailRenderer() {
   }
 
-  /** Renders the trail of the car. */
+  /**
+   * Renders the trail of the car.
+   */
   public static void render(DataPacket input, ControlsOutput output) {
-    if (!Flags.ENABLE_TRAIL_RENDERING || !Flags.BOT_RENDERING_IDS.contains(input.car.playerIndex)) {
+    if (!PerBotDebugOptions.get(input.car.playerIndex).isTrailRendererEnabled()) {
       return;
     }
 
     TrailRenderer renderer = getRenderer(input.car.playerIndex);
 
-    renderer.record(input, output);
-    renderer.renderTrail();
+    try {
+      renderer.record(input, output);
+      renderer.renderTrail();
+    } catch (Throwable e) {
+      e.printStackTrace();
+      PerBotDebugOptions.get(input.car.playerIndex).setTrailRendererEnabled(false);
+    }
   }
 
   private static TrailRenderer getRenderer(int playerIndex) {
@@ -66,20 +79,23 @@ public class TrailRenderer {
   }
 
   private void renderTrail() {
-    TrailRendererInternal renderer = getTrailRenderer();
+    if (currentRenderer == null) {
+      currentRenderer = getTrailRenderer();
+    }
+
     Pair<DataPacket, ControlsOutput> previous = trailPackets.isEmpty()
         ? null
         : trailPackets.getLast().get(trailPackets.getLast().size() - 1);
 
     for (Pair<DataPacket, ControlsOutput> trail : newPackets) {
       if (previous != null) {
-        renderTrail(renderer, previous, trail);
+        renderTrail(currentRenderer, previous, trail);
       }
 
       previous = trail;
     }
-    if (renderer.isInitialized()) {
-      renderer.sendData();
+    if (currentRenderer.isInitialized() && newPackets.size() > 1) {
+      currentRenderer.sendData();
     }
   }
 
@@ -176,13 +192,17 @@ public class TrailRenderer {
     }
   }
 
-  /** Returns a trail renderer from the pool of renderers. */
-  private static TrailRendererInternal getTrailRenderer() {
-    if (RENDER_POOL.isEmpty()) {
-      RENDER_POOL.add(new TrailRendererInternal(nextTrailBotIndex++));
+  /**
+   * Returns a trail renderer from the pool of renderers.
+   */
+  private static synchronized TrailRendererInternal getTrailRenderer() {
+    TrailRendererInternal renderer;
+    if (!RENDER_POOL.isEmpty()) {
+      renderer = RENDER_POOL.pollFirst();
+    } else {
+      renderer = new TrailRendererInternal(nextTrailBotIndex++);
     }
 
-    TrailRendererInternal renderer = RENDER_POOL.getFirst();
     if (!renderer.isInitialized()) {
       renderer.initTick();
     }
@@ -194,7 +214,8 @@ public class TrailRenderer {
     if (newPackets.size() > GROUPING_SIZE) {
       ImmutableList<Pair<DataPacket, ControlsOutput>> packets = ImmutableList.copyOf(newPackets);
       trailPackets.addLast(packets);
-      packetRendererMap.put(packets, RENDER_POOL.removeFirst());
+      packetRendererMap.put(packets, currentRenderer);
+      currentRenderer = null;
 
       newPackets.clear();
     }

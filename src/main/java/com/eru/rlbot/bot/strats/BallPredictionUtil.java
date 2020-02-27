@@ -11,13 +11,13 @@ import com.eru.rlbot.common.input.CarData;
 import com.eru.rlbot.common.input.DataPacket;
 import com.google.common.collect.Iterables;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -30,7 +30,7 @@ public class BallPredictionUtil {
 
   private static final Logger logger = LogManager.getLogger("BallPredictionUtil");
 
-  private static HashMap<Integer, BallPredictionUtil> BOTS = new HashMap<>();
+  private static ConcurrentHashMap<Integer, BallPredictionUtil> BOTS = new ConcurrentHashMap<>();
 
   private final int playerIndex;
 
@@ -39,8 +39,7 @@ public class BallPredictionUtil {
   }
 
   public static BallPredictionUtil forIndex(int index) {
-    BOTS.computeIfAbsent(index, BallPredictionUtil::new);
-    return BOTS.get(index);
+    return BOTS.computeIfAbsent(index, BallPredictionUtil::new);
   }
 
   public static BallPredictionUtil forCar(CarData car) {

@@ -21,7 +21,7 @@ public class SupportStrategist extends Strategist {
   public boolean assign(DataPacket input) {
     // TODO: If we are supporting, pick up boost nearby.
 
-    PathPlanner pathPlanner = new PathPlanner(input);
+    LegacyPathPlanner pathPlanner = new LegacyPathPlanner(input);
 
     if (input.car.boost < 50) {
       Vector3 boostLocation = input.car.position.x > 0 ? LEFT_MID : RIGHT_MID;

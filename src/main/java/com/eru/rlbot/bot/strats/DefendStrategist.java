@@ -90,7 +90,7 @@ public class DefendStrategist extends Strategist {
       return true;
     }
 
-    PathPlanner pathPlanner = new PathPlanner(input);
+    LegacyPathPlanner pathPlanner = new LegacyPathPlanner(input);
 
     // TODO: Update to include the opponent hitting the ball
     if (shotOnGoal(input)) {

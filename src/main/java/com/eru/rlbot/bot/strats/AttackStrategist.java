@@ -1,6 +1,7 @@
 package com.eru.rlbot.bot.strats;
 
 import com.eru.rlbot.bot.common.Goal;
+import com.eru.rlbot.bot.common.PathPlanner;
 import com.eru.rlbot.bot.common.PredictionUtils;
 import com.eru.rlbot.bot.main.Agc;
 import com.eru.rlbot.bot.tactics.AerialTactician;
@@ -38,9 +39,11 @@ public class AttackStrategist extends Strategist {
 
     // TODO: Update when the opponent can get to the ball.
 
-    // TODO: Pick a goal shot.
+    // Do Ground planning
+    PathPlanner.doGroundShotPlanning(input);
     AerialTactician.doAerialPlanning(input);
 
+    // TODO: Select a ball to hit, not just the first one.
     // Execute that shot.
     BallPredictionUtil.ExaminedBallData ballToHit = BallPredictionUtil.forCar(input.car).getFirstHittableLocation();
 
@@ -53,19 +56,11 @@ public class AttackStrategist extends Strategist {
       return true;
     }
 
-//    if (input.ball.position.z > 300) {
-//      tacticManager.setTactic(Tactic.builder()
-//          .setSubject(Moment.from(input.ball))
-//          .setObject(Goal.opponentGoal(input.car.team).center)
-//          .setTacticType(Tactic.TacticType.AERIAL)
-//          .build());
-//      return true;
-//    }
-
     if (TakeTheShotTactician.takeTheShot(input)) {
       tacticManager.setTactic(
           Tactic.builder()
               .setObject(Goal.opponentGoal(input.car.team).center)
+              .setSubject(Moment.from(input.ball))
               .setTacticType(Tactic.TacticType.STRIKE)
               .build());
       return true;
@@ -74,7 +69,7 @@ public class AttackStrategist extends Strategist {
     tacticManager.setTactic(Tactic.builder()
         .setSubject(PredictionUtils.getFirstHittableBall(input))
         .setTacticType(Tactic.TacticType.HIT_BALL)
-        .plan(new PathPlanner(input)::plan));
+        .plan(new LegacyPathPlanner(input)::plan));
     return true;
   }
 
