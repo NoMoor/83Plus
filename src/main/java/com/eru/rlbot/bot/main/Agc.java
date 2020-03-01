@@ -13,6 +13,7 @@ import com.eru.rlbot.bot.common.StateSetChecker;
 import com.eru.rlbot.bot.common.TrailRenderer;
 import com.eru.rlbot.bot.common.TrainingId;
 import com.eru.rlbot.bot.flags.PerBotDebugOptions;
+import com.eru.rlbot.bot.prediction.CarLocationPredictor;
 import com.eru.rlbot.bot.prediction.NextFramePredictor;
 import com.eru.rlbot.bot.strats.BallPredictionUtil;
 import com.eru.rlbot.bot.strats.StrategyManager;
@@ -91,12 +92,13 @@ public final class Agc implements Bot {
     CarBallContactManager.track(input);
     StateLogger.track(input);
     TrainingId.track(input);
+    CarLocationPredictor.track(input);
 
     botChatter.talk(input);
 
     ControlsOutput output = strategyManager.executeStrategy(input);
 
-    if (PerBotDebugOptions.get(input.car.playerIndex).isFreezeCar())
+    if (PerBotDebugOptions.get(input.car.playerIndex).isImmobilizeCar())
       output = new ControlsOutput()
           .withThrottle(0f)
           .withSteer(0)

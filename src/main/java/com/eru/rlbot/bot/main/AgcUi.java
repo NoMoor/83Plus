@@ -277,9 +277,9 @@ public class AgcUi {
 
     PerBotDebugOptions options = PerBotDebugOptions.get(playerIndex);
 
-    JCheckBox freezeCarCheckbox = new JCheckBox("Freeze car", options.isFreezeCar());
+    JCheckBox freezeCarCheckbox = new JCheckBox("Freeze car", options.isImmobilizeCar());
     freezeCarCheckbox.addActionListener((e) ->
-        options.setFreezeCar(freezeCarCheckbox.getModel().isSelected()));
+        options.setImmobilizeCar(freezeCarCheckbox.getModel().isSelected()));
     freezeCarCheckbox.setOpaque(false);
     optionsPanel.add(freezeCarCheckbox);
 
@@ -295,20 +295,31 @@ public class AgcUi {
     renderDebugLines.setOpaque(false);
     optionsPanel.add(renderDebugLines);
 
-
-    JCheckBox trailRendererCheckbox = new JCheckBox("Trail Renderer", options.isTrailRendererEnabled());
-    trailRendererCheckbox.addActionListener((e) ->
-        options.setTrailRendererEnabled(trailRendererCheckbox.getModel().isSelected()));
-    trailRendererCheckbox.setOpaque(false);
-    trailRendererCheckbox.setEnabled(false);
-    trailRendererCheckbox.setToolTipText("No longer works");
-    optionsPanel.add(trailRendererCheckbox);
-
-    JCheckBox renderBallCheckbox = new JCheckBox("Render Ball", options.isRenderBallPrediction());
+    JCheckBox renderBallCheckbox = new JCheckBox("Render ball trajectory", options.isRenderBallPrediction());
     renderBallCheckbox.addActionListener((e) ->
         options.setRenderBallPrediction(renderBallCheckbox.getModel().isSelected()));
     renderBallCheckbox.setOpaque(false);
     optionsPanel.add(renderBallCheckbox);
+
+    JCheckBox renderStatsCheckbox = new JCheckBox("Render stats", options.isRenderStats());
+    renderStatsCheckbox.addActionListener((e) ->
+        options.setRenderStats(renderStatsCheckbox.getModel().isSelected()));
+    renderStatsCheckbox.setOpaque(false);
+    optionsPanel.add(renderStatsCheckbox);
+
+    JCheckBox renderOpponentPathsCheckbox = new JCheckBox("Render opponent paths", options.isRenderOpponentPaths());
+    renderOpponentPathsCheckbox.addActionListener((e) ->
+        options.setRenderOpponentPaths(renderOpponentPathsCheckbox.getModel().isSelected()));
+    renderOpponentPathsCheckbox.setOpaque(false);
+    optionsPanel.add(renderOpponentPathsCheckbox);
+
+    JCheckBox trailRendererCheckbox = new JCheckBox("Trail Renderer", options.isRenderCarTrails());
+    trailRendererCheckbox.addActionListener((e) ->
+        options.setRenderCarTrails(trailRendererCheckbox.getModel().isSelected()));
+    trailRendererCheckbox.setOpaque(false);
+    trailRendererCheckbox.setEnabled(false);
+    trailRendererCheckbox.setToolTipText("No longer works");
+    optionsPanel.add(trailRendererCheckbox);
 
     return optionsPanel;
   }

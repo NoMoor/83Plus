@@ -68,4 +68,8 @@ public final class Angles {
   public static double flatCorrectionAngle(Vector3 current, Vector3 ideal) {
     return current.flatten().correctionAngle(ideal.flatten());
   }
+
+  public static boolean isInFrontOfCar(CarData car, Vector3 targetPosition) {
+    return targetPosition.minus(car.position).dot(car.orientation.getNoseVector()) > 0;
+  }
 }

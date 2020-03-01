@@ -10,11 +10,13 @@ public class PerBotDebugOptions {
 
   private volatile boolean renderAllDebugLinesEnabled;
   private volatile boolean renderPlan;
-  private volatile boolean trailRendererEnabled;
+  private volatile boolean renderCarTrails;
   private volatile boolean renderBallPrediction;
 
-  private volatile boolean freezeCar;
-  private volatile boolean predictAndRenderNextCarFrame;
+  private volatile boolean immobilizeCar;
+  private volatile boolean prerenderNextFrame;
+  private volatile boolean renderStats = true;
+  private volatile boolean renderOpponentPaths;
 
   public PerBotDebugOptions(int playerIndex) {
     this.playerIndex = playerIndex;
@@ -40,12 +42,12 @@ public class PerBotDebugOptions {
     this.renderPlan = renderPlan;
   }
 
-  public boolean isTrailRendererEnabled() {
-    return trailRendererEnabled || renderAllDebugLinesEnabled;
+  public boolean isRenderCarTrails() {
+    return renderCarTrails || renderAllDebugLinesEnabled;
   }
 
-  public void setTrailRendererEnabled(boolean trailRendererEnabled) {
-    this.trailRendererEnabled = trailRendererEnabled;
+  public void setRenderCarTrails(boolean renderCarTrails) {
+    this.renderCarTrails = renderCarTrails;
   }
 
   public boolean isRenderBallPrediction() {
@@ -56,19 +58,35 @@ public class PerBotDebugOptions {
     this.renderBallPrediction = renderBallPrediction;
   }
 
-  public boolean isFreezeCar() {
-    return freezeCar;
+  public boolean isImmobilizeCar() {
+    return immobilizeCar;
   }
 
-  public void setFreezeCar(boolean freezeCar) {
-    this.freezeCar = freezeCar;
+  public void setImmobilizeCar(boolean immobilizeCar) {
+    this.immobilizeCar = immobilizeCar;
   }
 
-  public boolean isPredictAndRenderNextCarFrame() {
-    return predictAndRenderNextCarFrame;
+  public boolean isPrerenderNextFrame() {
+    return prerenderNextFrame;
   }
 
-  public void setPredictAndRenderNextCarFrame(boolean predictAndRenderNextCarFrame) {
-    this.predictAndRenderNextCarFrame = predictAndRenderNextCarFrame;
+  public void setPrerenderNextFrame(boolean prerenderNextFrame) {
+    this.prerenderNextFrame = prerenderNextFrame;
+  }
+
+  public boolean isRenderStats() {
+    return renderStats;
+  }
+
+  public void setRenderStats(boolean renderStats) {
+    this.renderStats = renderStats;
+  }
+
+  public boolean isRenderOpponentPaths() {
+    return renderOpponentPaths;
+  }
+
+  public void setRenderOpponentPaths(boolean renderOpponentPaths) {
+    this.renderOpponentPaths = renderOpponentPaths;
   }
 }

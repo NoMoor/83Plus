@@ -42,7 +42,8 @@ public class KickoffTactician extends Tactician {
     return Math.abs(input.ball.position.x) < .1
         && Math.abs(input.ball.position.y) < .1
         && input.ball.velocity.magnitude() < 100
-        && input.ball.position.z < 120;
+        && input.ball.position.z < 120
+        && input.car.groundSpeed < 10;
   }
 
   @Override

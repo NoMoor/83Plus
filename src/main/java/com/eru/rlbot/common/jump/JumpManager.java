@@ -80,7 +80,7 @@ public class JumpManager {
       if (hasReleasedJumpInAir() && secondJumpTime == 0) {
         canFlip = car.position.z > 30;
       }
-    } else if (car.hasWheelContact) {
+    } else if (car.hasWheelContact && !car.jumped && !jumpPressedLastFrame()) {
       firstJumpTime = 0;
       secondJumpTime = 0;
       jumpInAirReleased = 0;
@@ -144,7 +144,7 @@ public class JumpManager {
   }
 
   public boolean canJump() {
-    return firstJumpTime == 0;
+    return firstJumpTime == 0 && !canFlip;
   }
 
   public float getFlipTime() {
@@ -165,5 +165,9 @@ public class JumpManager {
 
   public float getFlipRoll() {
     return flipRoll;
+  }
+
+  public boolean canJumpAccelerate() {
+    return jumpPressedLastFrame() && !hasMaxJumpHeight();
   }
 }

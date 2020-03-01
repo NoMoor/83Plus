@@ -59,7 +59,7 @@ public class TrailRenderer {
    * Renders the trail of the car.
    */
   public static void render(DataPacket input, ControlsOutput output) {
-    if (!PerBotDebugOptions.get(input.car.playerIndex).isTrailRendererEnabled()) {
+    if (!PerBotDebugOptions.get(input.car.playerIndex).isRenderCarTrails()) {
       return;
     }
 
@@ -70,7 +70,7 @@ public class TrailRenderer {
       renderer.renderTrail();
     } catch (Throwable e) {
       e.printStackTrace();
-      PerBotDebugOptions.get(input.car.playerIndex).setTrailRendererEnabled(false);
+      PerBotDebugOptions.get(input.car.playerIndex).setRenderCarTrails(false);
     }
   }
 

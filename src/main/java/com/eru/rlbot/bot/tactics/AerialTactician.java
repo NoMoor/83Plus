@@ -1,5 +1,7 @@
 package com.eru.rlbot.bot.tactics;
 
+import static com.google.common.collect.ImmutableList.toImmutableList;
+
 import com.eru.rlbot.bot.common.Accels;
 import com.eru.rlbot.bot.common.AerialLookUp;
 import com.eru.rlbot.bot.common.Angles;
@@ -9,6 +11,7 @@ import com.eru.rlbot.bot.common.Pair;
 import com.eru.rlbot.bot.common.Path;
 import com.eru.rlbot.bot.common.PathPlanner;
 import com.eru.rlbot.bot.main.Agc;
+import com.eru.rlbot.bot.prediction.CarPrediction;
 import com.eru.rlbot.bot.strats.BallPredictionUtil;
 import com.eru.rlbot.common.Lists;
 import com.eru.rlbot.common.Moment;
@@ -20,6 +23,7 @@ import com.eru.rlbot.common.input.Orientation;
 import com.eru.rlbot.common.output.ControlsOutput;
 import com.eru.rlbot.common.vector.Vector3;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
 import java.awt.Color;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
@@ -183,26 +187,16 @@ public class AerialTactician extends Tactician {
   }
 
   private FlightTrajectory computeFlightTrajectory(DataPacket input, FlightPlan plan) {
-    ImmutableList.Builder<Vector3> flightPathBuilder = ImmutableList.builder();
-    double time = input.car.elapsedSeconds;
-
-    Vector3 velocity = input.car.velocity;
-    Vector3 flightTerminus = input.car.position;
-    while (time + Constants.STEP_SIZE < plan.interceptTime) {
-
-      flightTerminus = flightTerminus.plus(velocity.multiply(Constants.STEP_SIZE));
-      velocity = velocity.addZ(Constants.NEG_GRAVITY * Constants.STEP_SIZE);
-      time += Constants.STEP_SIZE;
-
-      flightPathBuilder.add(flightTerminus);
-    }
-
-    return new FlightTrajectory(flightTerminus, flightPathBuilder.build());
+    return new FlightTrajectory(CarPrediction.noInputs(input.car, plan.interceptTime - input.car.elapsedSeconds));
   }
 
   private void renderHumanPath(DataPacket input, FlightPlan plan, FlightTrajectory trajectory) {
     bot.botRenderer.renderTarget(Color.GREEN, trajectory.flightTerminus);
-    bot.botRenderer.renderPath(Color.GREEN, Lists.everyNth(trajectory.flightPath, 10));
+    bot.botRenderer.renderPath(
+        Color.GREEN,
+        Lists.everyNth(trajectory.flightPath, 10).stream()
+            .map(CarPrediction.PredictionNode::getPosition)
+            .collect(toImmutableList()));
     bot.botRenderer.renderProjection(
         Color.GREEN,
         input.car,
@@ -304,11 +298,12 @@ public class AerialTactician extends Tactician {
   }
 
   private static class FlightTrajectory {
-    private final Vector3 flightTerminus;
-    private final List<Vector3> flightPath;
 
-    public FlightTrajectory(Vector3 flightTerminus, List<Vector3> flightPath) {
-      this.flightTerminus = flightTerminus;
+    private final Vector3 flightTerminus;
+    private final ImmutableList<CarPrediction.PredictionNode> flightPath;
+
+    public FlightTrajectory(ImmutableList<CarPrediction.PredictionNode> flightPath) {
+      this.flightTerminus = Iterables.getLast(flightPath).position;
       this.flightPath = flightPath;
     }
   }

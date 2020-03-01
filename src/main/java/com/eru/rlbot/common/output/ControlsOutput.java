@@ -42,10 +42,13 @@ public class ControlsOutput implements ControllerState {
         return withSteer((float) steer);
     }
 
-    public ControlsOutput withPitch(float pitch) {
-        this.pitch = clamp(pitch);
-        return this;
-    }
+  /**
+   * -1 is down, 1 is up.
+   */
+  public ControlsOutput withPitch(float pitch) {
+    this.pitch = clamp(pitch);
+    return this;
+  }
 
     public ControlsOutput withPitch(double pitch) {
         return withPitch((float) pitch);

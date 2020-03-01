@@ -79,6 +79,10 @@ public final class Constants {
   public static final double MAX_ROLL_ACCEL = 38.34;
   public static final double MAX_ANGULAR_VELOCITY = 5.5;
 
+  public static double radius(double velocity) {
+    return 1 / curvature(velocity);
+  }
+
   static double curvature(double velocity) {
     if (0.0 <= velocity && velocity < 500.0) {
       return 0.006900 - 5.84e-6 * velocity;

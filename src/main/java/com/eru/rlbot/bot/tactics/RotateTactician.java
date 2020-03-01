@@ -1,5 +1,6 @@
 package com.eru.rlbot.bot.tactics;
 
+import com.eru.rlbot.bot.common.Angles3;
 import com.eru.rlbot.bot.common.Goal;
 import com.eru.rlbot.bot.common.Path;
 import com.eru.rlbot.bot.common.PathPlanner;
@@ -50,6 +51,15 @@ public class RotateTactician extends Tactician {
     bot.botRenderer.renderPath(input, path);
     bot.botRenderer.renderHitBox(Color.BLACK, targetCar);
 
-    pathExecutor.executePath(input, output, path);
+    if (input.car.hasWheelContact) {
+      pathExecutor.executePath(input, output, path);
+    } else {
+      Angles3.setControlsForFlatLanding(input.car, output);
+    }
+  }
+
+  @Override
+  public boolean allowDelegate() {
+    return true;
   }
 }

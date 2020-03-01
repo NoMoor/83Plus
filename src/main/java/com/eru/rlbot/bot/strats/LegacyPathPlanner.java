@@ -28,8 +28,8 @@ public class LegacyPathPlanner {
 
     Optional<BoostPad> optionalBoostPad = closestBoostPad(tactic, 250);
     optionalBoostPad.map(pad -> Tactic.builder()
-        .setSubject(getNearestBoostEdge(
-            pad.getLocation(), input.car.position, tactic.subject.position, pad.isLargeBoost()))
+        .setSubject(getNearestBoostEdgeMoment(
+            input.car.position, tactic.subject.position, pad.getLocation(), pad.isLargeBoost()))
         .setTacticType(tactic.tacticType)
         .setTacticType(Tactic.TacticType.ROTATE)
         .setObject(tactic.subject.position)
@@ -41,8 +41,16 @@ public class LegacyPathPlanner {
         .build();
   }
 
-  private Moment getNearestBoostEdge(Vector3 location, Vector3 start, Vector3 end, boolean isLargeBoost) {
-    Vector3 boostToShortestPath = Vector3.from(location, Vector3s.nearestPointOnLineSegment(location, start, end));
+
+  public static Vector3 getNearestBoostEdge(Vector3 start, Vector3 end, BoostPad boostPad) {
+    return getNearestBoostEdge(start, end, boostPad.getLocation(), boostPad.isLargeBoost());
+  }
+
+  public static Vector3 getNearestBoostEdge(
+      Vector3 pathStart, Vector3 pathEnd, Vector3 boostLocation, boolean isLargeBoost) {
+
+    Vector3 boostToShortestPath =
+        Vector3.from(boostLocation, Vector3s.nearestPointOnLineSegment(boostLocation, pathStart, pathEnd));
 
     double offsetMagnitude =
         Math.min(
@@ -50,10 +58,21 @@ public class LegacyPathPlanner {
             isLargeBoost ? Constants.LARGE_BOOST_PICKUP_RADIUS : Constants.SMALL_BOOST_PICKUP_RADIUS);
 
     Vector3 pickUpOffset = boostToShortestPath.toMagnitude(offsetMagnitude);
-    return new Moment(location.plus(pickUpOffset), isLargeBoost ? Moment.Type.LARGE_BOOST : Moment.Type.SMALL_BOOST);
+    return boostLocation.plus(pickUpOffset);
+  }
+
+  public static Moment getNearestBoostEdgeMoment(
+      Vector3 pathStart, Vector3 pathEnd, Vector3 boostLocation, boolean isLargeBoost) {
+    return new Moment(
+        getNearestBoostEdge(pathStart, pathEnd, boostLocation, isLargeBoost),
+        isLargeBoost ? Moment.Type.LARGE_BOOST : Moment.Type.SMALL_BOOST);
   }
 
   private Optional<BoostPad> closestBoostPad(Tactic tactic, int maxOutOfWayTravel) {
+    return closestBoostPad(input, tactic, maxOutOfWayTravel);
+  }
+
+  public static Optional<BoostPad> closestBoostPad(DataPacket input, Tactic tactic, int maxOutOfWayTravel) {
     // TODO: Check if we need boost (< 80 boost or will use boost on the maneuver)
     // TODO: Take into account boost size
     BoostPad closetBoost = null;
@@ -77,7 +96,7 @@ public class LegacyPathPlanner {
       if (thisDistance < shortestDistance) {
         // Ensure the boost is good to pick up.
         Moment pickupLocation =
-            getNearestBoostEdge(boostPad.getLocation(), carPosition, tacticPosition, boostPad.isLargeBoost());
+            getNearestBoostEdgeMoment(carPosition, tacticPosition, boostPad.getLocation(), boostPad.isLargeBoost());
 
         boolean isTooCloseToTactic = tacticPosition.distance(pickupLocation.position) < maxOutOfWayTravel * 2;
 

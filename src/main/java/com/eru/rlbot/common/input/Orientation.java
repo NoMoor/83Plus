@@ -55,6 +55,7 @@ public class Orientation {
     return orientation.row(0);
   }
 
+  // TODO: This is actually the right side of the car.
   /**
    * The direction that the left side of the car is facing.
    */
@@ -82,12 +83,12 @@ public class Orientation {
     double noseY = Math.cos(pitch) * Math.sin(yaw);
     double noseZ = Math.sin(pitch);
 
-    double leftX = Math.cos(yaw) * Math.sin(pitch) * Math.sin(roll) - Math.cos(roll) * Math.sin(yaw);
-    double leftY = Math.sin(yaw) * Math.sin(pitch) * Math.sin(roll) + Math.cos(roll) * Math.cos(yaw);
-    double leftZ = -Math.cos(pitch) * Math.sin(roll);
+    double leftX = (Math.cos(yaw) * Math.sin(pitch) * Math.sin(roll)) - (Math.cos(roll) * Math.sin(yaw));
+    double leftY = (Math.sin(yaw) * Math.sin(pitch) * Math.sin(roll)) + (Math.cos(roll) * Math.cos(yaw));
+    double leftZ = -1 * Math.cos(pitch) * Math.sin(roll);
 
-    double roofX = -Math.cos(roll) * Math.cos(yaw) * Math.sin(pitch) - Math.sin(roll) * Math.sin(yaw);
-    double roofY = Math.cos(yaw) * Math.sin(roll) - Math.cos(roll) * Math.sin(pitch) * Math.sin(yaw);
+    double roofX = (-1 * Math.cos(roll) * Math.cos(yaw) * Math.sin(pitch)) - (Math.sin(roll) * Math.sin(yaw));
+    double roofY = Math.cos(yaw) * Math.sin(roll) - (Math.cos(roll) * Math.sin(pitch) * Math.sin(yaw));
     double roofZ = Math.cos(roll) * Math.cos(pitch);
 
     return new Orientation(

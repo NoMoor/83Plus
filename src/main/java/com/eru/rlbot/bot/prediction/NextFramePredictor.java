@@ -23,7 +23,7 @@ public class NextFramePredictor {
   private static ControlsOutput lastFrameControls;
 
   public static void getPrediction(DataPacket input, ControlsOutput output) {
-    if (!PerBotDebugOptions.get(input.car.playerIndex).isPredictAndRenderNextCarFrame())
+    if (!PerBotDebugOptions.get(input.car.playerIndex).isPrerenderNextFrame())
       return;
 
     // TODO: Update to support multiple cars

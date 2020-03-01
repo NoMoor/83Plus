@@ -134,12 +134,20 @@ public class Matrix3 {
     return determinant;
   }
 
-  /** The dot product of this matrix and the given vector. */
+  /**
+   * The dot product of this matrix and the given vector.
+   */
   public Vector3 dot(Vector3 v) {
     return Vector3.of(a.dot(v), b.dot(v), c.dot(v));
   }
 
-  /** The dot product of this matrix and the given matrix. */
+  public Matrix3 rotateOrientation(Matrix3 m) {
+    return this.dot(m);
+  }
+
+  /**
+   * The dot product of this matrix and the given matrix.
+   */
   public Matrix3 dot(Matrix3 m) {
     return new Matrix3(
         Vector3.of(a.dot(m.column(0)), a.dot(m.column(1)), a.dot(m.column(2))),
@@ -147,7 +155,9 @@ public class Matrix3 {
         Vector3.of(c.dot(m.column(0)), c.dot(m.column(1)), c.dot(m.column(2))));
   }
 
-  /** Returns true if this is equal to the identity matrix. */
+  /**
+   * Returns true if this is equal to the identity matrix.
+   */
   public boolean isIdentity() {
     return a.equals(IDENTITY.a) && b.equals(IDENTITY.b) && c.equals(IDENTITY.c);
   }

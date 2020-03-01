@@ -19,12 +19,14 @@ import com.eru.rlbot.common.output.ControlsOutput;
 import com.eru.rlbot.common.vector.Vector2;
 import com.eru.rlbot.common.vector.Vector3;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
 import java.awt.Color;
 import java.awt.Point;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
+import java.util.Objects;
 import java.util.PriorityQueue;
 import java.util.stream.IntStream;
 import org.apache.logging.log4j.Level;
@@ -45,8 +47,12 @@ public class BotRenderer {
   private static final double FULL_CIRCLE = Math.PI * 2;
   private static Map<Integer, BotRenderer> BOTS = new HashMap<>();
 
-  private Float initialTime = null;
-  private long ticks = 0;
+  private float initialIngameTime = 0;
+  private long ingameTicks = 0;
+  private float ingameFps = 0;
+  private long initialWallClockTime = 0;
+  private float wallclockFps = 0;
+  private int wallClockTicks = 0;
   private LinkedList<Vector3> previousVelocities = new LinkedList<>();
   private LinkedList<Float> previousVelocityTimes = new LinkedList<>();
 
@@ -98,27 +104,27 @@ public class BotRenderer {
   }
 
   public void renderInfo(DataPacket input, ControlsOutput output) {
-    if (skipRendering()) return;
+    PerBotDebugOptions renderOptions = PerBotDebugOptions.get(input.playerIndex);
+    if (renderOptions.isRenderPlan()) {
+      renderControlDebug();
+      renderDebugText();
+      renderAlert(input);
 
-    renderControlDebug();
-    renderDebugText();
-    renderAlert(input);
+      renderControls(output);
+      renderAcceleration(input);
+      renderLocation(input);
+      renderProjections(input);
+      renderHitBox(input.car);
+      //    renderTacticLines(input.car);
+      //    renderTurningRadius(input);
+      //    renderPredictionDiff(input);
+      //    renderRelativeBallData(input);
+      //    renderTouchIndicator(input);
+    }
 
-    renderControls(output);
-    renderAcceleration(input);
-    renderLocation(input);
-
-//    renderTacticLines(input.car);
-//    renderRefreshRate(input);
-//    renderTurningRadius(input);
-
-//      renderPredictionDiff(input);
-//      renderRelativeBallData(input);
-
-    renderProjections(input);
-//    renderTouchIndicator(input);
-
-//    renderHitBox(input.car);
+    if (renderOptions.isRenderStats()) {
+      renderRefreshRate(input);
+    }
   }
 
   private PriorityQueue<RenderRequest> renderRequests =
@@ -160,13 +166,41 @@ public class BotRenderer {
     getRenderer().drawLine3d(color, target.addX(-size).addY(size).addZ(size), target.addX(size).addY(-size).addZ(-size));
   }
 
+  /**
+   * Used for rendering multi-color paths. Callers must verify their rendering has been enabled.
+   */
+  public void renderPaths(ImmutableList<Pair<Color, ImmutableList<Vector3>>> paths) {
+    for (int i = 0; i < paths.size(); i++) {
+      Pair<Color, ImmutableList<Vector3>> path = paths.get(i);
+
+      if (i != 0) {
+        Pair<Color, ImmutableList<Vector3>> previousPath = paths.get(i - 1);
+
+        if (!previousPath.getSecond().isEmpty() && !path.getSecond().isEmpty()) {
+          renderPathInternal(
+              path.getFirst(),
+              ImmutableList.of(
+                  Iterables.getLast(previousPath.getSecond()),
+                  Objects.requireNonNull(Iterables.getFirst(path.getSecond(), Vector3.zero()))));
+        }
+      }
+
+      renderPathInternal(path.getFirst(), path.getSecond());
+    }
+  }
+
   public void renderPath(ImmutableList<Vector3> path) {
     renderPath(Color.pink, path);
   }
 
   public void renderPath(Color color, ImmutableList<Vector3> path) {
-    if (skipRendering()) return;
+    if (skipRendering())
+      return;
 
+    renderPathInternal(color, path);
+  }
+
+  private void renderPathInternal(Color color, ImmutableList<Vector3> path) {
     Vector3 prev = null;
     for (Vector3 location : path) {
       if (prev != null) {
@@ -251,17 +285,17 @@ public class BotRenderer {
 
   public void renderHitBox(CarData car) {
     JumpManager jumpManager = JumpManager.forCar(car);
-    renderHitBox(
-        jumpManager.canJump()
-            ? Color.GREEN
-            : jumpManager.canFlip()
-            ? Color.ORANGE
-            : !jumpManager.hasReleasedJumpInAir()
-            ? Color.CYAN
-            : Color.RED,
-        car);
+    Color color = jumpManager.canJump()
+        ? Color.GREEN
+        : jumpManager.canFlip()
+        ? Color.ORANGE
+        : !jumpManager.hasReleasedJumpInAir()
+        ? Color.CYAN
+        : Color.RED;
+    renderHitBox(color, car);
   }
 
+  private static final float COMPASS_SIZE = 100f;
   public void renderHitBox(Color color, CarData car) {
     if (skipRendering())
       return;
@@ -269,8 +303,8 @@ public class BotRenderer {
     BoundingBox hitbox = car.boundingBox;
 
     // Draw front box.
-    render3DLine(Color.RED, hitbox.flt, hitbox.flb);
-    render3DLine(Color.BLUE, hitbox.flb, hitbox.frb);
+    render3DLine(color, hitbox.flt, hitbox.flb);
+    render3DLine(color, hitbox.flb, hitbox.frb);
     render3DLine(color, hitbox.frb, hitbox.frt);
     render3DLine(color, hitbox.frt, hitbox.flt);
 
@@ -282,23 +316,39 @@ public class BotRenderer {
 
     // Connect front and back.
     render3DLine(color, hitbox.flt, hitbox.rlt);
-    render3DLine(Color.GREEN, hitbox.flb, hitbox.rlb);
+    render3DLine(color, hitbox.flb, hitbox.rlb);
     render3DLine(color, hitbox.frt, hitbox.rrt);
     render3DLine(color, hitbox.frb, hitbox.rrb);
 
-//    renderProjection(car, car.position.plus(car.velocity), Color.yellow);
+    // Render compass
+    render3DLine(Color.RED, car.position, car.position.plus(car.orientation.getNoseVector().toMagnitude(COMPASS_SIZE)));
+    render3DLine(Color.GREEN, car.position, car.position.plus(car.orientation.getLeftVector().toMagnitude(COMPASS_SIZE)));
+    render3DLine(Color.BLUE, car.position, car.position.plus(car.orientation.getRoofVector().toMagnitude(COMPASS_SIZE)));
   }
 
   private void renderRefreshRate(DataPacket input) {
-    if (initialTime == null || input.car.elapsedSeconds - initialTime > 5) {
-      initialTime = input.car.elapsedSeconds;
-      ticks = 0;
+    if (!PerBotDebugOptions.get(input.car.playerIndex).isRenderStats()) {
+      return;
     }
-    ticks++;
 
-    double fps = (ticks / (input.car.elapsedSeconds - initialTime));
+    if (initialIngameTime == 0 || input.car.elapsedSeconds - initialIngameTime > 1) {
+      float passedTime = input.car.elapsedSeconds - initialIngameTime;
+      ingameFps = passedTime == 0 ? 0 : (ingameTicks / passedTime);
+      initialIngameTime = input.car.elapsedSeconds;
+      ingameTicks = 0;
+    }
+    ingameTicks++;
 
-    renderText(0, 20, 1,"%.2f FPS", fps);
+    if (initialWallClockTime == 0 || System.currentTimeMillis() - initialWallClockTime > 1000) {
+      float passedTime = (float) (System.currentTimeMillis() - initialWallClockTime) / 1000;
+      wallclockFps = passedTime == 0 ? 0 : wallClockTicks / passedTime;
+      initialWallClockTime = System.currentTimeMillis();
+      wallClockTicks = 0;
+    }
+    wallClockTicks++;
+
+    renderText(400, 20, 1, "%s In-game FPS", ingameFps == 0 ? "-" : String.format("%.2f", ingameFps));
+    renderText(400, 40, 1, "%s Wall-clock FPS", wallclockFps == 0 ? "-" : String.format("%.2f", wallclockFps));
   }
 
   private void renderDebugText() {

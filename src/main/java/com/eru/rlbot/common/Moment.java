@@ -1,6 +1,7 @@
 package com.eru.rlbot.common;
 
 import com.eru.rlbot.bot.strats.BallPredictionUtil;
+import com.eru.rlbot.common.boost.BoostPad;
 import com.eru.rlbot.common.input.BallData;
 import com.eru.rlbot.common.vector.Vector3;
 import com.google.common.base.Objects;
@@ -46,6 +47,18 @@ public class Moment {
 
   private Moment(BallData ball) {
     this(ball.position, ball.velocity, ball.time, Type.BALL);
+  }
+
+  private Moment(BoostPad boostPad) {
+    this(boostPad.getLocation(), boostPad.isLargeBoost() ? Type.LARGE_BOOST : Type.SMALL_BOOST);
+  }
+
+  public static Moment from(Vector3 wayPoint) {
+    return new Moment(wayPoint, Type.WAY_POINT);
+  }
+
+  public static Moment from(BoostPad pad) {
+    return new Moment(pad);
   }
 
   public static Moment from(BallData ball) {

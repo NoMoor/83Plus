@@ -31,9 +31,8 @@ public class BoundingBox {
     this.orientation = orientation;
     Matrix3 hitboxOrientationMatrix = orientation.getOrientationMatrix();
 
-    this.center =  centerOfRotation.plus(orientation.getOrientationMatrix().dot(RJ_OFFSET));
+    this.center = centerOfRotation.plus(hitboxOrientationMatrix.dot(RJ_OFFSET));
 
-    // TODO: Take into account the orientation of the hitbox.
     this.flt = this.center.plus(hitboxOrientationMatrix.dot(Vector3.of(halfLength, -halfWidth, halfHeight)));
     this.flb = this.center.plus(hitboxOrientationMatrix.dot(Vector3.of(halfLength, -halfWidth, -halfHeight)));
     this.frt = this.center.plus(hitboxOrientationMatrix.dot(Vector3.of(halfLength, halfWidth, halfHeight)));
@@ -43,5 +42,34 @@ public class BoundingBox {
     this.rlb = this.center.plus(hitboxOrientationMatrix.dot(Vector3.of(-halfLength, -halfWidth, -halfHeight)));
     this.rrt = this.center.plus(hitboxOrientationMatrix.dot(Vector3.of(-halfLength, halfWidth, halfHeight)));
     this.rrb = this.center.plus(hitboxOrientationMatrix.dot(Vector3.of(-halfLength, halfWidth, -halfHeight)));
+  }
+
+  public rlbot.vector.Vector3 getLowestCorner() {
+    float noseZ = orientation.getNoseVector().z;
+    float roofZ = orientation.getRoofVector().z;
+    float leftZ = -orientation.getLeftVector().z;
+    if (noseZ > -.009) {
+      // Rear corners
+      if (roofZ > 0) {
+        return leftZ > 0
+            ? rrb
+            : rlb;
+      } else {
+        return leftZ > 0
+            ? rrt
+            : rlt;
+      }
+    } else {
+      // Front corners
+      if (roofZ > 0) {
+        return leftZ > 0
+            ? frb
+            : flb;
+      } else {
+        return leftZ > 0
+            ? frt
+            : flt;
+      }
+    }
   }
 }

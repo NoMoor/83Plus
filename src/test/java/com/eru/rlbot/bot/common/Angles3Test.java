@@ -12,9 +12,17 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
-/** Tests for {@link Angles3}. */
+/**
+ * Tests for {@link Angles3}.
+ */
 @RunWith(JUnit4.class)
 public class Angles3Test {
+
+  @Test
+  public void orientation() {
+    Orientation o = Orientation.convert(0, 0, 0);
+    assertThat((double) o.getLeftVector().y, is(closeTo(-1, .0001f)));
+  }
 
   @Test
   public void test_xAxis() {

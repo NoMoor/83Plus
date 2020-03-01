@@ -6,7 +6,12 @@ import com.eru.rlbot.bot.main.Agc;
 import com.eru.rlbot.common.input.DataPacket;
 import com.eru.rlbot.common.output.ControlsOutput;
 import com.google.common.collect.ImmutableList;
-import java.util.*;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 
 public class TacticManager {
 
@@ -16,6 +21,7 @@ public class TacticManager {
     DEFAULT_TACTICIAN_MAP.put(Tactic.TacticType.AERIAL, AerialTactician.class);
     DEFAULT_TACTICIAN_MAP.put(Tactic.TacticType.CATCH, CatchTactician.class);
     DEFAULT_TACTICIAN_MAP.put(Tactic.TacticType.DEFEND, GoalLineTactician.class);
+    DEFAULT_TACTICIAN_MAP.put(Tactic.TacticType.DEMO, DemoTactician.class);
     DEFAULT_TACTICIAN_MAP.put(Tactic.TacticType.DRIBBLE, DribbleTactician.class);
     DEFAULT_TACTICIAN_MAP.put(Tactic.TacticType.FAST_AERIAL, FastAerial.class);
     DEFAULT_TACTICIAN_MAP.put(Tactic.TacticType.FLIP, FlipTactician.class);

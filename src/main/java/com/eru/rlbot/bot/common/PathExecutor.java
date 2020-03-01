@@ -1,8 +1,8 @@
 package com.eru.rlbot.bot.common;
 
+import com.eru.rlbot.bot.maneuver.FlipHelper;
 import com.eru.rlbot.bot.tactics.Tactician;
 import com.eru.rlbot.common.input.DataPacket;
-import com.eru.rlbot.common.jump.JumpManager;
 import com.eru.rlbot.common.output.ControlsOutput;
 import com.eru.rlbot.common.vector.Vector3;
 import org.apache.logging.log4j.LogManager;
@@ -41,27 +41,16 @@ public class PathExecutor {
     }
 
     if (currentSegment.type == Segment.Type.FLIP) {
-      flip(input, output, path);
+      tactician.requestDelegate(FlipHelper.builder()
+          .setTarget(target)
+          .flipEarly()
+          .build());
     } else {
       drive(input, output, target, currentSegment, distanceDiff);
     }
 
-    if (STAND_STILL) {
-      output
-          .withSteer(0)
-          .withBoost(false)
-          .withThrottle(0);
-    }
-  }
-
-  private void flip(DataPacket input, ControlsOutput output, Path path) {
-    if (input.car.hasWheelContact) {
-      output.withJump();
-    } else if (JumpManager.forCar(input.car).hasReleasedJumpInAir()) {
-
-    } else if (JumpManager.forCar(input.car).canFlip()) {
-      output.withJump()
-          .withPitch(-1);
+    if (!path.isTimed()) {
+      output.withBoost(input.car.boost > 50);
     }
   }
 
@@ -107,7 +96,4 @@ public class PathExecutor {
       output.withJump();
     }
   }
-
-  // Indicates to keep the car stationary.
-  private static boolean STAND_STILL = false;
 }

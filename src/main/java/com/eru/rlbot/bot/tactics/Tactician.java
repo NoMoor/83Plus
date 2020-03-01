@@ -5,8 +5,12 @@ import com.eru.rlbot.bot.main.Agc;
 import com.eru.rlbot.bot.maneuver.Maneuver;
 import com.eru.rlbot.common.input.DataPacket;
 import com.eru.rlbot.common.output.ControlsOutput;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public abstract class Tactician {
+
+  private static final Logger logger = LogManager.getLogger("Tactician");
 
   protected final Agc bot;
   protected final TacticManager tacticManager;
@@ -48,8 +52,20 @@ public abstract class Tactician {
     this.delegate = delegate;
   }
 
-  public boolean isLocked() {
+  public void requestDelegate(Maneuver delegate) {
+    if (allowDelegate()) {
+      delegateTo(delegate);
+    } else {
+      logger.warn("Delegate {} rejected for tactician {}", delegate.getClass(), this.getClass());
+    }
+  }
+
+  public boolean allowDelegate() {
     return false;
+  }
+
+  public boolean isLocked() {
+    return delegate != null && !delegate.isComplete();
   }
 
   public TacticManager getTacticManager() {

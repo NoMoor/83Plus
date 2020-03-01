@@ -8,9 +8,13 @@ import com.eru.rlbot.common.vector.Vector3;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.ListIterator;
+import java.util.Map;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import java.util.*;
 
 public class Path {
 
@@ -50,6 +54,10 @@ public class Path {
           .sum();
     }
     return distance;
+  }
+
+  public boolean isTimed() {
+    return isTimed;
   }
 
   public static Builder builder() {

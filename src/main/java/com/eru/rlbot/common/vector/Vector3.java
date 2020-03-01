@@ -7,11 +7,13 @@ import rlbot.gamestate.DesiredVector3;
 
 /**
  * A simple 3d vector class with the most essential operations.
- *
+ * <p>
  * This class is here for your convenience, it is NOT part of the framework. You can add to it as much
  * as you want, or delete it.
  */
 public class Vector3 extends rlbot.vector.Vector3 {
+
+  public static final Vector3 WEST = Vector2.WEST.asVector3();
 
   /** Creates the null vector. */
   public static Vector3 zero() {
@@ -151,7 +153,6 @@ public class Vector3 extends rlbot.vector.Vector3 {
     return new Vector3(tx, ty, tz);
   }
 
-  // TODO: Add hashcode.
   @Override
   public boolean equals(Object o) {
     if (o == this) return true;

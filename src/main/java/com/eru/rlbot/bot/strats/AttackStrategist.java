@@ -37,6 +37,14 @@ public class AttackStrategist extends Strategist {
       return true;
     }
 
+    if (true) {
+      tacticManager.setTactic(Tactic.builder()
+          .setSubject(Moment.from(input.ball))
+          .setTacticType(Tactic.TacticType.DEMO)
+          .build());
+      return true;
+    }
+
     // TODO: Update when the opponent can get to the ball.
 
     // Do Ground planning
