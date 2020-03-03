@@ -1,10 +1,10 @@
 package com.eru.rlbot.bot.prediction;
 
-import com.eru.rlbot.bot.common.Angles3;
-import com.eru.rlbot.bot.common.BotRenderer;
 import com.eru.rlbot.bot.common.CarBall;
 import com.eru.rlbot.bot.common.Constants;
-import com.eru.rlbot.bot.common.Matrix3;
+import com.eru.rlbot.bot.renderer.BotRenderer;
+import com.eru.rlbot.common.Matrix3;
+import com.eru.rlbot.common.Numbers;
 import com.eru.rlbot.common.input.BallData;
 import com.eru.rlbot.common.input.CarData;
 import com.eru.rlbot.common.vector.Vector3;
@@ -75,8 +75,8 @@ public class CarBallCollision {
     Vector3 psyonixVelocity = getPsyonixVelocity(car, ball);
 
     if (renderComponents) {
-      BotRenderer.forIndex(car.playerIndex).renderProjection(ball.position, ball.position.plus(physicsVelocity), Color.RED, 0, "Physics");
-      BotRenderer.forIndex(car.playerIndex).renderProjection(ball.position, ball.position.plus(psyonixVelocity), Color.MAGENTA, 0, "Psyonix");
+      BotRenderer.forIndex(car.serialNumber).renderProjection(ball.position, ball.position.plus(physicsVelocity), Color.RED, 0, "Physics");
+      BotRenderer.forIndex(car.serialNumber).renderProjection(ball.position, ball.position.plus(psyonixVelocity), Color.MAGENTA, 0, "Psyonix");
     }
 
     Vector3 deltaSpin = ballLever.dot(scaledPhysicsImpulse).divide(Constants.BALL_MOMENT_OF_INERTIA);
@@ -141,12 +141,12 @@ public class CarBallCollision {
         {4600.0d, 0.30d}
     };
 
-    double input = Angles3.clip(dv, 0, 4600);
+    double input = Numbers.clamp(dv, 0, 4600);
 
     for (int i = 0; i < values.length; i++) {
       if (values[i][0] <= input && input < values[i + 1][0]) {
         double u = (input - values[i][0]) / (values[i + 1][0] - values[i][0]);
-        return Angles3.lerp(values[i][1], values[i + 1][1], u);
+        return Numbers.lerp(values[i][1], values[i + 1][1], u);
       }
     }
 

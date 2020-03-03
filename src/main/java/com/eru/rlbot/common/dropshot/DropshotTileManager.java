@@ -1,18 +1,17 @@
 package com.eru.rlbot.common.dropshot;
 
-import rlbot.cppinterop.RLBotDll;
-import rlbot.flat.FieldInfo;
-import rlbot.flat.GameTickPacket;
+import static com.eru.rlbot.common.dropshot.DropshotTile.TILE_HEIGHT;
+import static com.eru.rlbot.common.dropshot.DropshotTile.TILE_WIDTH;
+
 import com.eru.rlbot.common.vector.Vector2;
 import com.eru.rlbot.common.vector.Vector3;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-
-import static com.eru.rlbot.common.dropshot.DropshotTile.TILE_HEIGHT;
-import static com.eru.rlbot.common.dropshot.DropshotTile.TILE_WIDTH;
+import rlbot.cppinterop.RLBotDll;
+import rlbot.flat.FieldInfo;
+import rlbot.flat.GameTickPacket;
 
 /**
  * Information about where dropshot tiles are located in the arena and what state they have. Can also convert a
@@ -87,9 +86,9 @@ public class DropshotTileManager {
 
         // Apply offset
         if (point.y < 0) {
-            point = point.plus(new Vector2(0, 128));
+          point = point.plus(Vector2.of(0, 128));
         } else {
-            point = point.plus(new Vector2(0, -128));
+          point = point.plus(Vector2.of(0, -128));
         }
 
         // Calculate q and r component

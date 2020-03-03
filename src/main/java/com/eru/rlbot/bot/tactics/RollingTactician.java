@@ -3,26 +3,29 @@ package com.eru.rlbot.bot.tactics;
 import static com.eru.rlbot.bot.common.Constants.HALF_LENGTH;
 
 import com.eru.rlbot.bot.common.Angles;
-import com.eru.rlbot.bot.common.DllHelper;
-import com.eru.rlbot.bot.main.Agc;
+import com.eru.rlbot.bot.main.ApolloGuidanceComputer;
+import com.eru.rlbot.common.DllHelper;
 import com.eru.rlbot.common.input.DataPacket;
-import com.eru.rlbot.common.output.ControlsOutput;
+import com.eru.rlbot.common.output.Controls;
 import com.eru.rlbot.common.vector.Vector2;
 import com.eru.rlbot.common.vector.Vector3;
 import java.util.Optional;
 import rlbot.flat.BallPrediction;
 import rlbot.flat.PredictionSlice;
 
+/**
+ * The original controller for this bot. This isn't really used anymore, except in fall-back cases.
+ */
 public class RollingTactician extends Tactician {
 
   private boolean amBoosting;
 
-  RollingTactician(Agc bot, TacticManager tacticManager) {
+  RollingTactician(ApolloGuidanceComputer bot, TacticManager tacticManager) {
     super(bot, tacticManager);
   }
 
   @Override
-  public void internalExecute(DataPacket input, ControlsOutput output, Tactic tactic) {
+  public void internalExecute(DataPacket input, Controls output, Tactic tactic) {
     // TODO: Fix this
 
     Vector2 carDirection = input.car.orientation.getNoseVector().flatten();
@@ -34,9 +37,9 @@ public class RollingTactician extends Tactician {
     double flatCorrectionAngle;
     // Need to go up the wall.
     if (input.car.hasWheelContact
-            && Math.abs(carToTarget.z) > 500 // Needs to go upward
-            && Math.abs(input.car.position.x) > 3000 // Near the wall
-            && input.car.position.z < 20) { // On the ground
+        && Math.abs(carToTarget.z) > 500 // Needs to go upward
+        && Math.abs(input.car.position.x) > 3000 // Near the wall
+        && input.car.position.z < 20) { // On the ground
 
       bot.botRenderer.setBranchInfo("Wall Ride");
       flatCorrectionAngle = wallRideCorrectionAngle(input, tactic);
@@ -90,14 +93,14 @@ public class RollingTactician extends Tactician {
 
     Vector2 targetVector = targetPosition.flatten();
 
-    // TODO(ahatfield): This only works for side walls.
-    // TODO(ahatfield): Fix this. The x coordinate is positive the other way.
+    // TODO: This only works for side walls.
+    // TODO: Fix this. The x coordinate is positive the other way.
     // Project the height of the ball into the wall.
     float xVector = targetPosition.x > 0 ? targetPosition.z : targetPosition.z * -1;
     // If you are going down field, you need to rid up the wall sooner.
     float yVector = HALF_LENGTH - Math.abs(targetPosition.x) * (input.car.velocity.y > 0 ? 1 : -1);
 
-    Vector2 projectedVector = new Vector2(xVector, yVector);
+    Vector2 projectedVector = Vector2.of(xVector, yVector);
     Vector2 wallAdjustedVector = targetVector.plus(projectedVector);
 
     bot.botRenderer.renderProjection(input.car, wallAdjustedVector);
@@ -109,7 +112,7 @@ public class RollingTactician extends Tactician {
         wallAdjustedVector);
   }
 
-  private void boostToShoot(DataPacket input, ControlsOutput output, double flatCorrectionAngle) {
+  private void boostToShoot(DataPacket input, Controls output, double flatCorrectionAngle) {
     if ((input.car.boost > 12 || amBoosting) && Math.abs(flatCorrectionAngle) < .2) {
 
       double goalCorrectionAngle =

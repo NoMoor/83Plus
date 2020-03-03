@@ -3,39 +3,42 @@ package com.eru.rlbot.bot.tactics;
 import static com.eru.rlbot.bot.common.Constants.*;
 
 import com.eru.rlbot.bot.common.Angles;
-import com.eru.rlbot.bot.common.NormalUtils;
-import com.eru.rlbot.bot.main.Agc;
+import com.eru.rlbot.bot.common.RelativeUtils;
+import com.eru.rlbot.bot.main.ApolloGuidanceComputer;
 import com.eru.rlbot.common.input.BallData;
 import com.eru.rlbot.common.input.DataPacket;
-import com.eru.rlbot.common.output.ControlsOutput;
+import com.eru.rlbot.common.output.Controls;
 import java.awt.Color;
 
+/**
+ * Catches the ball on the car.
+ */
 public class CatchTactician extends Tactician {
 
   private static final float CATCH_BALL_POINT = OCTANE_BALANCE_POINT;
   private static final float BALL_DIAMETER = BALL_RADIUS;
 
-  CatchTactician(Agc bot, TacticManager tacticManager) {
+  CatchTactician(ApolloGuidanceComputer bot, TacticManager tacticManager) {
     super(bot, tacticManager);
   }
 
   public static boolean canCatch(DataPacket input) {
-    BallData relativeCarData = NormalUtils.noseRelativeBall(input);
+    BallData relativeCarData = RelativeUtils.noseRelativeBall(input);
 
     return (input.ball.position.z > 100 || input.ball.velocity.z > 100)
         && (ballDownTime(relativeCarData) > carToBallTime(relativeCarData));
   }
 
   @Override
-  public void internalExecute(DataPacket input, ControlsOutput output, Tactic nextTactic) {
-    BallData relativeBallData = NormalUtils.noseRelativeBall(input);
+  public void internalExecute(DataPacket input, Controls output, Tactic nextTactic) {
+    BallData relativeBallData = RelativeUtils.noseRelativeBall(input);
     catchBall(input, relativeBallData, output);
     relativeAngleToBall(input, relativeBallData, output); // Set up the angle here too.
 
     // TODO: if the ball is on the car, hand off to the dribbler
   }
 
-  private void relativeAngleToBall(DataPacket input, BallData relativeBallData, ControlsOutput output) {
+  private void relativeAngleToBall(DataPacket input, BallData relativeBallData, Controls output) {
     if (relativeBallData.position.y < 0 && relativeBallData.velocity.y > 0) {
       // Ball is behind you but catching up. Make slight x adjustment if needed
       if (Math.abs(relativeBallData.velocity.x) > 10) { // #Arbitrary threshold
@@ -53,9 +56,9 @@ public class CatchTactician extends Tactician {
 
   // TODO: Move this to another class.
   // Called when ball is in the air.
-  private void catchBall(DataPacket input, BallData relativeBallData, ControlsOutput output) {
-    double ballSpeed = input.ball.velocity.flatten().norm();
-    double carSpeed = input.car.velocity.flatten().norm();
+  private void catchBall(DataPacket input, BallData relativeBallData, Controls output) {
+    double ballSpeed = input.ball.velocity.flatten().magnitude();
+    double carSpeed = input.car.velocity.flatten().magnitude();
 
     double distanceToCatchPoint = relativeBallData.position.y - CATCH_BALL_POINT;
 

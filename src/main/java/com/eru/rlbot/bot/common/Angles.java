@@ -45,7 +45,7 @@ public final class Angles {
     double xPrime = (position.x * cos) + (position.y * sin);
     double yPrime = (-position.x * sin) + (position.y * cos);
 
-    return new Vector2(xPrime, yPrime);
+    return Vector2.of(xPrime, yPrime);
   }
 
   public static Vector3 carBall(DataPacket input) {

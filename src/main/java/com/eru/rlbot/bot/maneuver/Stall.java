@@ -3,8 +3,11 @@ package com.eru.rlbot.bot.maneuver;
 import com.eru.rlbot.bot.tactics.Tactic;
 import com.eru.rlbot.common.input.DataPacket;
 import com.eru.rlbot.common.jump.JumpManager;
-import com.eru.rlbot.common.output.ControlsOutput;
+import com.eru.rlbot.common.output.Controls;
 
+/**
+ * Stalls the rocket, consuming the flip, cancelling z-velocity.
+ */
 public class Stall extends Maneuver {
 
   private boolean done;
@@ -17,7 +20,7 @@ public class Stall extends Maneuver {
   }
 
   @Override
-  public void execute(DataPacket input, ControlsOutput output, Tactic tactic) {
+  public void execute(DataPacket input, Controls output, Tactic tactic) {
     JumpManager jumpManager = JumpManager.forCar(input.car);
     if (!jumpManager.hasReleasedJumpInAir()) {
       // Release jump for a tick.

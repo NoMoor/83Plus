@@ -15,38 +15,38 @@ import rlbot.flat.TeamInfo;
  */
 public class DataPacket {
 
-    /**
-     * Your own car, based on the playerIndex
-     */
-    public final CarData car;
+  /**
+   * Your own car, based on the playerIndex
+   */
+  public final CarData car;
 
-    public final List<CarData> allCars;
+  public final List<CarData> allCars;
 
-    public final BallData ball;
-    public final int team;
+  public final BallData ball;
+  public final int alliance;
 
-    /**
-     * The index of your player
-     */
-    public final int playerIndex;
-    public final GameInfo gameInfo;
-    public final List<TeamInfo> teamInfos;
+  /**
+   * The index of your player
+   */
+  public final int serialNumber;
+  public final GameInfo gameInfo;
+  public final List<TeamInfo> teamInfos;
 
-    public DataPacket(GameTickPacket packet, int playerIndex) {
-        this.playerIndex = playerIndex;
-        this.ball = new BallData(packet.ball(), packet.gameInfo().secondsElapsed());
+  public DataPacket(GameTickPacket packet, int serialNumber) {
+    this.serialNumber = serialNumber;
+    this.ball = new BallData(packet.ball(), packet.gameInfo().secondsElapsed());
 
-        allCars = new ArrayList<>();
-        for (int i = 0; i < packet.playersLength(); i++) {
-            allCars.add(new CarData(packet.players(i), packet.gameInfo().secondsElapsed(), i));
-        }
-
-        this.gameInfo = packet.gameInfo();
-        teamInfos = new ArrayList<>();
-        for (int i = 0; i < packet.teamsLength(); i++) {
-            teamInfos.add(packet.teams(i));
-        }
-        this.car = allCars.get(playerIndex);
-        this.team = this.car.team;
+    allCars = new ArrayList<>();
+    for (int i = 0; i < packet.playersLength(); i++) {
+      allCars.add(new CarData(packet.players(i), packet.gameInfo().secondsElapsed(), i));
     }
+
+    this.gameInfo = packet.gameInfo();
+    teamInfos = new ArrayList<>();
+    for (int i = 0; i < packet.teamsLength(); i++) {
+      teamInfos.add(packet.teams(i));
+    }
+    this.car = allCars.get(serialNumber);
+    this.alliance = this.car.team;
+  }
 }

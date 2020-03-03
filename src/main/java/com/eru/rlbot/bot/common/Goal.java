@@ -6,7 +6,10 @@ import static com.eru.rlbot.bot.common.Constants.HALF_LENGTH;
 import com.eru.rlbot.common.input.CarData;
 import com.eru.rlbot.common.vector.Vector3;
 
-public class Goal {
+/**
+ * Class holding various goal constants.
+ */
+public final class Goal {
 
   private static final Vector3 ORANGE_CENTER = Vector3.of(0, HALF_LENGTH, 0);
   private static final Vector3 BLUE_CENTER = Vector3.of(0, -1 * HALF_LENGTH, 0);
@@ -17,10 +20,12 @@ public class Goal {
   private static final Goal BLUE_GOAL = new Goal(BLUE_CENTER);
   private static final Goal ORANGE_GOAL = new Goal(ORANGE_CENTER);
 
+  /** Returns the goal of the given team. */
   public static Goal ownGoal(int team) {
     return team == 1 ? ORANGE_GOAL : BLUE_GOAL;
   }
 
+  /** Returns the opponent's goal. */
   public static Goal opponentGoal(int team) {
     return team == 0 ? ORANGE_GOAL : BLUE_GOAL;
   }
@@ -46,6 +51,7 @@ public class Goal {
     this.rightOutside = center.y < 0 ? center.plus(HALF_GOAL_OUTSIDE) : center.minus(HALF_GOAL_OUTSIDE);
   }
 
+  /** Returns the post on the same side as the given car. */
   public Vector3 getSameSidePost(CarData car) {
     return Math.signum(car.position.x) == Math.signum(right.x) ? right : left;
   }

@@ -1,53 +1,59 @@
 package com.eru.rlbot.common.vector;
 
-import java.awt.Point;
-
 /**
  * A vector that only knows about x and y components.
- *
- * This class is here for your convenience, it is NOT part of the framework. You can add to it as much
- * as you want, or delete it.
  */
 public class Vector2 {
 
-  public static final Vector2 NORTH = new Vector2(0, 1);
-  public static final Vector2 WEST = new Vector2(1, 0);
+  public static final Vector2 NORTH = Vector2.of(0, 1);
+  public static final Vector2 WEST = Vector2.of(1, 0);
 
   public final double x;
   public final double y;
 
+  /** Creates a new vector from the given x and y coordinates. */
   public static Vector2 of(double x, double y) {
     return new Vector2(x, y);
   }
 
-  public Vector2(double x, double y) {
+  private Vector2(double x, double y) {
     this.x = x;
     this.y = y;
   }
 
+  /**
+   * Adds two vectors tip to tail.
+   */
   public Vector2 plus(Vector2 other) {
-    return new Vector2(x + other.x, y + other.y);
+    return Vector2.of(x + other.x, y + other.y);
   }
 
+  /**
+   * Subtracts the given vector from this one.
+   */
   public Vector2 minus(Vector2 other) {
-    return new Vector2(x - other.x, y - other.y);
+    return Vector2.of(x - other.x, y - other.y);
   }
 
-  public Vector2 scaled(double scale) {
-    return new Vector2(x * scale, y * scale);
+  /**
+   * Scales this vector by the given scalar.
+   */
+  public Vector2 multiplied(double scale) {
+    return Vector2.of(x * scale, y * scale);
   }
 
   /**
    * If magnitude is negative, we will return a vector facing the opposite direction.
    */
-  public Vector2 scaledToMagnitude(double magnitude) {
+  public Vector2 toMagnitude(double magnitude) {
     if (isZero()) {
       throw new IllegalStateException("Cannot scale up a vector with length zero!");
     }
-    double scaleRequired = magnitude / norm();
-    return scaled(scaleRequired);
+    double scaleRequired = magnitude / magnitude();
+    return multiplied(scaleRequired);
   }
 
+  /** Returns the distance between this vector coordinate and the given one. */
   public double distance(Vector2 other) {
     double xDiff = x - other.x;
     double yDiff = y - other.y;
@@ -57,32 +63,26 @@ public class Vector2 {
   /**
    * This is the length of the vector.
    */
-  public double norm() {
-    return Math.sqrt(magnitudeSquared());
+  public double magnitude() {
+    return Math.sqrt(x * x + y * y);
   }
 
-  public double magnitudeSquared() {
-    return x * x + y * y;
-  }
-
+  /** Returns this vector scaled to a magnitude of one. */
   public Vector2 normalized() {
 
     if (isZero()) {
       throw new IllegalStateException("Cannot normalize a vector with length zero!");
     }
-    return this.scaled(1 / norm());
+    return this.multiplied(1 / magnitude());
   }
 
   public double dotProduct(Vector2 other) {
     return x * other.x + y * other.y;
   }
 
+  /** True if both parts of this vector are zero. */
   public boolean isZero() {
     return x == 0 && y == 0;
-  }
-
-  public Point asPoint() {
-    return new Point((int) x, (int) y);
   }
 
   /**
@@ -112,11 +112,17 @@ public class Vector2 {
     return Math.abs(a.correctionAngle(b));
   }
 
+  /**
+   * Returns this vector as a flat 3D vecotyr.
+   */
   public Vector3 asVector3() {
     return Vector3.of(x, y, 0);
   }
 
-  public Vector2 ClockwisePerpendicular() {
-    return new Vector2(-y, x);
+  /**
+   * Returns a vector perpendicular to this one.
+   */
+  public Vector2 clockwisePerpendicular() {
+    return Vector2.of(-y, x);
   }
 }

@@ -36,14 +36,10 @@ public class Tactic {
     AERIAL,
     CATCH,
     DEMO,
-    DEFEND,
-    DOUBLE_JUMP,
     DRIBBLE,
     FAST_AERIAL,
     FLICK,
     FLIP,
-    GRAB_BOOST,
-    HALF_FLIP,
     HIT_BALL,
     JUMP_FLIP,
     KICKOFF,
@@ -51,9 +47,6 @@ public class Tactic {
     ROTATE,
     SHADOW,
     STRIKE,
-    STALL,
-    WALL_RIDE,
-    WAVE_DASH
   }
 
   public Vector3 getTargetPosition() {

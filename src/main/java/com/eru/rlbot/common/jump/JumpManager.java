@@ -3,9 +3,12 @@ package com.eru.rlbot.common.jump;
 import com.eru.rlbot.bot.common.Constants;
 import com.eru.rlbot.common.input.CarData;
 import com.eru.rlbot.common.input.DataPacket;
-import com.eru.rlbot.common.output.ControlsOutput;
+import com.eru.rlbot.common.output.Controls;
 import java.util.HashMap;
 
+/**
+ * Keeps track of the various aspects of the jump state of a car.
+ */
 public class JumpManager {
 
   public static final float MAX_JUMP_TIME = .2f;
@@ -43,7 +46,7 @@ public class JumpManager {
       throw new IllegalStateException("Not supported for non-live data");
     }
 
-    return MANAGER_MAP.computeIfAbsent(car.playerIndex, index -> new JumpManager());
+    return MANAGER_MAP.computeIfAbsent(car.serialNumber, index -> new JumpManager());
   }
 
   public static JumpManager copyForCar(CarData car) {
@@ -92,11 +95,11 @@ public class JumpManager {
     }
   }
 
-  public static void trackOutput(DataPacket input, ControlsOutput output) {
+  public static void trackOutput(DataPacket input, Controls output) {
     forCar(input.car).trackOutput(input.car, output);
   }
 
-  public void trackOutput(CarData car, ControlsOutput output) {
+  public void trackOutput(CarData car, Controls output) {
     jumpPressed = output.holdJump();
 
     if (car.hasWheelContact && jumpPressed && firstJumpTime == 0) {

@@ -7,6 +7,9 @@ import com.eru.rlbot.common.input.CarData;
 import com.eru.rlbot.common.vector.Vector3;
 import com.google.common.collect.Range;
 
+/**
+ * Optimizes the ball in the z direction.
+ */
 public class ZOptimizer extends Optimizer {
 
   private static final double Z_PRECISION = .1; // How accurate to get Z.
@@ -45,7 +48,7 @@ public class ZOptimizer extends Optimizer {
   }
 
   @Override
-  public CarData adjustCar(CarData car, double value) {
+  public CarData adjust(CarData car, double value) {
     Vector3 newPosition = car.position.plus(car.orientation.getRoofVector().toMagnitude(value));
 
     return car.toBuilder()

@@ -25,7 +25,7 @@ repositories {
     jcenter()
 }
 
-mainClassName = 'com.eru.rlbot.bot.main.BotLauncher'
+mainClassName = 'com.eru.rlbot.bot.main.LaunchComplex39'
 
 // This directory will be created and the interface dll copied into it at runtime.
 // The end result is that the interface dll will be available for loading.

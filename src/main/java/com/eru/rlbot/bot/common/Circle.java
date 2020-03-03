@@ -7,7 +7,7 @@ import com.eru.rlbot.common.vector.Vector3;
 /**
  * Represents a circle in the xy coordinate space on the field.
  */
-public class Circle {
+public final class Circle {
 
   public final Vector3 center;
   public final double radius;
@@ -44,8 +44,8 @@ public class Circle {
     return Vector3.of(x, y, center.z);
   }
 
-  public boolean isClockwise(CarData carData) {
-    return isClockwise(carData.position, carData.orientation.getNoseVector());
+  public boolean isClockwise(CarData car) {
+    return isClockwise(car.position, car.orientation.getNoseVector());
   }
 
   private boolean isClockwise(Vector3 position, Vector3 noseVector) {

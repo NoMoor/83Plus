@@ -22,8 +22,8 @@ class StoneShotOnGoal(TrainingExercise):
     ball_vx: float = 0
     ball_vy: float = 0
     ball_vz: float = 0
-    car_start_x: float = 0
-    car_start_y: float = -5000
+    car_x: float = 0
+    car_y: float = -5000
     car_spin: float = pi / 2
 
     def make_game_state(self, rng: SeededRandomNumberGenerator) -> GameState:
@@ -39,9 +39,8 @@ class StoneShotOnGoal(TrainingExercise):
                 0: CarState(
                     physics=Physics(
                         # location=Vector3(self.car_start_x + rng.uniform(-1500, 1500), self.car_start_y, 0),
-                        location=Vector3(self.car_start_x, self.car_start_y, 17),
+                        location=Vector3(self.car_x, self.car_y, 17),
                         rotation=Rotator(0, self.car_spin, 0),
-                        # rotation=Rotator(0, rng.uniform(-3.14, 3.14), 0),
                         velocity=Vector3(0, 0, 0),
                         angular_velocity=Vector3(0, 0, 0)),
                     jumped=False,

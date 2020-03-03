@@ -10,23 +10,22 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * Tracks when a car or ball has been state-set.
  */
-public class StateSetChecker {
+public final class StateSetChecker {
 
-  private static ConcurrentHashMap<Integer, StateSetChecker> BOTS = new ConcurrentHashMap<>();
+  private static ConcurrentHashMap<Integer, StateSetChecker> MAP = new ConcurrentHashMap<>();
 
   public static StateSetChecker forIndex(int index) {
-    BOTS.computeIfAbsent(index, StateSetChecker::new);
-    return BOTS.get(index);
+    MAP.computeIfAbsent(index, StateSetChecker::new);
+    return MAP.get(index);
   }
 
   public static StateSetChecker forCar(CarData car) {
-    return forIndex(car.playerIndex);
+    return forIndex(car.serialNumber);
   }
 
   public static void track(DataPacket input) {
     forCar(input.car).trackForCar(input);
   }
-
 
   private Vector3 lastBallPosition;
   private Vector3 lastCarPosition;

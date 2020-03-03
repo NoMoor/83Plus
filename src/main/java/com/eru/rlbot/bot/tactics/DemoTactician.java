@@ -1,20 +1,20 @@
 package com.eru.rlbot.bot.tactics;
 
 import com.eru.rlbot.bot.common.Angles;
+import com.eru.rlbot.bot.common.BoostPathHelper;
 import com.eru.rlbot.bot.common.Constants;
 import com.eru.rlbot.bot.common.Goal;
-import com.eru.rlbot.bot.main.Agc;
+import com.eru.rlbot.bot.main.ApolloGuidanceComputer;
 import com.eru.rlbot.bot.maneuver.WaveDash;
+import com.eru.rlbot.bot.prediction.BallPredictionUtil;
 import com.eru.rlbot.bot.prediction.CarLocationPredictor;
 import com.eru.rlbot.bot.prediction.CarPrediction;
-import com.eru.rlbot.bot.strats.LegacyPathPlanner;
 import com.eru.rlbot.common.Moment;
-import com.eru.rlbot.common.boost.BoostManager;
 import com.eru.rlbot.common.boost.BoostPad;
 import com.eru.rlbot.common.input.BoundingBox;
 import com.eru.rlbot.common.input.CarData;
 import com.eru.rlbot.common.input.DataPacket;
-import com.eru.rlbot.common.output.ControlsOutput;
+import com.eru.rlbot.common.output.Controls;
 import com.eru.rlbot.common.vector.Vector3;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
@@ -24,7 +24,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * Manages tactical demos.
+ * Manages tactical demos. In truth, this is a ball chasing, demo-ing machine.
  */
 public class DemoTactician extends Tactician {
 
@@ -32,40 +32,19 @@ public class DemoTactician extends Tactician {
 
   private boolean completed;
 
-  DemoTactician(Agc bot, TacticManager tacticManager) {
+  DemoTactician(ApolloGuidanceComputer bot, TacticManager tacticManager) {
     super(bot, tacticManager);
   }
 
   @Override
-  public void internalExecute(DataPacket input, ControlsOutput output, Tactic tactic) {
-    Vector3 target = input.ball.position;
-    if (input.allCars.size() > 1) {
-      Optional<CarPrediction.PredictionNode> demoTargetOptional = input.allCars.stream()
-          .filter(car -> car.team != input.car.team)
-          .filter(car -> !car.isDemolished)
-          .map(earliestTarget(input.car))
-          .filter(node -> Angles.isInFrontOfCar(input.car, node.position))
-          .findFirst();
+  public void internalExecute(DataPacket input, Controls output, Tactic tactic) {
+    Optional<Vector3> optionalTarget = getDashTarget(input);
 
-      if (!demoTargetOptional.isPresent()) {
-        pickupBoost(input);
-        return;
-      }
-
-      CarPrediction.PredictionNode demoTarget = demoTargetOptional.get();
-
-      target = demoTarget.position;
-      bot.botRenderer.setBranchInfo("Target acquired");
-
-      Optional<BoostPad> nearestPad = BoostManager.boostOnTheWay(input.car, demoTarget.position);
-      if (nearestPad.isPresent() && input.car.boost < 60) {
-        bot.botRenderer.setBranchInfo("Boost target acquired");
-        LegacyPathPlanner.getNearestBoostEdge(input.car.position, demoTarget.position, nearestPad.get());
-      } else if (input.car.boost < 20 && !input.car.isSupersonic) {
-        pickupBoost(input);
-        return;
-      }
+    if (!optionalTarget.isPresent()) {
+      return;
     }
+
+    Vector3 target = optionalTarget.get();
 
     Vector3 carTarget = target.minus(input.car.position);
     boolean travelingTowardTarget = carTarget.dot(input.car.velocity) >= 0;
@@ -107,7 +86,7 @@ public class DemoTactician extends Tactician {
             .withBoost(input.car.boost > 30)
             .withSteer(Angles.flatCorrectionAngle(input.car, target) * 5)
             .withSlide(Math.abs(velocityCorrection) > .4);
-      } else if (input.car.angularVelocity.flatten().norm() < .5) {
+      } else if (input.car.angularVelocity.flatten().magnitude() < .5) {
         delegateToWaveDash(input, output, target);
       } else {
         output
@@ -119,7 +98,53 @@ public class DemoTactician extends Tactician {
     }
   }
 
-  private void delegateToWaveDash(DataPacket input, ControlsOutput output, Vector3 target) {
+  private Optional<Vector3> getDashTarget(DataPacket input) {
+    CarPrediction.PredictionNode demoTarget = null;
+    if (input.allCars.size() > 1) {
+      Optional<CarPrediction.PredictionNode> demoTargetOptional = input.allCars.stream()
+          .filter(car -> car.team != input.car.team)
+          .filter(car -> !car.isDemolished)
+          .map(earliestTarget(input.car))
+          .filter(node -> Angles.isInFrontOfCar(input.car, node.position))
+          .findFirst();
+
+      if (demoTargetOptional.isPresent()) {
+        demoTarget = demoTargetOptional.get();
+
+        bot.botRenderer.setBranchInfo("Demo target acquired");
+      }
+    }
+
+    BallPredictionUtil.ExaminedBallData ball = BallPredictionUtil.forCar(input.car).getFirstHittableLocation();
+
+    Vector3 target;
+    if (demoTarget != null && ball != null) {
+      // TODO: Check if the ball is a break-away.
+      target = ball.ball.time < demoTarget.getAbsoluteTime() ? ball.ball.position : demoTarget.position;
+    } else if (demoTarget != null) {
+      target = demoTarget.position;
+    } else if (ball != null) {
+      target = ball.ball.position;
+    } else {
+      target = Goal.ownGoal(input.car.team).getSameSidePost(input.car);
+    }
+
+    if (input.car.boost < 5 && !input.car.isSupersonic) {
+      // Bail out and go for boost.
+      pickupBoost(input, target);
+      return Optional.empty();
+    }
+
+    Optional<BoostPad> nearestPad = BoostPathHelper.boostOnTheWay(input.car, target);
+    if (nearestPad.isPresent() && input.car.boost < 80) {
+      bot.botRenderer.setBranchInfo("Boost target acquired");
+      target = BoostPathHelper.getNearestBoostEdge(input.car.position, target, nearestPad.get());
+    }
+
+    return Optional.of(target);
+  }
+
+  private void delegateToWaveDash(DataPacket input, Controls output, Vector3 target) {
     double correctionAngle = Angles.flatCorrectionAngle(input.car, target);
     // Do Initial jump.
     output
@@ -134,15 +159,16 @@ public class DemoTactician extends Tactician {
         .build());
   }
 
-  private void pickupBoost(DataPacket input) {
+  private void pickupBoost(DataPacket input, Vector3 secondaryTarget) {
     bot.botRenderer.setBranchInfo("Need boost");
     completed = true;
 
-    Optional<BoostPad> nearestPad = BoostManager.nearestBoostPad(input.car);
+    Optional<BoostPad> nearestPad = BoostPathHelper.nearestBoostPad(input.car);
     Moment subject = nearestPad.map(Moment::from)
-        .orElseGet(() -> Moment.from(Goal.ownGoal(input.team).center));
+        .orElseGet(() -> Moment.from(Goal.ownGoal(input.alliance).center));
     tacticManager.setTactic(Tactic.builder()
         .setSubject(subject)
+        .setObject(secondaryTarget)
         .setTacticType(Tactic.TacticType.ROTATE)
         .build());
   }

@@ -1,33 +1,36 @@
 package com.eru.rlbot.bot.prediction;
 
 import com.eru.rlbot.bot.common.Accels;
-import com.eru.rlbot.bot.common.BotRenderer;
 import com.eru.rlbot.bot.common.Constants;
 import com.eru.rlbot.bot.flags.PerBotDebugOptions;
+import com.eru.rlbot.bot.renderer.BotRenderer;
 import com.eru.rlbot.common.boost.BoostTracker;
 import com.eru.rlbot.common.input.CarData;
 import com.eru.rlbot.common.input.DataPacket;
 import com.eru.rlbot.common.input.Orientation;
 import com.eru.rlbot.common.jump.JumpManager;
-import com.eru.rlbot.common.output.ControlsOutput;
+import com.eru.rlbot.common.output.Controls;
 import com.eru.rlbot.common.vector.Vector3;
 import com.google.common.collect.ImmutableList;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+/**
+ * Predicts the next frame from the input / list of inputs.
+ */
 public class NextFramePredictor {
 
   private static final Logger logger = LogManager.getLogger("FramePrediction");
 
   private static CarData lastFramePrediction;
-  private static ControlsOutput lastFrameControls;
+  private static Controls lastFrameControls;
 
-  public static void getPrediction(DataPacket input, ControlsOutput output) {
-    if (!PerBotDebugOptions.get(input.car.playerIndex).isPrerenderNextFrame())
+  public static void getPrediction(DataPacket input, Controls output) {
+    if (!PerBotDebugOptions.get(input.car.serialNumber).isPrerenderNextFrame())
       return;
 
     // TODO: Update to support multiple cars
-    if (lastFramePrediction != null && lastFramePrediction.playerIndex != input.car.playerIndex) {
+    if (lastFramePrediction != null && lastFramePrediction.serialNumber != input.car.serialNumber) {
       return;
     }
 
@@ -40,11 +43,11 @@ public class NextFramePredictor {
     lastFrameControls = output;
   }
 
-  public static CarData makePrediction(CarData car, ImmutableList<ControlsOutput> outputs) {
+  public static CarData makePrediction(CarData car, ImmutableList<Controls> outputs) {
     BoostTracker boostTracker = BoostTracker.copyForCar(car);
     JumpManager jumpManager = JumpManager.copyForCar(car);
 
-    for (ControlsOutput controls : outputs) {
+    for (Controls controls : outputs) {
       jumpManager.trackInput(car);
       boostTracker.update(car, controls);
       jumpManager.trackOutput(car, controls);
@@ -55,7 +58,7 @@ public class NextFramePredictor {
   }
 
   public static CarData makePrediction(
-      CarData car, ControlsOutput output, BoostTracker boostTracker, JumpManager jumpManager) {
+      CarData car, Controls output, BoostTracker boostTracker, JumpManager jumpManager) {
 
     CarData.Builder carDataBuilder = car.toBuilder();
 
@@ -183,7 +186,7 @@ public class NextFramePredictor {
     return car.position.z > 2000;
   }
 
-  private static double throttleAcceleration(CarData car, ControlsOutput output, BoostTracker boostTracker) {
+  private static double throttleAcceleration(CarData car, Controls output, BoostTracker boostTracker) {
     if (boostTracker.isBoosting()) {
       return Accels.acceleration(car.velocity.magnitude()) + Constants.BOOSTED_ACCELERATION;
     } else if (output.getThrottle() > 0) {
@@ -195,7 +198,7 @@ public class NextFramePredictor {
     }
   }
 
-  private static double throttleAirAcceleration(CarData car, ControlsOutput output, BoostTracker boostTracker) {
+  private static double throttleAirAcceleration(CarData car, Controls output, BoostTracker boostTracker) {
     if (boostTracker.isBoosting()) {
       return Accels.acceleration(car.velocity.magnitude()) + Constants.BOOSTED_ACCELERATION;
     } else if (output.getThrottle() != 0) {
@@ -205,7 +208,7 @@ public class NextFramePredictor {
   }
 
   private static void compareResult(CarData expected, CarData actual) {
-    BotRenderer botRenderer = BotRenderer.forIndex(actual.playerIndex);
+    BotRenderer botRenderer = BotRenderer.forIndex(actual.serialNumber);
 //    botRenderer.renderHitBox(Color.MAGENTA, expected);
     botRenderer.renderHitBox(actual);
 

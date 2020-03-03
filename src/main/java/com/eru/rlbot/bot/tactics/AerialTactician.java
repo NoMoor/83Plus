@@ -3,24 +3,24 @@ package com.eru.rlbot.bot.tactics;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 
 import com.eru.rlbot.bot.common.Accels;
-import com.eru.rlbot.bot.common.AerialLookUp;
 import com.eru.rlbot.bot.common.Angles;
 import com.eru.rlbot.bot.common.Angles3;
 import com.eru.rlbot.bot.common.Constants;
-import com.eru.rlbot.bot.common.Pair;
-import com.eru.rlbot.bot.common.Path;
-import com.eru.rlbot.bot.common.PathPlanner;
-import com.eru.rlbot.bot.main.Agc;
+import com.eru.rlbot.bot.lookup.AerialLookUp;
+import com.eru.rlbot.bot.main.ApolloGuidanceComputer;
+import com.eru.rlbot.bot.path.Path;
+import com.eru.rlbot.bot.path.PathPlanner;
+import com.eru.rlbot.bot.prediction.BallPredictionUtil;
 import com.eru.rlbot.bot.prediction.CarPrediction;
-import com.eru.rlbot.bot.strats.BallPredictionUtil;
 import com.eru.rlbot.common.Lists;
 import com.eru.rlbot.common.Moment;
+import com.eru.rlbot.common.Pair;
 import com.eru.rlbot.common.boost.BoostTracker;
 import com.eru.rlbot.common.input.BallData;
 import com.eru.rlbot.common.input.CarData;
 import com.eru.rlbot.common.input.DataPacket;
 import com.eru.rlbot.common.input.Orientation;
-import com.eru.rlbot.common.output.ControlsOutput;
+import com.eru.rlbot.common.output.Controls;
 import com.eru.rlbot.common.vector.Vector3;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
@@ -34,14 +34,14 @@ public class AerialTactician extends Tactician {
 
   private static final Logger logger = LogManager.getLogger("AerialTactician");
 
-  AerialTactician(Agc bot, TacticManager tacticManager) {
+  AerialTactician(ApolloGuidanceComputer bot, TacticManager tacticManager) {
     super(bot, tacticManager);
   }
 
   private Moment target;
 
   @Override
-  public void internalExecute(DataPacket input, ControlsOutput output, Tactic tactic) {
+  public void internalExecute(DataPacket input, Controls output, Tactic tactic) {
     target = tactic.subject;
 
     float timeToImpact = target.time - input.car.elapsedSeconds;
@@ -109,7 +109,7 @@ public class AerialTactician extends Tactician {
       return;
     }
 
-    BallPredictionUtil ballPredictionUtil = BallPredictionUtil.forIndex(input.car.playerIndex);
+    BallPredictionUtil ballPredictionUtil = BallPredictionUtil.get(input.car.serialNumber);
 
     List<BallPredictionUtil.ExaminedBallData> predictions = Lists.everyNth(ballPredictionUtil.getPredictions(), 5);
     for (BallPredictionUtil.ExaminedBallData prediction : predictions) {
@@ -147,7 +147,7 @@ public class AerialTactician extends Tactician {
 
   private boolean freestyle = false;
 
-  private void humanExecution(DataPacket input, ControlsOutput output, FlightPlan plan) {
+  private void humanExecution(DataPacket input, Controls output, FlightPlan plan) {
     FlightTrajectory trajectory = computeFlightTrajectory(input, plan);
     Vector3 flightPlanDiff = plan.computeDeviation(trajectory);
     float timeToImpact = plan.interceptTime - input.car.elapsedSeconds;
@@ -209,7 +209,7 @@ public class AerialTactician extends Tactician {
         input.car.position.plus(input.car.orientation.getNoseVector().multiply(300)));
   }
 
-  private void pointAnyDirection(CarData car, Vector3 desiredVector, ControlsOutput output) {
+  private void pointAnyDirection(CarData car, Vector3 desiredVector, Controls output) {
     Vector3 nose = desiredVector.normalize();
     Vector3 sideDoor = nose.cross(car.orientation.getRoofVector().multiply(-1));
     Vector3 roofOrientation = nose.cross(sideDoor);

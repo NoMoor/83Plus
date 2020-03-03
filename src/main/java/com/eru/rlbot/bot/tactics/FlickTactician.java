@@ -2,15 +2,18 @@ package com.eru.rlbot.bot.tactics;
 
 import com.eru.rlbot.bot.common.Angles;
 import com.eru.rlbot.bot.common.Goal;
-import com.eru.rlbot.bot.common.NormalUtils;
-import com.eru.rlbot.bot.main.Agc;
+import com.eru.rlbot.bot.common.RelativeUtils;
+import com.eru.rlbot.bot.main.ApolloGuidanceComputer;
 import com.eru.rlbot.common.input.BallData;
 import com.eru.rlbot.common.input.DataPacket;
-import com.eru.rlbot.common.output.ControlsOutput;
+import com.eru.rlbot.common.output.Controls;
 
+/**
+ * Flicks the ball off the car.
+ */
 public class FlickTactician extends Tactician {
 
-  FlickTactician(Agc bot, TacticManager tacticManager) {
+  FlickTactician(ApolloGuidanceComputer bot, TacticManager tacticManager) {
     super(bot, tacticManager);
   }
 
@@ -35,7 +38,7 @@ public class FlickTactician extends Tactician {
   }
 
   @Override
-  void internalExecute(DataPacket input, ControlsOutput output, Tactic tactic) {
+  void internalExecute(DataPacket input, Controls output, Tactic tactic) {
     if (input.ball.position.z < 135) {
       // Delegate this back.
       tacticManager.setTacticComplete(tactic);
@@ -43,7 +46,7 @@ public class FlickTactician extends Tactician {
 
     bot.botRenderer.addDebugText("Flick Chooser %b", flickChooser);
 
-    BallData relativeBallData = NormalUtils.noseRelativeBall(input);
+    BallData relativeBallData = RelativeUtils.noseRelativeBall(input);
     if (!jumpLock && Math.abs(relativeBallData.position.x) > 15) {
       output
           .withSteer(relativeBallData.position.x / -25)
@@ -70,8 +73,8 @@ public class FlickTactician extends Tactician {
     }
   }
 
-  private void mognusFlick(DataPacket input, ControlsOutput output) {
-    BallData relativeBallData = NormalUtils.noseRelativeBall(input);
+  private void mognusFlick(DataPacket input, Controls output) {
+    BallData relativeBallData = RelativeUtils.noseRelativeBall(input);
     if (jumpLock || (relativeBallData.position.y > 35 && relativeBallData.position.y < 45 && relativeBallData.velocity.y > 10)) {
       jumpLock = true;
 
@@ -95,7 +98,7 @@ public class FlickTactician extends Tactician {
         mognusFlickTicks++;
         output.withPitch(1.0f); // Hold pitch
       } else if (input.car.position.z > 150 && input.car.velocity.z < 200) {
-          bot.botRenderer.setBranchInfo("Release Jump");
+        bot.botRenderer.setBranchInfo("Release Jump");
         output.withJump(false);
         output.withYaw(rotationDirection);
       } else {
@@ -137,8 +140,8 @@ public class FlickTactician extends Tactician {
     }
   }
 
-  private void mustyFlick(DataPacket input, ControlsOutput output) {
-    BallData relativeBallData = NormalUtils.noseRelativeBall(input);
+  private void mustyFlick(DataPacket input, Controls output) {
+    BallData relativeBallData = RelativeUtils.noseRelativeBall(input);
     if (jumpLock || (relativeBallData.position.y > 60 && relativeBallData.position.y < 70 && relativeBallData.velocity.y > 20)) {
       jumpLock = true;
 
@@ -205,12 +208,13 @@ public class FlickTactician extends Tactician {
   }
 
   private float recordingTime;
+
   private void recordJump(DataPacket input) {
     if (input.car.elapsedSeconds - recordingTime < 5) {
       return;
     }
 
-    BallData relativeBallData = NormalUtils.noseRelativeBall(input);
+    BallData relativeBallData = RelativeUtils.noseRelativeBall(input);
     recordingTime = input.car.elapsedSeconds;
     bot.botRenderer.addAlertText("Jump at %d %d", (int) relativeBallData.position.y, (int) relativeBallData.velocity.y);
   }

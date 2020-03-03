@@ -2,16 +2,17 @@ package com.eru.rlbot.bot.maneuver;
 
 import com.eru.rlbot.bot.common.Angles;
 import com.eru.rlbot.bot.common.Angles3;
-import com.eru.rlbot.bot.common.BotRenderer;
 import com.eru.rlbot.bot.common.Constants;
-import com.eru.rlbot.bot.common.Monitor;
-import com.eru.rlbot.bot.common.NormalUtils;
+import com.eru.rlbot.bot.common.RelativeUtils;
+import com.eru.rlbot.bot.renderer.BotRenderer;
 import com.eru.rlbot.bot.tactics.Tactic;
+import com.eru.rlbot.bot.utils.Monitor;
+import com.eru.rlbot.common.Numbers;
 import com.eru.rlbot.common.input.CarData;
 import com.eru.rlbot.common.input.DataPacket;
 import com.eru.rlbot.common.input.Orientation;
 import com.eru.rlbot.common.jump.JumpManager;
-import com.eru.rlbot.common.output.ControlsOutput;
+import com.eru.rlbot.common.output.Controls;
 import com.eru.rlbot.common.vector.Vector3;
 import com.google.common.collect.ImmutableSortedMap;
 import java.awt.Color;
@@ -19,6 +20,9 @@ import java.util.Map;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+/**
+ * Performs a diagonal flip cancel.
+ */
 public class DiagonalFlipCancel extends Maneuver {
 
   private static final Logger logger = LogManager.getLogger("DiagonalFlipCancel");
@@ -51,7 +55,7 @@ public class DiagonalFlipCancel extends Maneuver {
   }
 
   @Override
-  public void execute(DataPacket input, ControlsOutput output, Tactic tactic) {
+  public void execute(DataPacket input, Controls output, Tactic tactic) {
     if (initialState == null) {
       initialState = input.car;
     }
@@ -73,7 +77,7 @@ public class DiagonalFlipCancel extends Maneuver {
     double correctionAngle = Angles.flatCorrectionAngle(input.car, target);
     correctionAngle += MIN_DRIFT * -Math.signum(correctionAngle);
     Vector3 noseRelative =
-        NormalUtils.translateRelative(input.car.position, target, input.car.orientation.getNoseVector());
+        RelativeUtils.translateRelative(input.car.position, target, input.car.orientation.getNoseVector());
 
     if (input.car.hasWheelContact && Math.abs(correctionAngle) > .1) {
       output
@@ -106,7 +110,7 @@ public class DiagonalFlipCancel extends Maneuver {
       Map.Entry<Double, Double> floorEntry = PITCH_ANGLE_OFFSET.floorEntry(correctionAngle);
       if (ceilingEntry != null && floorEntry != null) {
         double percent = (correctionAngle - floorEntry.getKey()) / (ceilingEntry.getKey() - floorEntry.getKey());
-        pitch = -Angles3.lerp(floorEntry.getValue(), ceilingEntry.getValue(), percent);
+        pitch = -Numbers.lerp(floorEntry.getValue(), ceilingEntry.getValue(), percent);
       } else if (ceilingEntry != null) {
         pitch = -ceilingEntry.getValue();
       } else if (floorEntry != null) {

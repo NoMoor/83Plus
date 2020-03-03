@@ -1,16 +1,16 @@
 package com.eru.rlbot.bot.strats;
 
-import com.eru.rlbot.bot.main.Agc;
+import com.eru.rlbot.bot.main.ApolloGuidanceComputer;
 import com.eru.rlbot.bot.tactics.TacticManager;
 import com.eru.rlbot.common.input.DataPacket;
-import com.eru.rlbot.common.output.ControlsOutput;
+import com.eru.rlbot.common.output.Controls;
 
 public abstract class Strategist {
 
-  protected final Agc bot;
+  protected final ApolloGuidanceComputer bot;
   protected final TacticManager tacticManager;
 
-  protected Strategist(Agc bot) {
+  protected Strategist(ApolloGuidanceComputer bot) {
     this.bot = bot;
     this.tacticManager = new TacticManager(bot);
   }
@@ -28,9 +28,11 @@ public abstract class Strategist {
     tacticManager.clearTactics();
   }
 
-  /** Allow the strategist to execute the strategy. */
-  public ControlsOutput execute(DataPacket input) {
-    ControlsOutput output = new ControlsOutput();
+  /**
+   * Allow the strategist to execute the strategy.
+   */
+  public Controls execute(DataPacket input) {
+    Controls output = Controls.create();
 
     if (!tacticManager.hasTactic()) {
       bot.botRenderer.addAlertText("%s has no tactic", this.getType());

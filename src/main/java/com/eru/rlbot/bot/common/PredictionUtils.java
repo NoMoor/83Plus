@@ -1,5 +1,7 @@
 package com.eru.rlbot.bot.common;
 
+import com.eru.rlbot.bot.prediction.BallPredictionUtil;
+import com.eru.rlbot.common.DllHelper;
 import com.eru.rlbot.common.Moment;
 import com.eru.rlbot.common.input.DataPacket;
 import com.eru.rlbot.common.vector.Vector3;
@@ -7,7 +9,13 @@ import java.util.Optional;
 import rlbot.flat.BallPrediction;
 import rlbot.flat.PredictionSlice;
 
-public class PredictionUtils {
+/**
+ * Utility for tracking ball predictions.
+ * <p>
+ * DEPRECATED: Use {@link BallPredictionUtil}
+ */
+@Deprecated
+public final class PredictionUtils {
 
   public static Moment getFirstHittableBall(DataPacket input) {
     Optional<BallPrediction> ballPredictionOptional = DllHelper.getBallPrediction();
@@ -17,7 +25,7 @@ public class PredictionUtils {
     }
 
     BallPrediction ballPrediction = ballPredictionOptional.get();
-    for (int i = 0 ; i < ballPrediction.slicesLength() ; i++) {
+    for (int i = 0; i < ballPrediction.slicesLength(); i++) {
       PredictionSlice predictionSlice = ballPrediction.slices(i);
 
       Vector3 ballLocation = Vector3.of(predictionSlice.physics().location());

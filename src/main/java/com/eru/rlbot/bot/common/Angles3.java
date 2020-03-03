@@ -1,8 +1,10 @@
 package com.eru.rlbot.bot.common;
 
+import com.eru.rlbot.common.Matrix3;
+import com.eru.rlbot.common.Numbers;
 import com.eru.rlbot.common.input.CarData;
 import com.eru.rlbot.common.input.Orientation;
-import com.eru.rlbot.common.output.ControlsOutput;
+import com.eru.rlbot.common.output.Controls;
 import com.eru.rlbot.common.vector.Vector3;
 import java.util.ArrayList;
 import java.util.List;
@@ -13,7 +15,7 @@ import org.apache.logging.log4j.Logger;
  * Utilities for calculating rotations in 3d space.
  */
 // https://github.com/samuelpmish/RLUtilities/blob/master/src/mechanics/aerial_turn.cc
-public class Angles3 {
+public final class Angles3 {
 
   private static final Logger logger = LogManager.getLogger("Angles3");
 
@@ -37,18 +39,18 @@ public class Angles3 {
   // How far ahead to look.
   private static final float HORIZON_TIME = .05f;
 
-  public static void setControlsForFlatLanding(CarData car, ControlsOutput output) {
+  public static void setControlsForFlatLanding(CarData car, Controls output) {
     setControlsFor(car, Orientation.fromFlatOrientation(car).getOrientationMatrix(), output);
   }
 
-  public static boolean setControlsFor(CarData car, Orientation target, ControlsOutput controls) {
+  public static boolean setControlsFor(CarData car, Orientation target, Controls controls) {
     return setControlsFor(car, target.getOrientationMatrix(), controls);
   }
 
   /**
    * Returns controls to optimally rotate toward the subject orientation.
    */
-  public static boolean setControlsFor(CarData car, Matrix3 target, ControlsOutput controls) {
+  public static boolean setControlsFor(CarData car, Matrix3 target, Controls controls) {
     try {
       return setControlsForInternal(car, target, controls);
     } catch (Exception e) {
@@ -58,7 +60,7 @@ public class Angles3 {
     return false;
   }
 
-  private static boolean setControlsForInternal(CarData car, Matrix3 target, ControlsOutput controls) {
+  private static boolean setControlsForInternal(CarData car, Matrix3 target, Controls controls) {
     // Omega = Velocity
     Vector3 omega = target.transpose().dot(car.angularVelocity);
 
@@ -211,7 +213,7 @@ public class Angles3 {
   private static float solve_pwl(float y, Vector3 values) {
     float min_value = Math.min(Math.min(values.x, values.y), values.z);
     float max_value = Math.max(Math.max(values.x, values.y), values.z);
-    float clipped_y = clip(y, min_value, max_value);
+    float clipped_y = Numbers.clamp(y, min_value, max_value);
 
     // if the clipped value can be found in the interval [-1, 0]
     if ((Math.min(values.x, values.y) <= clipped_y) &&
@@ -254,7 +256,7 @@ public class Angles3 {
   }
 
   private static Vector3 rotation_to_axis(Matrix3 R) {
-    double theta = Math.cos(clip(0.5f * (R.trace() - 1.0f), -1.0f, 1.0f));
+    double theta = Math.cos(Numbers.clamp(0.5f * (R.trace() - 1.0f), -1.0f, 1.0f));
 
     double scale;
 
@@ -277,23 +279,6 @@ public class Angles3 {
         Vector3.of(Math.cos(radians), Math.sin(radians), 0),
         Vector3.of(-Math.sin(radians), Math.cos(radians), 0),
         Vector3.of(0, 0, 1));
-  }
-
-  // TODO: Move these utils.
-  public static double clip(double value, double min, double max) {
-    return Math.min(max, Math.max(min, value));
-  }
-
-  public static float clip(float value, float min, float max) {
-    return Math.min(max, Math.max(min, value));
-  }
-
-  public static double lerp(double a, double b, double lerpAmount) {
-    return a + ((b - a) * lerpAmount);
-  }
-
-  public static float lerp(float a, float b, float lerpAmount) {
-    return a + ((b - a) * lerpAmount);
   }
 
   private Angles3() {}

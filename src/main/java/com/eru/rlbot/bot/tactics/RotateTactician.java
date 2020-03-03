@@ -2,19 +2,22 @@ package com.eru.rlbot.bot.tactics;
 
 import com.eru.rlbot.bot.common.Angles3;
 import com.eru.rlbot.bot.common.Goal;
-import com.eru.rlbot.bot.common.Path;
-import com.eru.rlbot.bot.common.PathPlanner;
-import com.eru.rlbot.bot.main.Agc;
+import com.eru.rlbot.bot.main.ApolloGuidanceComputer;
+import com.eru.rlbot.bot.path.Path;
+import com.eru.rlbot.bot.path.PathPlanner;
 import com.eru.rlbot.common.input.CarData;
 import com.eru.rlbot.common.input.DataPacket;
 import com.eru.rlbot.common.input.Orientation;
-import com.eru.rlbot.common.output.ControlsOutput;
+import com.eru.rlbot.common.output.Controls;
 import com.eru.rlbot.common.vector.Vector3;
 import java.awt.Color;
 
+/**
+ * Moves the ball back toward the given location.
+ */
 public class RotateTactician extends Tactician {
 
-  RotateTactician(Agc bot, TacticManager tacticManager) {
+  RotateTactician(ApolloGuidanceComputer bot, TacticManager tacticManager) {
     super(bot, tacticManager);
   }
 
@@ -26,17 +29,18 @@ public class RotateTactician extends Tactician {
   }
 
   @Override
-  void internalExecute(DataPacket input, ControlsOutput output, Tactic tactic) {
+  void internalExecute(DataPacket input, Controls output, Tactic tactic) {
     usingPathPlanner(input, output, tactic);
   }
 
   private boolean locked;
+
   @Override
   public boolean isLocked() {
     return locked;
   }
 
-  private void usingPathPlanner(DataPacket input, ControlsOutput output, Tactic tactic) {
+  private void usingPathPlanner(DataPacket input, Controls output, Tactic tactic) {
     // TODO: Uses current ball position and future car position.
     Vector3 targetVelocity = input.ball.position.minus(tactic.subject.position).addX(.01).toMagnitude(1800);
 

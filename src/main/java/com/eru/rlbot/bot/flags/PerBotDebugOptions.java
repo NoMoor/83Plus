@@ -2,20 +2,23 @@ package com.eru.rlbot.bot.flags;
 
 import java.util.concurrent.ConcurrentHashMap;
 
-public class PerBotDebugOptions {
+/**
+ * Model holding UI selections for each bot.
+ */
+public final class PerBotDebugOptions {
 
-  private static final ConcurrentHashMap<Integer, PerBotDebugOptions> BOTS = new ConcurrentHashMap<>();
+  private static final ConcurrentHashMap<Integer, PerBotDebugOptions> MAP = new ConcurrentHashMap<>();
 
   private final int playerIndex;
 
   private volatile boolean renderAllDebugLinesEnabled;
-  private volatile boolean renderPlan;
+  private volatile boolean renderLines;
+  private volatile boolean renderDebugText;
   private volatile boolean renderCarTrails;
   private volatile boolean renderBallPrediction;
 
   private volatile boolean immobilizeCar;
   private volatile boolean prerenderNextFrame;
-  private volatile boolean renderStats = true;
   private volatile boolean renderOpponentPaths;
 
   public PerBotDebugOptions(int playerIndex) {
@@ -23,7 +26,7 @@ public class PerBotDebugOptions {
   }
 
   public static PerBotDebugOptions get(int playerIndex) {
-    return BOTS.computeIfAbsent(playerIndex, PerBotDebugOptions::new);
+    return MAP.computeIfAbsent(playerIndex, PerBotDebugOptions::new);
   }
 
   public boolean isRenderAllDebugLines() {
@@ -34,16 +37,17 @@ public class PerBotDebugOptions {
     this.renderAllDebugLinesEnabled = renderAllDebugLines;
   }
 
-  public boolean isRenderPlan() {
-    return renderPlan || renderAllDebugLinesEnabled;
+  public boolean isRenderLines() {
+    return renderLines || renderAllDebugLinesEnabled;
   }
 
-  public void setRenderPlan(boolean renderPlan) {
-    this.renderPlan = renderPlan;
+  public void setRenderLines(boolean renderLines) {
+    this.renderLines = renderLines;
   }
 
   public boolean isRenderCarTrails() {
-    return renderCarTrails || renderAllDebugLinesEnabled;
+    // TODO: Fix the trail renderer.
+    return false && (renderCarTrails || renderAllDebugLinesEnabled);
   }
 
   public void setRenderCarTrails(boolean renderCarTrails) {
@@ -74,19 +78,19 @@ public class PerBotDebugOptions {
     this.prerenderNextFrame = prerenderNextFrame;
   }
 
-  public boolean isRenderStats() {
-    return renderStats;
-  }
-
-  public void setRenderStats(boolean renderStats) {
-    this.renderStats = renderStats;
-  }
-
   public boolean isRenderOpponentPaths() {
     return renderOpponentPaths;
   }
 
   public void setRenderOpponentPaths(boolean renderOpponentPaths) {
     this.renderOpponentPaths = renderOpponentPaths;
+  }
+
+  public boolean isRenderDebugText() {
+    return renderDebugText;
+  }
+
+  public void setRenderDebugText(boolean renderDebugText) {
+    this.renderDebugText = renderDebugText;
   }
 }

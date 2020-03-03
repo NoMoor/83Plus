@@ -1,5 +1,9 @@
 package com.eru.rlbot.bot.common;
 
+import static com.eru.rlbot.bot.common.Constants.STEP_SIZE;
+
+import com.eru.rlbot.common.Numbers;
+import com.eru.rlbot.common.Pair;
 import com.eru.rlbot.common.input.CarData;
 import com.eru.rlbot.common.input.Orientation;
 import com.eru.rlbot.common.jump.JumpManager;
@@ -7,13 +11,15 @@ import com.eru.rlbot.common.vector.Vector3;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
+/**
+ * Utilities to determine acceleration and travel times and related constants.
+ */
 public class Accels {
 
   private static final float SLOW_SLOPE = (1600.0f - 160) / (0 - 1400);
   private static final float FAST_SLOPE = (160.0f - 0) / (1400 - 1410);
 
-  public static final double MAX_ACCELERATION = acceleration(0) + Constants.BOOSTED_ACCELERATION;
-
+  /** Returns the acceleration of the next frame given a throttle of 1.0. */
   public static float acceleration(double carVelocity) {
     if (carVelocity < 1400) {
       return (float) (1600 + (SLOW_SLOPE * carVelocity));
@@ -25,21 +31,19 @@ public class Accels {
     }
   }
 
+  /**
+   * Returns the minimum time to go the distance by using all the boost available.
+   */
   public static AccelResult minTimeToDistance(CarData car, double distance) {
-    double velocity = car.velocity.flatten().norm();
+    double velocity = car.velocity.flatten().magnitude();
 
     return boostedTimeToDistance(car.boost, velocity, distance);
   }
 
-  public static AccelResult minTimeToDistance(CarData car, double distance, double targetSpeed) {
-    double velocity = car.velocity.flatten().norm();
-
-    return boostedTimeToDistance(car.boost, velocity, targetSpeed, distance);
-  }
-
-  private static final double STEP_SIZE = 1.0 / 120;
-
-  public static AccelResult timeToDistance(double velocity, double distance) {
+  /**
+   * Returns the time to travel a distance without using boost.
+   */
+  public static AccelResult nonBoostedTimeToDistance(double velocity, double distance) {
     double initialDistance = distance;
     float t = 0;
     while (distance > 0) {
@@ -53,22 +57,25 @@ public class Accels {
     return new AccelResult(velocity, t, initialDistance, 0);
   }
 
+  /** Returns the time to travel the given distance using unlimited boost. */
   public static AccelResult boostedTimeToDistance(double velocity, double distance) {
     double boostUsed = 0;
     double initialDistance = distance;
     float t = 0;
     while (distance > 0) {
       double nextAcceleration = acceleration(velocity) + Constants.BOOSTED_ACCELERATION;
-      double newVelocity = velocity + nextAcceleration * STEP_SIZE;
+      double newVelocity =
+          Numbers.clamp(velocity + nextAcceleration * STEP_SIZE, 0, Constants.BOOSTED_MAX_SPEED);
 
       distance -= ((velocity + newVelocity) / 2) * STEP_SIZE;
       velocity = newVelocity;
       t += STEP_SIZE;
-      boostUsed += Constants.BOOST_RATE / Constants.STEP_SIZE;
+      boostUsed += Constants.BOOST_RATE / STEP_SIZE;
     }
     return new AccelResult(velocity, t, initialDistance, boostUsed);
   }
 
+  /** Returns the time to travel the given distance using unlimited boost. */
   public static AccelResult boostedTimeToDistance(double boost, double velocity, double distance) {
     double initialDistance = distance;
     double initialBoost = boost;
@@ -89,31 +96,7 @@ public class Accels {
     return new AccelResult(velocity, t, initialDistance, initialBoost - boost);
   }
 
-  // TODO: Make more sophisticated. For now. Assume the we wont' exceed Max(velocity, targetVelocity)
-  public static AccelResult boostedTimeToDistance(
-      double boost, double velocity, double targetVelocity, double distance) {
-    double initialDistance = distance;
-    double initialBoost = boost;
-
-    float t = 0;
-    while (distance > 0) {
-      double nextAcceleration = 0;
-      if (targetVelocity > velocity) {
-        nextAcceleration = acceleration(velocity) + ((boost > 0) ? Constants.BOOSTED_ACCELERATION : 0);
-      }
-
-      double newVelocity = velocity + nextAcceleration * STEP_SIZE;
-      distance -= ((velocity + newVelocity) / 2) * STEP_SIZE;
-      velocity = newVelocity;
-      t += STEP_SIZE;
-
-      if (boost > 0) {
-        boost -= STEP_SIZE * Constants.BOOST_RATE;
-      }
-    }
-    return new AccelResult(velocity, t, initialDistance, initialBoost - boost);
-  }
-
+  /** The amount of time needed to get to a given height or Optional.empty. */
   public static Optional<Float> jumpTimeToHeight(double distance) {
     double t = 0;
     double velocity = Constants.JUMP_VELOCITY_INSTANT;
@@ -164,7 +147,7 @@ public class Accels {
     if (time > Constants.JUMP_HOLD_TIME) {
       return Constants.NEG_GRAVITY;
     } else {
-      int jumpTick = (int) (time / Constants.STEP_SIZE);
+      int jumpTick = (int) (time / STEP_SIZE);
       return (jumpTick < Constants.JUMP_ACCELERATION_HOLD_SLOW_TICK_COUNT
           ? Constants.JUMP_ACCELERATION_SLOW_HELD
           : Constants.JUMP_ACCELERATION_FAST_HELD)
@@ -220,8 +203,8 @@ public class Accels {
     return new AccelResult(currentVelocity, initialTime, distanceTraveled, initialBoost - boostRemaining);
   }
 
+  /** The result of an acceleration simulation. */
   public static class AccelResult {
-
     public final double distance;
     public final double speed;
     public final double time;
@@ -235,6 +218,7 @@ public class Accels {
     }
   }
 
+  /** Returns the impulse vector given a flip and the initial conditions. */
   public static Vector3 flipImpulse(Orientation orientation, Vector3 velocity, double pitch, double yaw, double roll) {
     Vector3 frontImpulse = Vector3.zero();
     Vector3 sideImpulse = Vector3.zero();
@@ -254,20 +238,21 @@ public class Accels {
       double vForward = orientation.getNoseVector().dot(velocity);
       double sideImpulseMagnitude = Constants.FORWARD_DODGE_IMPULSE * (1 + .9 * (vForward / Constants.BOOSTED_MAX_SPEED));
       sideImpulse = orientation.getNoseVector().flat().clockwisePerpendicular()
-          .toMagnitude(sideImpulseMagnitude * Angles3.clip(yaw + roll, -1, 1));
+          .toMagnitude(sideImpulseMagnitude * Numbers.clamp(yaw + roll, -1, 1));
     }
 
     return frontImpulse.plus(sideImpulse);
   }
 
+  /** Returns the angular acceleration vector for the given pitch, yaw, roll and orientation. */
   public static Vector3 flipAngularAcceleration(
       Orientation orientation, double pitch, double yaw, double roll) {
 
-    double yawRoll = Angles3.clip(yaw + roll, -1, 1);
+    double yawRoll = Numbers.clamp(yaw + roll, -1, 1);
     double total = Math.abs(pitch) + Math.abs(yawRoll);
 
     Vector3 side = orientation.getNoseVector().toMagnitude(yawRoll / total);
-    Vector3 front = orientation.getLeftVector().toMagnitude(-pitch / total);
+    Vector3 front = orientation.getRightVector().toMagnitude(-pitch / total);
 
     return side.plus(front)
         .multiply(Constants.STEP_SIZE_COUNT * Constants.MAX_ANGULAR_VELOCITY / JumpManager.FLIP_ACCELERATION_TICKS);

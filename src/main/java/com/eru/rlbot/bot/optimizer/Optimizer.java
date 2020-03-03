@@ -1,13 +1,16 @@
 package com.eru.rlbot.bot.optimizer;
 
-import com.eru.rlbot.bot.common.Angles3;
 import com.eru.rlbot.bot.common.Constants;
 import com.eru.rlbot.bot.prediction.CarBallCollision;
+import com.eru.rlbot.common.Numbers;
 import com.eru.rlbot.common.input.BallData;
 import com.eru.rlbot.common.input.CarData;
 import com.eru.rlbot.common.vector.Vector3;
 import com.google.common.collect.Range;
 
+/**
+ * An abstract class which can be extended to provide optimization in a particular direction.
+ */
 public abstract class Optimizer {
 
   protected float currentValue = getInitialValue();
@@ -22,7 +25,7 @@ public abstract class Optimizer {
 
   abstract double getPrecision();
 
-  abstract CarData adjustCar(CarData car, double value);
+  abstract CarData adjust(CarData car, double value);
 
   float getInitialValue() {
     return 0;
@@ -41,7 +44,7 @@ public abstract class Optimizer {
       doStep(ball, car, target);
     }
 
-    return adjustCar(car, currentValue);
+    return adjust(car, currentValue);
   }
 
   public void doStep(BallData ball, CarData car, Vector3 target) {
@@ -54,14 +57,14 @@ public abstract class Optimizer {
       isDone = true;
     }
 
-    currentValue = Angles3.clip(currentValue, getRange().lowerEndpoint(), getRange().upperEndpoint());
+    currentValue = Numbers.clamp(currentValue, getRange().lowerEndpoint(), getRange().upperEndpoint());
   }
 
   protected double getGradient(BallData ball, Vector3 target, CarData car, double currentValue) {
-    BallData resultA = CarBallCollision.calculateCollision(ball, adjustCar(car, currentValue));
+    BallData resultA = CarBallCollision.calculateCollision(ball, adjust(car, currentValue));
     double aScore = score(resultA, target);
 
-    BallData resultB = CarBallCollision.calculateCollision(ball, adjustCar(car, currentValue + getGamma()));
+    BallData resultB = CarBallCollision.calculateCollision(ball, adjust(car, currentValue + getGamma()));
     double bScore = score(resultB, target);
 
     return (bScore - aScore) / getGamma();
@@ -73,7 +76,7 @@ public abstract class Optimizer {
     double flatAngleOffset = ballTarget.flatten().correctionAngle(ballData.velocity.flatten());
 
     double flatDistance = ballTarget.magnitude();
-    double groundSpeed = ballData.velocity.flatten().norm();
+    double groundSpeed = ballData.velocity.flatten().magnitude();
     double timeToTarget = flatDistance / groundSpeed;
 
     double verticalAngleOffset = 10_000; // Arbitrarily large number

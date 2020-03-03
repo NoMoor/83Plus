@@ -1,15 +1,18 @@
 package com.eru.rlbot.bot.tactics;
 
-import com.eru.rlbot.bot.main.Agc;
+import com.eru.rlbot.bot.main.ApolloGuidanceComputer;
 import com.eru.rlbot.common.input.DataPacket;
-import com.eru.rlbot.common.output.ControlsOutput;
+import com.eru.rlbot.common.output.Controls;
 import com.eru.rlbot.common.vector.Vector3;
 
+/**
+ * Jumps up to the ball.
+ */
 public class JumpTactician extends Tactician {
 
   private Vector3 targetPosition;
 
-  JumpTactician(Agc bot, TacticManager tacticManager) {
+  JumpTactician(ApolloGuidanceComputer bot, TacticManager tacticManager) {
     super(bot, tacticManager);
   }
 
@@ -19,7 +22,7 @@ public class JumpTactician extends Tactician {
   }
 
   @Override
-  public void internalExecute(DataPacket input, ControlsOutput output, Tactic nextTactic) {
+  public void internalExecute(DataPacket input, Controls output, Tactic nextTactic) {
     if (input.car.position.distance(targetPosition) < 1000 && input.car.position.z > 1000) {
       output
           .withJump()

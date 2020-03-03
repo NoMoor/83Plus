@@ -1,15 +1,12 @@
 package com.eru.rlbot.common.vector;
 
-import com.eru.rlbot.bot.common.Matrix3;
+import com.eru.rlbot.common.Matrix3;
 import com.google.common.base.Objects;
 import com.google.flatbuffers.FlatBufferBuilder;
 import rlbot.gamestate.DesiredVector3;
 
 /**
  * A simple 3d vector class with the most essential operations.
- * <p>
- * This class is here for your convenience, it is NOT part of the framework. You can add to it as much
- * as you want, or delete it.
  */
 public class Vector3 extends rlbot.vector.Vector3 {
 
@@ -132,7 +129,7 @@ public class Vector3 extends rlbot.vector.Vector3 {
 
   /** Returns a 2-d vector, dropping this z axis. */
   public Vector2 flatten() {
-    return new Vector2(x, y);
+    return Vector2.of(x, y);
   }
 
   /**
@@ -213,7 +210,7 @@ public class Vector3 extends rlbot.vector.Vector3 {
   }
 
   public Vector3 clockwisePerpendicular() {
-    // TODO: Check this.
+    // TODO: Verify that this is correct.
     return this.cross(Vector3.of(0, 0, 1));
   }
 

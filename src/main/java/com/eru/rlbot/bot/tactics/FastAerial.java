@@ -1,11 +1,14 @@
 package com.eru.rlbot.bot.tactics;
 
-import com.eru.rlbot.bot.common.Monitor;
-import com.eru.rlbot.bot.main.Agc;
+import com.eru.rlbot.bot.main.ApolloGuidanceComputer;
+import com.eru.rlbot.bot.utils.Monitor;
 import com.eru.rlbot.common.input.DataPacket;
 import com.eru.rlbot.common.jump.JumpManager;
-import com.eru.rlbot.common.output.ControlsOutput;
+import com.eru.rlbot.common.output.Controls;
 
+/**
+ * Performs a fast aerial.
+ */
 public class FastAerial extends Tactician {
 
   private boolean isFinished;
@@ -13,13 +16,13 @@ public class FastAerial extends Tactician {
 
   private Monitor monitor;
 
-  FastAerial(Agc bot, TacticManager tacticManager) {
+  FastAerial(ApolloGuidanceComputer bot, TacticManager tacticManager) {
     super(bot, tacticManager);
   }
 
   // TODO: Measure how much velocity this adds.
   @Override
-  void internalExecute(DataPacket input, ControlsOutput output, Tactic nextTactic) {
+  void internalExecute(DataPacket input, Controls output, Tactic nextTactic) {
     if (monitor == null) {
       monitor = Monitor.create(input);
     }

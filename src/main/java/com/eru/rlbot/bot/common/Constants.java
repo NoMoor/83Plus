@@ -1,5 +1,6 @@
 package com.eru.rlbot.bot.common;
 
+import com.eru.rlbot.common.Matrix3;
 import com.eru.rlbot.common.vector.Vector3;
 
 /** RL Constants. */
@@ -83,7 +84,7 @@ public final class Constants {
     return 1 / curvature(velocity);
   }
 
-  static double curvature(double velocity) {
+  public static double curvature(double velocity) {
     if (0.0 <= velocity && velocity < 500.0) {
       return 0.006900 - 5.84e-6 * velocity;
     } else if (500.0 <= velocity && velocity < 1000.0) {

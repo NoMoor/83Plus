@@ -11,6 +11,7 @@ import rlbot.gamestate.GameState;
  */
 public final class SlowGameNearBall {
 
+  /** Tracks if a car is close to the ball and - if enabled - adjusts the game speed. */
   public static void track(DataPacket input) {
     if (carIsNearBall(input) && GlobalDebugOptions.isSlowTimeNearBallEnabled()) {
       setSpeed(GlobalDebugOptions.getSlowedGameSpeed());
@@ -33,6 +34,5 @@ public final class SlowGameNearBall {
         .buildPacket());
   }
 
-  private SlowGameNearBall() {
-  }
+  private SlowGameNearBall() {}
 }

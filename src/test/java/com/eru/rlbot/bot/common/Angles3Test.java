@@ -4,9 +4,10 @@ import static org.hamcrest.Matchers.closeTo;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 
+import com.eru.rlbot.common.Matrix3;
 import com.eru.rlbot.common.input.CarData;
 import com.eru.rlbot.common.input.Orientation;
-import com.eru.rlbot.common.output.ControlsOutput;
+import com.eru.rlbot.common.output.Controls;
 import com.eru.rlbot.common.vector.Vector3;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -21,7 +22,7 @@ public class Angles3Test {
   @Test
   public void orientation() {
     Orientation o = Orientation.convert(0, 0, 0);
-    assertThat((double) o.getLeftVector().y, is(closeTo(-1, .0001f)));
+    assertThat((double) o.getRightVector().y, is(closeTo(-1, .0001f)));
   }
 
   @Test
@@ -39,7 +40,7 @@ public class Angles3Test {
         Vector3.of(0, 1, 0),
         Vector3.of(0, 0, 1));
 
-    ControlsOutput output = new ControlsOutput();
+    Controls output = Controls.create();
 
     Angles3.setControlsFor(car, target, output);
 
@@ -63,7 +64,7 @@ public class Angles3Test {
         Vector3.of(0, 1, 0),
         Vector3.of(0, 0, 1));
 
-    ControlsOutput output = new ControlsOutput();
+    Controls output = Controls.create();
 
     Angles3.setControlsFor(car, target, output);
 
@@ -87,7 +88,7 @@ public class Angles3Test {
         Vector3.of(0, 1, 0),
         Vector3.of(0, 0, 1));
 
-    ControlsOutput output = new ControlsOutput();
+    Controls output = Controls.create();
 
     Angles3.setControlsFor(car, target, output);
 
@@ -111,7 +112,7 @@ public class Angles3Test {
         Vector3.of(0, -1, 0),
         Vector3.of(0, 0, 1));
 
-    ControlsOutput output = new ControlsOutput();
+    Controls output = Controls.create();
 
     Angles3.setControlsFor(car, target, output);
 
@@ -134,7 +135,7 @@ public class Angles3Test {
 
     Matrix3 target = Orientation.convert(0, 1, 0).getOrientationMatrix();
 
-    ControlsOutput output = new ControlsOutput();
+    Controls output = Controls.create();
 
     Angles3.setControlsFor(car, target, output);
 
@@ -157,7 +158,7 @@ public class Angles3Test {
 
     Matrix3 target = Orientation.convert(1, 1, 1).getOrientationMatrix();
 
-    ControlsOutput output = new ControlsOutput();
+    Controls output = Controls.create();
 
     Angles3.setControlsFor(car, target, output);
 

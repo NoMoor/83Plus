@@ -6,6 +6,9 @@ import com.eru.rlbot.common.input.CarData;
 import com.eru.rlbot.common.vector.Vector3;
 import com.google.common.collect.Range;
 
+/**
+ * Optimizes hitting the ball with different speeds.
+ */
 public class SpeedOptimizer extends Optimizer {
 
   private static final double S_PRECISION = 50; // How accurate to get Z.
@@ -34,7 +37,7 @@ public class SpeedOptimizer extends Optimizer {
   }
 
   @Override
-  CarData adjustCar(CarData car, double value) {
+  CarData adjust(CarData car, double value) {
     return car.toBuilder()
         .setVelocity(car.velocity.toMagnitude(value))
         .build();

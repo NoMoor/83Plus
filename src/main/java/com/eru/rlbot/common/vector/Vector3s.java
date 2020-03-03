@@ -1,5 +1,8 @@
 package com.eru.rlbot.common.vector;
 
+/**
+ * Utility methods for vectors in R3.
+ */
 public final class Vector3s {
 
   // https://math.stackexchange.com/a/2193733
@@ -23,6 +26,5 @@ public final class Vector3s {
     }
   }
 
-  private Vector3s() {
-  }
+  private Vector3s() {}
 }

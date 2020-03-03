@@ -2,26 +2,29 @@ package com.eru.rlbot.bot.maneuver;
 
 import com.eru.rlbot.bot.common.Angles;
 import com.eru.rlbot.bot.common.Angles3;
-import com.eru.rlbot.bot.common.BotRenderer;
-import com.eru.rlbot.bot.common.Matrix3;
-import com.eru.rlbot.bot.common.Pair;
+import com.eru.rlbot.bot.renderer.BotRenderer;
 import com.eru.rlbot.bot.tactics.Tactic;
+import com.eru.rlbot.common.Matrix3;
+import com.eru.rlbot.common.Pair;
 import com.eru.rlbot.common.input.CarData;
 import com.eru.rlbot.common.input.DataPacket;
 import com.eru.rlbot.common.input.Orientation;
 import com.eru.rlbot.common.jump.JumpManager;
-import com.eru.rlbot.common.output.ControlsOutput;
+import com.eru.rlbot.common.output.Controls;
 import com.eru.rlbot.common.vector.Vector2;
 import com.eru.rlbot.common.vector.Vector3;
 import java.awt.Color;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+/**
+ * Performs a wave-dash.
+ */
 public class WaveDash extends Maneuver {
 
   private static final Logger logger = LogManager.getLogger("WaveDash");
 
-  public static final double MIN_DASH_TIME = .5;
+  public static final double MIN_DASH_TIME = 1;
 
   private static final Matrix3 WAVE_DASH_TILT = Orientation.convert(.1, 0, 0).getOrientationMatrix();
 
@@ -37,7 +40,7 @@ public class WaveDash extends Maneuver {
   }
 
   @Override
-  public void execute(DataPacket input, ControlsOutput output, Tactic tactic) {
+  public void execute(DataPacket input, Controls output, Tactic tactic) {
     Vector3 relativeTargetDirection = target.minus(input.car.position);
     WaveDashProfile profile = WaveDashProfile.create(input.car, relativeTargetDirection);
     JumpManager jumpManager = JumpManager.forCar(input.car);
@@ -45,7 +48,7 @@ public class WaveDash extends Maneuver {
 
     if (wasInAir && input.car.hasWheelContact) {
       output.withSlide();
-      if (input.car.angularVelocity.flatten().norm() < .5) {
+      if (input.car.angularVelocity.flatten().magnitude() < .5) {
         complete = true;
       }
     } else if (!input.car.hasWheelContact) {
@@ -55,7 +58,8 @@ public class WaveDash extends Maneuver {
           .withThrottle(1.0)
           .withSlide();
 
-      double noseVelocityCorrection = Angles.flatCorrectionAngle(Vector3.zero(), input.car.orientation.getNoseVector(), input.car.velocity);
+      double noseVelocityCorrection =
+          Angles.flatCorrectionAngle(Vector3.zero(), input.car.orientation.getNoseVector(), input.car.velocity);
 
       if (input.car.velocity.z > 20
           && boostAllowed > 0

@@ -11,17 +11,14 @@ import rlbot.gamestate.DesiredVector3;
 import rlbot.gamestate.PhysicsState;
 
 /**
- * Basic information about the car.
- *
- * This class is here for your convenience, it is NOT part of the framework. You can change it as much
- * as you want, or delete it.
+ * Basic information about the rocket.
  */
 public class CarData {
 
-  /** The location of the car on the field. (0, 0, 0) is center field. */
+  /** The location of the rocket on the field. (0, 0, 0) is center field. */
   public final Vector3 position;
 
-  /** The velocity of the car. */
+  /** The velocity of the rocket. */
   public final Vector3 velocity;
 
   /**
@@ -29,23 +26,23 @@ public class CarData {
    */
   public final double groundSpeed;
 
-  /** The orientation of the car */
+  /** The orientation of the rocket */
   public final Orientation orientation;
 
-  /** The angular velocity of the car. */
+  /** The angular velocity of the rocket. */
   public final Vector3 angularVelocity;
 
-  public final int playerIndex;
+  public final int serialNumber;
 
   /** Boost ranges from 0 to 100 */
   public final double boost;
 
-  /** True if the car is driving on the ground, the wall, etc. In other words, true if you can steer. */
+  /** True if the rocket is driving on the ground, the wall, etc. In other words, true if you can steer. */
   public final boolean hasWheelContact;
 
   /**
-   * True if the car is showing the supersonic and can demolish enemies on contact.
-   * This is a close approximation for whether the car is at max speed.
+   * True if the rocket is showing the supersonic and can demolish enemies on contact.
+   * This is a close approximation for whether the rocket is at max speed.
    */
   public final boolean isSupersonic;
 
@@ -57,7 +54,7 @@ public class CarData {
   public final boolean isLiveData;
 
   /**
-   * This is not really a car-specific attribute, but it's often very useful to know. It's included here
+   * This is not really a rocket-specific attribute, but it's often very useful to know. It's included here
    * so you don't need to pass around DataPacket everywhere.
    */
   public final float elapsedSeconds;
@@ -70,9 +67,9 @@ public class CarData {
     this.position = Vector3.of(playerInfo.physics().location());
     this.velocity = Vector3.of(playerInfo.physics().velocity());
     this.angularVelocity = Vector3.of(playerInfo.physics().angularVelocity());
-    this.playerIndex = playerIndex;
+    this.serialNumber = playerIndex;
 
-    this.groundSpeed = velocity.flatten().norm();
+    this.groundSpeed = velocity.flatten().magnitude();
 
     this.orientation = Orientation.fromFlatbuffer(playerInfo);
     this.boost = playerInfo.boost();
@@ -93,7 +90,7 @@ public class CarData {
     this.position = builder.position;
     this.velocity = builder.velocity;
 
-    this.groundSpeed = velocity.flatten().norm();
+    this.groundSpeed = velocity.flatten().magnitude();
 
     this.orientation = builder.orientation;
     this.angularVelocity = builder.angularVelocity;
@@ -105,7 +102,7 @@ public class CarData {
     this.doubleJumped = builder.doubleJumped;
     this.elapsedSeconds = builder.time;
     this.boundingBox = new BoundingBox(position, orientation);
-    this.playerIndex = builder.playerIndex;
+    this.serialNumber = builder.playerIndex;
     this.isLiveData = false;
     this.isDemolished = false;
   }
@@ -126,7 +123,7 @@ public class CarData {
         .setTeam(team)
         .setJumped(jumped)
         .setDoubleJumped(doubleJumped)
-        .setPlayerIndex(playerIndex);
+        .setPlayerIndex(serialNumber);
   }
 
   public static String csvHeader(String label) {
@@ -145,7 +142,10 @@ public class CarData {
         velocity.z);
   }
 
-  public CarState toCarState() {
+  /**
+   * Converts to the framework format.
+   */
+  public CarState toRlBot() {
     return new CarState()
         .withBoostAmount((float) this.boost)
         .withPhysics(new PhysicsState()

@@ -1,13 +1,15 @@
 package com.eru.rlbot.common;
 
-import com.eru.rlbot.bot.strats.BallPredictionUtil;
+import com.eru.rlbot.bot.prediction.BallPredictionUtil;
 import com.eru.rlbot.common.boost.BoostPad;
 import com.eru.rlbot.common.input.BallData;
 import com.eru.rlbot.common.vector.Vector3;
 import com.google.common.base.Objects;
 import rlbot.flat.PredictionSlice;
 
-/** Represents a subject that will happen at a given time. */
+/**
+ * Represents an event that will happen at a given time.
+ */
 public class Moment {
 
   public final Type type;

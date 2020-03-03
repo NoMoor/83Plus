@@ -1,13 +1,16 @@
 package com.eru.rlbot.bot.optimizer;
 
 import com.eru.rlbot.bot.common.Angles3;
-import com.eru.rlbot.bot.common.Matrix3;
+import com.eru.rlbot.common.Matrix3;
 import com.eru.rlbot.common.input.BallData;
 import com.eru.rlbot.common.input.CarData;
 import com.eru.rlbot.common.input.Orientation;
 import com.eru.rlbot.common.vector.Vector3;
 import com.google.common.collect.Range;
 
+/**
+ * Optimizes angle around the equator of the ball.
+ */
 public class AOptimizer extends Optimizer {
 
   private static final double A_PRECISION = .025f;
@@ -41,7 +44,7 @@ public class AOptimizer extends Optimizer {
   }
 
   @Override
-  public CarData adjustCar(CarData car, double value) {
+  public CarData adjust(CarData car, double value) {
     Matrix3 rotate = Angles3.rotationMatrix(value);
 
     Orientation newCarOrientation =

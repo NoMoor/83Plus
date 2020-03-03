@@ -1,9 +1,10 @@
 package com.eru.rlbot.bot.strats;
 
 import com.eru.rlbot.bot.common.Goal;
-import com.eru.rlbot.bot.common.PathPlanner;
 import com.eru.rlbot.bot.common.PredictionUtils;
-import com.eru.rlbot.bot.main.Agc;
+import com.eru.rlbot.bot.main.ApolloGuidanceComputer;
+import com.eru.rlbot.bot.path.PathPlanner;
+import com.eru.rlbot.bot.prediction.BallPredictionUtil;
 import com.eru.rlbot.bot.tactics.AerialTactician;
 import com.eru.rlbot.bot.tactics.KickoffTactician;
 import com.eru.rlbot.bot.tactics.Tactic;
@@ -14,7 +15,7 @@ import com.eru.rlbot.common.input.DataPacket;
 /** Responsible for dribbling, shooting, and passing. */
 public class AttackStrategist extends Strategist {
 
-  AttackStrategist(Agc bot) {
+  AttackStrategist(ApolloGuidanceComputer bot) {
     super(bot);
   }
 
@@ -28,7 +29,7 @@ public class AttackStrategist extends Strategist {
       return true;
     }
 
-    if (KickoffTactician.isKickOff(input)) {
+    if (KickoffTactician.isKickoffStart(input)) {
       tacticManager.setTactic(
           Tactic.builder()
               .setSubject(Moment.from(input.ball))
@@ -36,6 +37,9 @@ public class AttackStrategist extends Strategist {
               .build());
       return true;
     }
+
+    // Do Ground planning
+    PathPlanner.doGroundShotPlanning(input);
 
     if (true) {
       tacticManager.setTactic(Tactic.builder()
@@ -47,8 +51,7 @@ public class AttackStrategist extends Strategist {
 
     // TODO: Update when the opponent can get to the ball.
 
-    // Do Ground planning
-    PathPlanner.doGroundShotPlanning(input);
+    // Do Aerial planning
     AerialTactician.doAerialPlanning(input);
 
     // TODO: Select a ball to hit, not just the first one.
@@ -77,7 +80,7 @@ public class AttackStrategist extends Strategist {
     tacticManager.setTactic(Tactic.builder()
         .setSubject(PredictionUtils.getFirstHittableBall(input))
         .setTacticType(Tactic.TacticType.HIT_BALL)
-        .plan(new LegacyPathPlanner(input)::plan));
+        .build());
     return true;
   }
 

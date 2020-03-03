@@ -2,15 +2,15 @@ package com.eru.rlbot.bot.strats;
 
 import com.eru.rlbot.bot.common.Angles;
 import com.eru.rlbot.bot.common.Constants;
-import com.eru.rlbot.bot.common.DllHelper;
 import com.eru.rlbot.bot.common.Goal;
 import com.eru.rlbot.bot.common.Locations;
-import com.eru.rlbot.bot.common.Pair;
 import com.eru.rlbot.bot.common.PredictionUtils;
-import com.eru.rlbot.bot.main.Agc;
+import com.eru.rlbot.bot.main.ApolloGuidanceComputer;
 import com.eru.rlbot.bot.tactics.RotateTactician;
 import com.eru.rlbot.bot.tactics.Tactic;
+import com.eru.rlbot.common.DllHelper;
 import com.eru.rlbot.common.Moment;
+import com.eru.rlbot.common.Pair;
 import com.eru.rlbot.common.input.CarData;
 import com.eru.rlbot.common.input.DataPacket;
 import com.eru.rlbot.common.vector.Vector3;
@@ -21,9 +21,10 @@ import rlbot.flat.Physics;
 import rlbot.flat.PredictionSlice;
 
 /** Responsible for shadowing, blocking, shots, and clearing. */
+// TODO: Delete this class.
 public class DefendStrategist extends Strategist {
 
-  DefendStrategist(Agc bot) {
+  DefendStrategist(ApolloGuidanceComputer bot) {
     super(bot);
   }
 
@@ -90,8 +91,6 @@ public class DefendStrategist extends Strategist {
       return true;
     }
 
-    LegacyPathPlanner pathPlanner = new LegacyPathPlanner(input);
-
     // TODO: Update to include the opponent hitting the ball
     if (shotOnGoal(input)) {
       if (shadow(input)) {
@@ -102,7 +101,7 @@ public class DefendStrategist extends Strategist {
       } else {
         tacticManager.setTactic(Tactic.builder()
             .setSubject(input.ball.position)
-            .setTacticType(Tactic.TacticType.DEFEND)
+            .setTacticType(Tactic.TacticType.STRIKE)
             .build());
       }
     } else if (canClear(input)) {
@@ -115,7 +114,7 @@ public class DefendStrategist extends Strategist {
       } else {
         tacticManager.setTactic(Tactic.builder()
             .setSubject(input.ball.position)
-            .setTacticType(Tactic.TacticType.DEFEND)
+            .setTacticType(Tactic.TacticType.STRIKE)
             .build());
       }
     } else if (RotateTactician.shouldRotateBack(input)) {
@@ -125,11 +124,11 @@ public class DefendStrategist extends Strategist {
       tacticManager.setTactic(Tactic.builder()
           .setSubject(farPost)
           .setTacticType(Tactic.TacticType.ROTATE)
-          .plan(pathPlanner::plan));
+          .build());
     } else {
       tacticManager.setTactic(Tactic.builder()
           .setSubject(input.ball.position)
-          .setTacticType(Tactic.TacticType.DEFEND)
+          .setTacticType(Tactic.TacticType.STRIKE)
           .build());
     }
 

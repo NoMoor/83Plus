@@ -1,40 +1,43 @@
 package com.eru.rlbot.bot.tactics;
 
 import com.eru.rlbot.bot.common.Angles;
-import com.eru.rlbot.bot.common.NormalUtils;
-import com.eru.rlbot.bot.main.Agc;
+import com.eru.rlbot.bot.common.RelativeUtils;
+import com.eru.rlbot.bot.main.ApolloGuidanceComputer;
 import com.eru.rlbot.common.input.BallData;
 import com.eru.rlbot.common.input.CarData;
 import com.eru.rlbot.common.input.DataPacket;
-import com.eru.rlbot.common.output.ControlsOutput;
+import com.eru.rlbot.common.output.Controls;
 
+/**
+ * Picks up the ball for dribbling.
+ */
 public class PickUpTactician extends Tactician {
 
   private static final float PICK_UP_SPEED = 600f;
 
   private static final float PICK_UP_Y_OFFSET = 170f;
 
-  public PickUpTactician(Agc bot, TacticManager tacticManager) {
+  public PickUpTactician(ApolloGuidanceComputer bot, TacticManager tacticManager) {
     super(bot, tacticManager);
   }
 
   public static boolean canPickUp(DataPacket input) {
-    BallData relativeBallData = NormalUtils.noseRelativeBall(input);
-    CarData relativeCarData = NormalUtils.rollNormal(input);
+    BallData relativeBallData = RelativeUtils.noseRelativeBall(input);
+    CarData relativecar = RelativeUtils.rollNormal(input);
 
     return input.ball.position.z < 170
         && input.car.position.distance(input.ball.position) < 1000
         && input.car.boost > 40
         && relativeBallData.position.y > 0 // Ball is in-front of the car
         && Math.abs(relativeBallData.position.x) < 300
-        && relativeCarData.position.y > 0;
+        && relativecar.position.y > 0;
   }
 
   @Override
-  void internalExecute(DataPacket input, ControlsOutput output, Tactic tactic) {
-    CarData relativeCarData = NormalUtils.rollNormal(input);
+  void internalExecute(DataPacket input, Controls output, Tactic tactic) {
+    CarData relativecar = RelativeUtils.rollNormal(input);
 
-    if (relativeCarData.position.y > 0) {
+    if (relativecar.position.y > 0) {
       // Ball is rolling toward the car.
       doStationaryPickup(input, output, tactic);
     } else {
@@ -44,12 +47,12 @@ public class PickUpTactician extends Tactician {
 
   }
 
-  private void doRollingPickup(DataPacket input, ControlsOutput output, Tactic tactic) {
+  private void doRollingPickup(DataPacket input, Controls output, Tactic tactic) {
 
   }
 
-  private void doStationaryPickup(DataPacket input, ControlsOutput output, Tactic tactic) {
-    BallData relativeBallData = NormalUtils.noseRelativeBall(input);
+  private void doStationaryPickup(DataPacket input, Controls output, Tactic tactic) {
+    BallData relativeBallData = RelativeUtils.noseRelativeBall(input);
 
     if (relativeBallData.position.z > 130) {
       bot.botRenderer.setBranchInfo("Got it!");

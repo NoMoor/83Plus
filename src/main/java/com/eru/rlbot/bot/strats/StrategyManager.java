@@ -1,15 +1,18 @@
 package com.eru.rlbot.bot.strats;
 
 import com.eru.rlbot.bot.common.StateSetChecker;
-import com.eru.rlbot.bot.main.Agc;
+import com.eru.rlbot.bot.main.ApolloGuidanceComputer;
 import com.eru.rlbot.common.boost.BoostPad;
 import com.eru.rlbot.common.input.DataPacket;
-import com.eru.rlbot.common.output.ControlsOutput;
+import com.eru.rlbot.common.output.Controls;
 import com.eru.rlbot.common.vector.Vector2;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * Keeps track of the strategists.
+ */
 public class StrategyManager {
 
   // Delay ~1 frame after a jump to allow ball propagation.
@@ -21,20 +24,20 @@ public class StrategyManager {
 
   private Strategist active;
 
-  private Agc bot;
+  private ApolloGuidanceComputer bot;
 
   private float resetTime;
   private float lastStrategyUpdateTime;
 
-  public StrategyManager(Agc bot) {
+  public StrategyManager(ApolloGuidanceComputer bot) {
     this.bot = bot;
-    for(Strategy.Type type : Strategy.Type.values()) {
+    for (Strategy.Type type : Strategy.Type.values()) {
       strategists.put(type, Strategy.strategistForBot(type, bot));
     }
     active = strategists.get(Strategy.Type.ATTACK);
   }
 
-  public ControlsOutput executeStrategy(DataPacket input) {
+  public Controls executeStrategy(DataPacket input) {
     checkReset(input);
 
     boolean timedUpdate = lastStrategyUpdateTime == 0
@@ -52,7 +55,7 @@ public class StrategyManager {
       active = newStrategist;
     }
 
-    ControlsOutput output = active.execute(input);
+    Controls output = active.execute(input);
     bot.botRenderer.setStrategy(active);
 
     return output;

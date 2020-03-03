@@ -5,6 +5,9 @@ import com.eru.rlbot.common.input.CarData;
 import com.eru.rlbot.common.vector.Vector3;
 import com.google.common.collect.ImmutableList;
 
+/**
+ * Predicts where the car will be in a given time.
+ */
 public final class CarPrediction {
 
   /**
@@ -36,14 +39,15 @@ public final class CarPrediction {
     return pathBuilder.build();
   }
 
+  /** The result of a prediction. */
   public static class PredictionNode {
 
     public final Vector3 position;
     public final float absoluteTime;
 
-    PredictionNode(Vector3 position, float absolutetime) {
+    PredictionNode(Vector3 position, float absoluteTime) {
       this.position = position;
-      this.absoluteTime = absolutetime;
+      this.absoluteTime = absoluteTime;
     }
 
     public Vector3 getPosition() {
@@ -55,6 +59,5 @@ public final class CarPrediction {
     }
   }
 
-  private CarPrediction() {
-  }
+  private CarPrediction() {}
 }

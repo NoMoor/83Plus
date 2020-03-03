@@ -1,33 +1,21 @@
 package com.eru.rlbot.bot.strats;
 
-import com.eru.rlbot.bot.main.Agc;
+import com.eru.rlbot.bot.main.ApolloGuidanceComputer;
 
+/**
+ * List of high level strategies.
+ */
 class Strategy {
 
+  /** Types of strategies. */
   enum Type {
     ATTACK,
     DEFEND,
     SUPPORT
-
-//    /** Shoot straight at the goal. */
-//    TAKE_SHOT,
-//    /** Center the ball for someone else to shoot. */
-//    INFIELD_PASS,
-//    /** Pass back to a teammate. */
-//    BACK_PASS,
-//    /** Move away from what you are doing. */
-//    DISENGAGE,
-//    /** Follow team as they attack. */
-//    SUPPORT,
-//    /** Bouncing a shot off the opponents back wall. */
-//    BACKBOARD,
-//    /** Defending as last man back. Stall for time. */
-//    SHADOW,
-//    /** Solo dribbling. */
-//    DRIBBLE
   }
 
-  static Strategist strategistForBot(Strategy.Type type, Agc bot) {
+  /** Gets a strategist of the given type for a bot. */
+  static Strategist strategistForBot(Strategy.Type type, ApolloGuidanceComputer bot) {
     switch (type) {
       case ATTACK:
         return new AttackStrategist(bot);

@@ -1,10 +1,10 @@
 package com.eru.rlbot.bot.tactics;
 
-import com.eru.rlbot.bot.common.BotRenderer;
-import com.eru.rlbot.bot.common.Pair;
-import com.eru.rlbot.bot.main.Agc;
+import com.eru.rlbot.bot.main.ApolloGuidanceComputer;
+import com.eru.rlbot.bot.renderer.BotRenderer;
+import com.eru.rlbot.common.Pair;
 import com.eru.rlbot.common.input.DataPacket;
-import com.eru.rlbot.common.output.ControlsOutput;
+import com.eru.rlbot.common.output.Controls;
 import com.google.common.collect.ImmutableList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -13,6 +13,9 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
+/**
+ * Keeps track of the various tacticians and calls the one corresponding to the current action.
+ */
 public class TacticManager {
 
   private static final Map<Tactic.TacticType, Class<? extends Tactician>> DEFAULT_TACTICIAN_MAP = new HashMap<>();
@@ -20,7 +23,6 @@ public class TacticManager {
   static {
     DEFAULT_TACTICIAN_MAP.put(Tactic.TacticType.AERIAL, AerialTactician.class);
     DEFAULT_TACTICIAN_MAP.put(Tactic.TacticType.CATCH, CatchTactician.class);
-    DEFAULT_TACTICIAN_MAP.put(Tactic.TacticType.DEFEND, GoalLineTactician.class);
     DEFAULT_TACTICIAN_MAP.put(Tactic.TacticType.DEMO, DemoTactician.class);
     DEFAULT_TACTICIAN_MAP.put(Tactic.TacticType.DRIBBLE, DribbleTactician.class);
     DEFAULT_TACTICIAN_MAP.put(Tactic.TacticType.FAST_AERIAL, FastAerial.class);
@@ -33,8 +35,6 @@ public class TacticManager {
     DEFAULT_TACTICIAN_MAP.put(Tactic.TacticType.ROTATE, RotateTactician.class);
     DEFAULT_TACTICIAN_MAP.put(Tactic.TacticType.SHADOW, ShadowTactician.class);
     DEFAULT_TACTICIAN_MAP.put(Tactic.TacticType.STRIKE, TakeTheShotTactician.class);
-    DEFAULT_TACTICIAN_MAP.put(Tactic.TacticType.WALL_RIDE, SideWallTactician.class);
-    DEFAULT_TACTICIAN_MAP.put(Tactic.TacticType.WAVE_DASH, WaveDashTactician.class);
   }
 
   private final Map<Tactic.TacticType, Tactician> tacticians = new HashMap<>();
@@ -42,13 +42,13 @@ public class TacticManager {
   private final BotRenderer botRenderer;
   private LinkedList<Tactic> tacticList = new LinkedList<>();
 
-  private final Agc bot;
+  private final ApolloGuidanceComputer rocket;
   private final Set<Tactic> completedTactics = new HashSet<>();
   private Pair<Tactic.TacticType, Tactician> controllingTactician;
 
-  public TacticManager(Agc bot) {
-    this.bot = bot;
-    this.botRenderer = BotRenderer.forBot(bot);
+  public TacticManager(ApolloGuidanceComputer rocket) {
+    this.rocket = rocket;
+    this.botRenderer = BotRenderer.forBot(rocket);
   }
 
   private Optional<Tactic> nextTactic() {
@@ -75,7 +75,7 @@ public class TacticManager {
     tacticList.addAll(tactics);
   }
 
-  public void execute(DataPacket input, ControlsOutput output) {
+  public void execute(DataPacket input, Controls output) {
 
     Tactician tactician = getTactician();
     Tactic tactic = getTactic();
@@ -139,8 +139,8 @@ public class TacticManager {
 
   private Tactician newTactician(Class<? extends Tactician> t) {
     try {
-      return t.getDeclaredConstructor(Agc.class, TacticManager.class)
-          .newInstance(bot, this);
+      return t.getDeclaredConstructor(ApolloGuidanceComputer.class, TacticManager.class)
+          .newInstance(rocket, this);
     } catch (Throwable e) {
       throw new IllegalStateException(String.format("Cannot create tactician %s", t), e);
     }

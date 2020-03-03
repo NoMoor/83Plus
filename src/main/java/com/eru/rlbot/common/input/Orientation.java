@@ -1,7 +1,7 @@
 package com.eru.rlbot.common.input;
 
 
-import com.eru.rlbot.bot.common.Matrix3;
+import com.eru.rlbot.common.Matrix3;
 import com.eru.rlbot.common.vector.Vector2;
 import com.eru.rlbot.common.vector.Vector3;
 import rlbot.flat.PlayerInfo;
@@ -9,9 +9,6 @@ import rlbot.gamestate.DesiredRotation;
 
 /**
  * The car's orientation in space, a.k.a. what direction it's pointing.
- *
- * This class is here for your convenience, it is NOT part of the framework. You can change it as much
- * as you want, or delete it.
  */
 public class Orientation {
 
@@ -55,11 +52,10 @@ public class Orientation {
     return orientation.row(0);
   }
 
-  // TODO: This is actually the right side of the car.
   /**
-   * The direction that the left side of the car is facing.
+   * The direction that the right side of the car is facing.
    */
-  public final Vector3 getLeftVector() {
+  public final Vector3 getRightVector() {
     return orientation.row(1);
   }
 
@@ -127,5 +123,10 @@ public class Orientation {
 
     Orientation other = (Orientation) o;
     return this.orientation.equals(other.orientation);
+  }
+
+  @Override
+  public int hashCode() {
+    return orientation.hashCode();
   }
 }

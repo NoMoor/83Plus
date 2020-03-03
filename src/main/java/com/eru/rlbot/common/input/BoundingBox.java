@@ -1,6 +1,6 @@
 package com.eru.rlbot.common.input;
 
-import com.eru.rlbot.bot.common.Matrix3;
+import com.eru.rlbot.common.Matrix3;
 import com.eru.rlbot.common.vector.Vector3;
 
 public class BoundingBox {
@@ -47,7 +47,7 @@ public class BoundingBox {
   public rlbot.vector.Vector3 getLowestCorner() {
     float noseZ = orientation.getNoseVector().z;
     float roofZ = orientation.getRoofVector().z;
-    float leftZ = -orientation.getLeftVector().z;
+    float leftZ = -orientation.getRightVector().z;
     if (noseZ > -.009) {
       // Rear corners
       if (roofZ > 0) {

@@ -1,4 +1,4 @@
-from striking.striking_setups import GroundNonMoving
+from striking.striking_setups import GroundNonMoving, PowerSlide
 
 bronze_striking = [
     # GroundNonMoving('Straight', ball_y=3500),
@@ -16,6 +16,10 @@ bronze_striking = [
     # GroundNonMoving('Midrange right', ball_x=-1000, ball_y=1500, car_y=-2000),
     # GroundNonMoving('Midrange far right', ball_x=-2000, ball_y=1500, car_y=-2000),
     # GroundNonMoving('Midrange farfar right', ball_x=-3000, ball_y=1500, car_y=-2000),
+]
+
+power_slide_testing = [
+    PowerSlide('power_slide_test', ball_y=4500, car_y=-3500)
 ]
 
 striking_exercises = bronze_striking

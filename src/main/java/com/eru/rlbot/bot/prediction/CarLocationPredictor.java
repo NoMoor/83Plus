@@ -2,10 +2,10 @@ package com.eru.rlbot.bot.prediction;
 
 import static com.google.common.collect.ImmutableList.toImmutableList;
 
-import com.eru.rlbot.bot.common.BotRenderer;
-import com.eru.rlbot.bot.common.Pair;
 import com.eru.rlbot.bot.flags.PerBotDebugOptions;
+import com.eru.rlbot.bot.renderer.BotRenderer;
 import com.eru.rlbot.common.Lists;
+import com.eru.rlbot.common.Pair;
 import com.eru.rlbot.common.input.CarData;
 import com.eru.rlbot.common.input.DataPacket;
 import com.eru.rlbot.common.vector.Vector3;
@@ -21,7 +21,7 @@ public class CarLocationPredictor {
 
   private static final Logger logger = LogManager.getLogger("CarLocationPredictor");
 
-  private static final ConcurrentHashMap<Integer, CarLocationPredictor> BOTS = new ConcurrentHashMap<>();
+  private static final ConcurrentHashMap<Integer, CarLocationPredictor> MAP = new ConcurrentHashMap<>();
 
   private static final LinkedHashMap<Integer, CarLocationPrediction> predictions = new LinkedHashMap<>();
 
@@ -38,7 +38,7 @@ public class CarLocationPredictor {
   }
 
   public static CarLocationPredictor forCar(CarData car) {
-    return BOTS.computeIfAbsent(car.playerIndex, i -> new CarLocationPredictor(car.playerIndex, car.team));
+    return MAP.computeIfAbsent(car.serialNumber, i -> new CarLocationPredictor(car.serialNumber, car.team));
   }
 
   public ImmutableList<CarLocationPrediction> allies() {
@@ -55,26 +55,26 @@ public class CarLocationPredictor {
 
   public CarLocationPrediction forOpponent(CarData car) {
     return predictions.values().stream()
-        .filter(predictions -> predictions.getPlayerIndex() == car.playerIndex)
+        .filter(predictions -> predictions.getPlayerIndex() == car.serialNumber)
         .collect(MoreCollectors.onlyElement());
   }
 
   private void trackInternal(DataPacket input) {
     if (input.gameInfo.isRoundActive()) {
-      for (CarData carData : input.allCars) {
+      for (CarData car : input.allCars) {
         // Skip self.
-        if (carData == input.car) {
+        if (car == input.car) {
           continue;
         }
 
         CarLocationPrediction prediction =
-            predictions.computeIfAbsent(carData.playerIndex, index -> new CarLocationPrediction(input.playerIndex));
+            predictions.computeIfAbsent(car.serialNumber, index -> new CarLocationPrediction(input.serialNumber));
 
-        prediction.updatePrediction(carData);
+        prediction.updatePrediction(car);
       }
     }
 
-    if (PerBotDebugOptions.get(input.playerIndex).isRenderOpponentPaths()) {
+    if (PerBotDebugOptions.get(input.serialNumber).isRenderOpponentPaths()) {
       predictions.values().forEach(CarLocationPrediction::renderPrediction);
     }
   }
@@ -97,7 +97,7 @@ public class CarLocationPredictor {
     }
 
     public int getPlayerIndex() {
-      return previousCar.playerIndex;
+      return previousCar.serialNumber;
     }
 
     public int getTeamIndex() {

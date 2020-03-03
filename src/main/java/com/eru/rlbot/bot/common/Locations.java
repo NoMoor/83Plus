@@ -1,5 +1,6 @@
 package com.eru.rlbot.bot.common;
 
+import com.eru.rlbot.common.DllHelper;
 import com.eru.rlbot.common.Moment;
 import com.eru.rlbot.common.input.BallData;
 import com.eru.rlbot.common.input.CarData;
@@ -12,7 +13,12 @@ import java.util.Optional;
 import rlbot.flat.BallPrediction;
 import rlbot.flat.PredictionSlice;
 
-public class Locations {
+// TODO: Clean up this class.
+
+/**
+ * Static utilities for deriving different logical locations.
+ */
+public final class Locations {
 
   public static Vector3 toInsideLeftGoal(CarData car, Vector3 target) {
     return Vector3.from(target, Goal.opponentGoal(car.team).leftInside);
@@ -47,7 +53,7 @@ public class Locations {
   }
 
   public static boolean ballIsInFrontOfCar(DataPacket input) {
-    BallData relativeBallLocation = NormalUtils.noseRelativeBall(input);
+    BallData relativeBallLocation = RelativeUtils.noseRelativeBall(input);
 
     return relativeBallLocation.position.y > 0;
   }

@@ -4,21 +4,24 @@ import com.eru.rlbot.bot.common.Accels;
 import com.eru.rlbot.bot.common.Angles;
 import com.eru.rlbot.bot.common.Locations;
 import com.eru.rlbot.bot.common.PredictionUtils;
-import com.eru.rlbot.bot.main.Agc;
+import com.eru.rlbot.bot.main.ApolloGuidanceComputer;
 import com.eru.rlbot.common.input.DataPacket;
-import com.eru.rlbot.common.output.ControlsOutput;
+import com.eru.rlbot.common.output.Controls;
 import com.eru.rlbot.common.vector.Vector3;
 import java.util.Optional;
 import rlbot.flat.PredictionSlice;
 
+/**
+ * Aspirational at best.
+ */
 public class ShadowTactician extends Tactician {
 
-  ShadowTactician(Agc bot, TacticManager tacticManager) {
+  ShadowTactician(ApolloGuidanceComputer bot, TacticManager tacticManager) {
     super(bot, tacticManager);
   }
 
   @Override
-  public void internalExecute(DataPacket input, ControlsOutput output, Tactic tactic) {
+  public void internalExecute(DataPacket input, Controls output, Tactic tactic) {
     double minCorrection = Locations.minCarTargetNotGoalCorrection(input, tactic.subject);
     double targetCorrectionAngle = Angles.flatCorrectionAngle(input.car, tactic.subject.position);
 
@@ -29,7 +32,7 @@ public class ShadowTactician extends Tactician {
       bot.botRenderer.setBranchInfo("Sweep");
       // TODO: Make this better
       float ballToTargetTime = tactic.subject.time - input.car.elapsedSeconds;
-      double carToTargetTime = Accels.timeToDistance(
+      double carToTargetTime = Accels.nonBoostedTimeToDistance(
           input.car.velocity.magnitude(),
           input.car.position.distance(tactic.subject.position)).time;
 
@@ -40,7 +43,7 @@ public class ShadowTactician extends Tactician {
     }
   }
 
-  private void getAlongSide(DataPacket input, ControlsOutput output, Tactic tactic) {
+  private void getAlongSide(DataPacket input, Controls output, Tactic tactic) {
     float ballToGoalTime = getBallToGoalTime(input);
     double carToGoalTime = getCarToGoalTime(input);
 
@@ -67,7 +70,7 @@ public class ShadowTactician extends Tactician {
     Vector3 goalLocation = Vector3.of(slice.get().physics().location());
     double distanceToSave = input.car.position.distance(goalLocation);
 
-    return Accels.timeToDistance(input.car.velocity.flatten().norm(), distanceToSave).time;
+    return Accels.nonBoostedTimeToDistance(input.car.velocity.flatten().magnitude(), distanceToSave).time;
   }
 
   private float getBallToGoalTime(DataPacket input) {

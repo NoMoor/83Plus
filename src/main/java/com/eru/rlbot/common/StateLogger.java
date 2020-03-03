@@ -3,13 +3,13 @@ package com.eru.rlbot.common;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 
 import com.eru.rlbot.bot.common.Constants;
-import com.eru.rlbot.bot.common.TrainingId;
 import com.eru.rlbot.bot.flags.GlobalDebugOptions;
 import com.eru.rlbot.common.input.BallData;
 import com.eru.rlbot.common.input.CarData;
 import com.eru.rlbot.common.input.DataPacket;
 import com.eru.rlbot.common.input.Orientation;
 import com.eru.rlbot.common.vector.Vector3;
+import com.eru.rlbot.testing.TrainingId;
 import com.google.common.collect.ImmutableList;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.util.JsonFormat;
@@ -22,6 +22,9 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import rlbot.gamestate.DesiredRotation;
 
+/**
+ * Utility for logging game states to proto json format.
+ */
 public class StateLogger {
 
   private static final Logger logger = LogManager.getLogger("StateLogger");
@@ -38,14 +41,15 @@ public class StateLogger {
 
   private static volatile int controllingPlayer = -1;
 
+  /** Tracks the input in the buffer. */
   public static void track(DataPacket input) {
     if (!GlobalDebugOptions.isStateLoggerEnabled()) {
       return;
     }
 
     if (controllingPlayer == -1) {
-      controllingPlayer = input.car.playerIndex;
-    } else if (controllingPlayer != input.car.playerIndex) {
+      controllingPlayer = input.car.serialNumber;
+    } else if (controllingPlayer != input.car.serialNumber) {
       return;
     }
 
@@ -55,8 +59,9 @@ public class StateLogger {
     }
   }
 
+  /** Captures the data buffer into a file. */
   public static void capture(DataPacket input) {
-    if (controllingPlayer != input.car.playerIndex || dataPacketBuffer.isEmpty()) {
+    if (controllingPlayer != input.car.serialNumber || dataPacketBuffer.isEmpty()) {
       return;
     }
 
@@ -94,7 +99,7 @@ public class StateLogger {
 
   private static GameStateProtos.GameState convert(DataPacket input, String label) {
     return GameStateProtos.GameState.newBuilder()
-        .setFrameId(convert(input.car.elapsedSeconds))
+        .setFrameId(toFrameId(input.car.elapsedSeconds))
         .addAllCar(input.allCars.stream()
             .map(StateLogger::convert)
             .collect(toImmutableList()))
@@ -104,28 +109,46 @@ public class StateLogger {
         .build();
   }
 
+  /**
+   * Logs the packet in json format.
+   *
+   * @see #log(DataPacket, String)
+   */
   public static void log(DataPacket packet) {
     log(packet, "");
   }
 
+  /**
+   * Logs the packet and label in json format.
+   */
   public static void log(DataPacket packet, String label) {
+    if (!GlobalDebugOptions.isStateLoggerEnabled()) {
+      return;
+    }
+
     String formattedEntry = format(packet, label);
     if (!formattedEntry.isEmpty()) {
       logger.info(formattedEntry);
     }
   }
 
+  /**
+   * Returns the data packet as a proto in json string format.
+   */
   public static String toJson(DataPacket packet) {
     return format(packet);
   }
 
-  private static long convert(float elapsedSeconds) {
+  /**
+   * Converst the elapsed seconds to a frame id.
+   */
+  private static long toFrameId(float elapsedSeconds) {
     return Math.round(elapsedSeconds * 120);
   }
 
   private static GameStateProtos.GameState.CarState convert(CarData car) {
     return GameStateProtos.GameState.CarState.newBuilder()
-        .setId(car.playerIndex)
+        .setId(car.serialNumber)
         .setTeam(car.team)
         .addAllPos(convert(car.position))
         .addAllVel(convert(car.velocity))
