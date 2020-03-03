@@ -3,14 +3,7 @@ you've just extracted a zip file submitted to a tournament. If that's not your s
 instead.
 
 1. Install Java 8 or newer.
-2. Reference the included `.cfg` file as you would do with a plain python bot.
-3. Before running the match, double click on the `.bat` file included in
-this submission. It should stay open and manage the java bot.
-
-
-You only need to run a single instance of the `.bat`, and it can handle all the bots in this zip
-in the whole match, even on opposite teams.
-
+2. Reference the included `tournament.cfg` file as you would do with a plain python bot.
 
 Advanced:
 

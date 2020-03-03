@@ -5,6 +5,7 @@ import static java.awt.Component.CENTER_ALIGNMENT;
 import com.eru.rlbot.bot.flags.GlobalDebugOptions;
 import com.eru.rlbot.bot.flags.PerBotDebugOptions;
 import com.eru.rlbot.common.Pair;
+import com.eru.rlbot.common.util.BuildInfo;
 import com.google.common.base.Preconditions;
 import java.awt.Color;
 import java.awt.Dimension;
@@ -22,17 +23,22 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import javax.swing.BorderFactory;
+import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.DefaultListSelectionModel;
 import javax.swing.JCheckBox;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
+import javax.swing.JMenu;
+import javax.swing.JMenuBar;
+import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JSeparator;
 import javax.swing.JSlider;
 import javax.swing.JTable;
+import javax.swing.KeyStroke;
 import javax.swing.ListSelectionModel;
 import javax.swing.SwingConstants;
 import javax.swing.Timer;
@@ -111,11 +117,32 @@ public class DSKY {
     panel.add(settingsPanel);
     dskyFrame.add(panel);
 
+    registerBuildInfo(dskyFrame);
+
     dskyFrame.pack();
     dskyFrame.setVisible(true);
   }
 
-  /** Creates ui to adjust settings for the game / all rockets. */
+  private void registerBuildInfo(JFrame frame) {
+    JMenu versionMenu = new JMenu("Help");
+    JMenuItem versionInfo = new JMenuItem("Version Info");
+    versionInfo.setMnemonic('v');
+    versionInfo.setAccelerator(KeyStroke.getKeyStroke("v"));
+    versionInfo.addActionListener(e -> JOptionPane.showMessageDialog(
+        frame, BuildInfo.getInfo().displayFormat(), "Build Info", JOptionPane.PLAIN_MESSAGE));
+    versionMenu.add(versionInfo);
+
+    if (frame.getJMenuBar() == null) {
+      frame.setJMenuBar(new JMenuBar());
+    }
+
+    frame.getJMenuBar().add(Box.createHorizontalGlue());
+    frame.getJMenuBar().add(versionMenu);
+  }
+
+  /**
+   * Creates ui to adjust settings for the game / all rockets.
+   */
   private JPanel initGlobalDebugPanel() {
     JPanel globalPanel = new JPanel();
     globalPanel.setOpaque(false);

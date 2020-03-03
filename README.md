@@ -4,5 +4,6 @@ an opponents goal. It was all about sending a few dudes to that little rock that
 
 Like this bot, Apollo was hand crafted over years. Unlike this bot, the AGC actually worked ... mostly.
 
-# How to build the bot?
-If your repo is not at 'C:/Code/AGC', update build.gradle with the absolute path to the top level director of this git repo.
+# Latest Stable build
+You can download the latest stable build from the releases folder or by clicking
+[here](https://github.com/NoMoor/AGC/raw/master/RELEASES/AGC.zip).

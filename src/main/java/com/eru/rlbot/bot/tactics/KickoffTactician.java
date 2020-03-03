@@ -4,7 +4,9 @@ import com.eru.rlbot.bot.CarBallContactManager;
 import com.eru.rlbot.bot.common.Angles;
 import com.eru.rlbot.bot.common.Constants;
 import com.eru.rlbot.bot.common.Goal;
-import com.eru.rlbot.bot.common.Locations;
+import com.eru.rlbot.bot.common.KickoffLocations;
+import com.eru.rlbot.bot.common.KickoffLocations.KickoffLocation;
+import com.eru.rlbot.bot.common.KickoffLocations.KickoffStation;
 import com.eru.rlbot.bot.common.RelativeUtils;
 import com.eru.rlbot.bot.main.ApolloGuidanceComputer;
 import com.eru.rlbot.bot.maneuver.DiagonalFlipCancel;
@@ -32,7 +34,7 @@ public class KickoffTactician extends Tactician {
 
   private static final Logger logger = LogManager.getLogger("KickoffTactician");
 
-  private Locations.KickoffLocation location;
+  private KickoffLocation location;
 
   private Vector3 target;
   private Monitor monitor;
@@ -41,7 +43,7 @@ public class KickoffTactician extends Tactician {
 
   KickoffTactician(ApolloGuidanceComputer bot, TacticManager tacticManager) {
     super(bot, tacticManager);
-    location = Locations.KickoffLocation.defaultLocation(bot.team);
+    location = KickoffLocation.defaultLocation(bot.team);
   }
 
   public static boolean isKickoffStart(DataPacket input) {
@@ -73,10 +75,10 @@ public class KickoffTactician extends Tactician {
       target = input.ball.position;
     }
 
-    if (location.station == Locations.KickoffStation.LEFT_CENTER
-        || location.station == Locations.KickoffStation.RIGHT_CENTER) {
+    if (location.station == KickoffStation.LEFT_CENTER
+        || location.station == KickoffStation.RIGHT_CENTER) {
       centerOffset(input, output);
-    } else if (location.station == Locations.KickoffStation.CENTER) {
+    } else if (location.station == KickoffStation.CENTER) {
       centerKickOff(input, output);
     } else {
       cornerSpeedFlip(output, input);
@@ -86,7 +88,7 @@ public class KickoffTactician extends Tactician {
 
   @Override
   protected void reset(DataPacket input) {
-    Optional<Locations.KickoffLocation> optionalKickoffLocation = Locations.getKickoffLocation(input.car);
+    Optional<KickoffLocation> optionalKickoffLocation = KickoffLocations.getKickoffLocation(input.car);
     location = optionalKickoffLocation.orElse(location);
 
     if (optionalKickoffLocation.isPresent()) {
@@ -103,7 +105,7 @@ public class KickoffTactician extends Tactician {
 
   private Vector3 selectTarget(DataPacket input) {
     Random random = new Random();
-    if (location.station == Locations.KickoffStation.RIGHT || location.station == Locations.KickoffStation.LEFT) {
+    if (location.station == KickoffStation.RIGHT || location.station == KickoffStation.LEFT) {
       if ((hasTeammates(input) || hasScoreDiff(input, 2)) && random.nextBoolean()) {
         // Aim for the goal.
         Vector3 goalAngle = input.ball.position.minus(Goal.opponentGoal(input.alliance).getSameSidePost(input.car));
@@ -115,7 +117,7 @@ public class KickoffTactician extends Tactician {
             .addX(Constants.BALL_RADIUS * Math.signum(input.car.position.x))
             .addY(10 * -Math.signum(input.car.position.y));
       }
-    } else if (location.station == Locations.KickoffStation.CENTER) {
+    } else if (location.station == KickoffStation.CENTER) {
       // -1 or 1
       int xInt = -1 + (random.nextInt(2) * 2);
 
