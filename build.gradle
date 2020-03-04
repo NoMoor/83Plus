@@ -33,12 +33,23 @@ mainClassName = 'com.eru.rlbot.bot.main.LaunchComplex39'
 // The end result is that the interface dll will be available for loading.
 def dllDirectory = '\\build\\dll'
 
-applicationDefaultJvmArgs = ["-Djna.library.path=" + dllDirectory, "-Duser.dir=C:\\Code\\AGC"]
+applicationDefaultJvmArgs = ["-Djna.library.path=" + dllDirectory]
+
+application {
+    // Read the port from file.
+    def portNum = new File('src\\main\\python\\port.cfg').readLines()[0]
+    run {
+        args "--port=$portNum"
+    }
+}
 
 // https://www.mkyong.com/gradle/gradle-application-plugin-app_home-in-applicationdefaultjvmargs/
 startScripts {
+    classpath += files('..\\python')
     doLast {
         windowsScript.text = windowsScript.text.replace('MY_WORKING_DIR', "%~dp0..")
+        windowsScript.text = windowsScript.text.replace('lib\\python', '..\\python')
+        unixScript.text = unixScript.text.replace('lib/python', '../python')
     }
 }
 
@@ -112,15 +123,13 @@ distZip {
     into ('python') {
         from fileTree('src/main/python') {
             exclude '__pycache__'
+            exclude 'local_version.cfg'
         }
-    }
-    into (applicationName + '/bin') {
-        from fileTree('port.cfg')
     }
 }
 
 // A version number that is included in the dist release. The minor version is incremented each time distZip is run.
-def archiveVersion = '1.0.18'
+def archiveVersion = '1.0.121'
 task incrementVersionNumber {
     def v = archiveVersion
     String minor = v.substring(v.lastIndexOf('.') + 1).toInteger() + 1
@@ -135,13 +144,15 @@ tasks.named("distZip").configure {
     dependsOn incrementVersionNumber
 }
 
+def nickname = System.getenv()['discord-nickname']
+def username = nickname == null ? System.properties['user.name'] : nickname
 // Include various build info in the manifest file.
 jar {
     manifest {
         attributes("title": "Apollo Guidance Computer",
                    "version": archiveVersion,
                    "build-date-time": buildTime(),
-                   "build-user": System.properties['user.name'])
+                   "build-user": username)
     }
 }
 
@@ -178,6 +189,8 @@ protobuf {
         }
     }
 }
+
+application.class
 
 task printClasspath {
     doLast {

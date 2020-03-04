@@ -7,7 +7,7 @@ import java.util.jar.Manifest;
 /**
  * A class which extracts build info from the manifest file.
  */
-public class BuildInfo {
+public final class BuildInfo {
 
   private static final BuildInfo UNKNOWN = new BuildInfo("Unknown", "-", "-", "-");
   private static final String BUILD_DATE_TIME = "build-date-time";
@@ -17,6 +17,7 @@ public class BuildInfo {
 
   private static volatile BuildInfo INSTANCE;
 
+  /** Returns a copy of the {@link BuildInfo}. */
   public static BuildInfo getInfo() {
     if (INSTANCE == null) {
       try {
