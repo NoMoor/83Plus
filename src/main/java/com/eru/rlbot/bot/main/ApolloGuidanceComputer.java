@@ -8,6 +8,7 @@ import com.eru.rlbot.bot.chat.RadioModule;
 import com.eru.rlbot.bot.common.Constants;
 import com.eru.rlbot.bot.common.Goal;
 import com.eru.rlbot.bot.common.StateSetChecker;
+import com.eru.rlbot.bot.common.Teams;
 import com.eru.rlbot.bot.flags.PerBotDebugOptions;
 import com.eru.rlbot.bot.prediction.BallPredictionUtil;
 import com.eru.rlbot.bot.prediction.CarLocationPredictor;
@@ -84,6 +85,7 @@ public final class ApolloGuidanceComputer implements Bot {
     // Update the boost manager and tile manager with the latest data
     BoostManager.track(packet);
     DropshotTileManager.loadGameTickPacket(packet);
+    Teams.track(packet);
 
     // Translate the raw packet data (which is in an unpleasant format) into our custom DataPacket class.
     // The DataPacket might not include everything from GameTickPacket, so improve it if you need to!

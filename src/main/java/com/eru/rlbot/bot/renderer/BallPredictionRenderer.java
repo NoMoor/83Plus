@@ -1,11 +1,14 @@
 package com.eru.rlbot.bot.renderer;
 
+import com.eru.rlbot.bot.common.Teams;
 import com.eru.rlbot.bot.flags.PerBotDebugOptions;
+import com.eru.rlbot.bot.prediction.BallPrediction;
 import com.eru.rlbot.bot.prediction.BallPredictionUtil;
-import com.eru.rlbot.bot.prediction.BallPredictionUtil.ExaminedBallData;
 import com.google.flatbuffers.FlatBufferBuilder;
 import java.awt.Color;
-import java.util.Optional;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 import rlbot.cppinterop.RLBotDll;
 import rlbot.render.RenderPacket;
 import rlbot.render.Renderer;
@@ -37,13 +40,21 @@ public class BallPredictionRenderer extends Renderer {
       initTick();
     }
 
-    ExaminedBallData prev = null;
-    for (ExaminedBallData next : BallPredictionUtil.get(playerIndex).getPredictions()) {
+    BallPrediction prev = null;
+    for (BallPrediction next : BallPredictionUtil.get(playerIndex).getPredictions()) {
       if (prev == null) {
         prev = next;
       } else if (next.ball.time - prev.ball.time > .1) {
-        Optional<Boolean> hittable = next.isHittable();
-        Color color = !hittable.isPresent() ? Color.BLACK : hittable.get() ? Color.GREEN : Color.RED;
+        Map<Integer, List<Integer>> reachableByTeam = next.ableToReach().stream()
+            .collect(Collectors.groupingBy(Teams::getTeamForBot));
+
+        Color color = reachableByTeam.isEmpty()
+            ? Color.BLACK // Not reachable
+            : reachableByTeam.size() == 2 // Reachable by both teams
+            ? Color.RED
+            : reachableByTeam.containsKey(0)
+            ? Color.BLUE
+            : Color.ORANGE;
 
         drawLine3d(color,
             next.ball.position,

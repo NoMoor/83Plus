@@ -16,6 +16,8 @@ public final class CarPrediction {
    */
   public static ImmutableList<PredictionNode> noInputs(CarData car, float timeToSimulate) {
     ImmutableList.Builder<PredictionNode> pathBuilder = ImmutableList.builder();
+    pathBuilder.add(new PredictionNode(car.position, car.elapsedSeconds));
+
     float time = 0;
 
     Vector3 velocity = car.velocity;

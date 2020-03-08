@@ -1,6 +1,6 @@
 package com.eru.rlbot.common;
 
-import com.eru.rlbot.bot.prediction.BallPredictionUtil;
+import com.eru.rlbot.bot.prediction.BallPrediction;
 import com.eru.rlbot.common.boost.BoostPad;
 import com.eru.rlbot.common.input.BallData;
 import com.eru.rlbot.common.vector.Vector3;
@@ -67,7 +67,7 @@ public class Moment {
     return new Moment(ball);
   }
 
-  public static Moment from(BallPredictionUtil.ExaminedBallData ballToHit) {
+  public static Moment from(BallPrediction ballToHit) {
     return from(ballToHit.ball);
   }
 

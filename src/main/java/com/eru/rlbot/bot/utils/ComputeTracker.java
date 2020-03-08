@@ -51,7 +51,6 @@ public class ComputeTracker {
   }
 
   private void track() {
-    Preconditions.checkState(tickWatch == null);
     tickWatch = StopWatch.start("");
   }
 

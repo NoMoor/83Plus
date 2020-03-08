@@ -1,22 +1,17 @@
 package com.eru.rlbot.bot.prediction;
 
 import com.eru.rlbot.bot.common.Constants;
-import com.eru.rlbot.bot.path.Path;
-import com.eru.rlbot.bot.path.Plan;
-import com.eru.rlbot.bot.tactics.Tactic;
+import com.eru.rlbot.bot.common.Teams;
 import com.eru.rlbot.common.DllHelper;
 import com.eru.rlbot.common.StateLogger;
 import com.eru.rlbot.common.input.BallData;
 import com.eru.rlbot.common.input.CarData;
 import com.eru.rlbot.common.input.DataPacket;
 import com.google.common.collect.Iterables;
-import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -32,6 +27,8 @@ import rlbot.flat.PredictionSlice;
 public class BallPredictionUtil {
 
   private static final Logger logger = LogManager.getLogger("BallPredictionUtil");
+  private static final int PREDICTION_FPS = 60;
+  private static final long PREDICTION_LIMIT = 3 * PREDICTION_FPS;
 
   private static ConcurrentHashMap<Integer, BallPredictionUtil> MAP = new ConcurrentHashMap<>();
 
@@ -41,19 +38,19 @@ public class BallPredictionUtil {
     this.serialNumber = serialNumber;
   }
 
-  private List<ExaminedBallData> examinedBallData = new LinkedList<>();
+  private volatile List<com.eru.rlbot.bot.prediction.BallPrediction> balls = new LinkedList<>();
 
-  public List<ExaminedBallData> getPredictions() {
-    return examinedBallData;
+  public List<com.eru.rlbot.bot.prediction.BallPrediction> getPredictions() {
+    return balls;
   }
 
-  public ExaminedBallData getFirstHittableLocation() {
-    if (examinedBallData.isEmpty()) {
+  public com.eru.rlbot.bot.prediction.BallPrediction getFirstHittableLocation() {
+    if (balls.isEmpty()) {
       return null;
     }
 
-    Optional<ExaminedBallData> firstHittable = examinedBallData.stream()
-        .filter(ball -> ball.isHittable().orElse(false))
+    Optional<com.eru.rlbot.bot.prediction.BallPrediction> firstHittable = balls.stream()
+        .filter(ball -> ball.forCar(serialNumber).isHittable())
         .findFirst();
 
     return firstHittable.orElse(null);
@@ -61,23 +58,26 @@ public class BallPredictionUtil {
 
   private boolean refreshInternal(BallData ball) {
     Optional<BallPrediction> predictionOptional = DllHelper.getBallPrediction();
-    if (predictionOptional.isPresent()) {
-      BallPrediction prediction = predictionOptional.get();
-      if (prediction.slicesLength() > 0) {
-        PredictionSlice nextSlice = prediction.slices(0);
-        if (hasBeenTouched(nextSlice)) {
-          examinedBallData = stream(prediction)
-              .map(BallData::fromPredictionSlice)
-              .map(ExaminedBallData::new)
-              .collect(Collectors.toList());
-          return true;
-        }
+    if (!predictionOptional.isPresent()) {
+      return false;
+    }
+
+    BallPrediction prediction = predictionOptional.get();
+    if (prediction.slicesLength() > 0) {
+      PredictionSlice nextSlice = prediction.slices(0);
+      if (hasBeenTouched(nextSlice)) {
+        balls = stream(prediction)
+            .limit(PREDICTION_LIMIT)
+            .map(BallData::fromPredictionSlice)
+            .map(com.eru.rlbot.bot.prediction.BallPrediction::new)
+            .collect(Collectors.toList());
+        return true;
       }
     }
 
-    Iterator<ExaminedBallData> ballIterator = examinedBallData.iterator();
+    Iterator<com.eru.rlbot.bot.prediction.BallPrediction> ballIterator = balls.iterator();
     while (ballIterator.hasNext()) {
-      ExaminedBallData next = ballIterator.next();
+      com.eru.rlbot.bot.prediction.BallPrediction next = ballIterator.next();
       if (next.ball.time >= ball.time) {
         break;
       }
@@ -85,23 +85,42 @@ public class BallPredictionUtil {
       ballIterator.remove();
     }
 
+    if (PREDICTION_LIMIT > balls.size()) {
+      float lastTime = Iterables.getLast(balls).ball.time;
+
+      stream(prediction)
+          .filter(predictionSlice -> predictionSlice.gameSeconds() > lastTime)
+          .limit(PREDICTION_LIMIT - balls.size())
+          .map(BallData::fromPredictionSlice)
+          .map(com.eru.rlbot.bot.prediction.BallPrediction::new)
+          .forEach(balls::add);
+    }
+
     return false;
   }
 
   private boolean hasBeenTouched(PredictionSlice nextSlice) {
     BallData prediction = BallData.fromPredictionSlice(nextSlice);
-    Iterator<ExaminedBallData> ballIterator = examinedBallData.iterator();
+    Iterator<com.eru.rlbot.bot.prediction.BallPrediction> ballIterator = balls.iterator();
     while (ballIterator.hasNext()) {
-      ExaminedBallData nextBall = ballIterator.next();
+      com.eru.rlbot.bot.prediction.BallPrediction nextBall = ballIterator.next();
       if (nextBall.ball.time >= prediction.time) {
         if (prediction.time + Constants.STEP_SIZE * 1 < nextBall.ball.time) {
           // This prediction is off-cycle of the ones we have. Don't worry about it.
           return false;
         }
 
-        // Logging to check the diffs when the ball prediction is refreshed.
-        logger.debug(StateLogger.format(nextBall.ball) + " time: " + nextBall.ball.time);
-        return !prediction.fuzzyEquals(nextBall.ball);
+        boolean isTheSame = prediction.fuzzyEquals(nextBall.ball);
+        float lastTouchTime = Teams.getBallTouchTime().gameSeconds();
+        if (!isTheSame && nextBall.ball.time - lastTouchTime > .5) {
+          // Logging to check the diffs when the ball prediction is refreshed.
+          logger.debug(
+              " time: {} last touch: {} data {}",
+              nextBall.ball.time,
+              Teams.getBallTouchTime().gameSeconds(),
+              StateLogger.format(nextBall.ball));
+        }
+        return !isTheSame;
       }
       ballIterator.remove();
     }
@@ -113,85 +132,16 @@ public class BallPredictionUtil {
     return MAP.computeIfAbsent(serialNumber, BallPredictionUtil::new);
   }
 
-  public static BallPredictionUtil forCar(CarData car) {
+  public static BallPredictionUtil get(CarData car) {
     return get(car.serialNumber);
   }
 
   public static boolean refresh(DataPacket input) {
-    return forCar(input.car).refreshInternal(input.ball);
+    return get(input.car).refreshInternal(input.ball);
   }
 
   private static Stream<PredictionSlice> stream(BallPrediction prediction) {
     return IntStream.range(0, prediction.slicesLength())
         .mapToObj(prediction::slices);
-  }
-
-  /**
-   * For each prediction slice, this keeps track of what analysis has been done.
-   */
-  public static class ExaminedBallData {
-    private List<Path> paths = new ArrayList<>();
-    private Set<Tactic.TacticType> hittableBy = new HashSet<>();
-    private Set<Tactic.TacticType> notHittableBy = new HashSet<>();
-    public final BallData ball;
-    private CarData fastTarget;
-    private Plan fastPlan;
-
-    public ExaminedBallData(BallData ball) {
-      this.ball = ball;
-    }
-
-    public Optional<Boolean> isHittable() {
-      return hittableBy.isEmpty() && notHittableBy.isEmpty() ? Optional.empty() : Optional.of(!hittableBy.isEmpty());
-    }
-
-    public Optional<Tactic.TacticType> isHittableBy() {
-      return hittableBy.isEmpty() ? Optional.empty() : Optional.of(Iterables.getOnlyElement(hittableBy));
-    }
-
-    public void setHittableBy(Tactic.TacticType type) {
-      hittableBy.add(type);
-    }
-
-    public void setNotHittableBy(Tactic.TacticType type) {
-      notHittableBy.add(type);
-    }
-
-    public void addPath(Path path) {
-      paths.add(path);
-    }
-
-    public boolean hasPath() {
-      return paths.size() > 1;
-    }
-
-    public Path getPath() {
-      return paths.isEmpty() ? null : paths.get(0);
-    }
-
-    public void setFastTarget(CarData targetCar) {
-      this.fastTarget = targetCar;
-    }
-
-    public CarData getFastTarget() {
-      return this.fastTarget;
-    }
-
-    public void addFastPlan(Plan time) {
-      this.fastPlan = time;
-    }
-
-    public Plan getFastPlan() {
-      return fastPlan;
-    }
-
-    public Tactic.TacticType getTactic() {
-      return ball.position.z > 300 ? Tactic.TacticType.AERIAL : Tactic.TacticType.STRIKE;
-    }
-
-    @Override
-    public String toString() {
-      return "hittable: " + isHittable() + " location: " + ball.position;
-    }
   }
 }

@@ -68,7 +68,7 @@ public class TakeTheShotTactician extends Tactician {
   public void internalExecute(DataPacket input, Controls output, Tactic tactic) {
     bot.botRenderer.setIntersectionTarget(tactic.getTargetPosition());
 
-    Path path = PathPlanner.fastPath(input.car, tactic.subject);
+    Path path = PathPlanner.oneTurn(input.car, tactic.subject);
     pathExecutor.executePath(input, output, path);
 
     bot.botRenderer.renderPath(input, path);

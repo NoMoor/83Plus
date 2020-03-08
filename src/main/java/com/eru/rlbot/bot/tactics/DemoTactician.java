@@ -6,6 +6,7 @@ import com.eru.rlbot.bot.common.Constants;
 import com.eru.rlbot.bot.common.Goal;
 import com.eru.rlbot.bot.main.ApolloGuidanceComputer;
 import com.eru.rlbot.bot.maneuver.WaveDash;
+import com.eru.rlbot.bot.prediction.BallPrediction;
 import com.eru.rlbot.bot.prediction.BallPredictionUtil;
 import com.eru.rlbot.bot.prediction.CarLocationPredictor;
 import com.eru.rlbot.bot.prediction.CarPrediction;
@@ -115,7 +116,7 @@ public class DemoTactician extends Tactician {
       }
     }
 
-    BallPredictionUtil.ExaminedBallData ball = BallPredictionUtil.forCar(input.car).getFirstHittableLocation();
+    BallPrediction ball = BallPredictionUtil.get(input.car).getFirstHittableLocation();
 
     Vector3 target;
     if (demoTarget != null && ball != null) {

@@ -10,7 +10,7 @@ import com.eru.rlbot.bot.lookup.AerialLookUp;
 import com.eru.rlbot.bot.main.ApolloGuidanceComputer;
 import com.eru.rlbot.bot.path.Path;
 import com.eru.rlbot.bot.path.PathPlanner;
-import com.eru.rlbot.bot.prediction.BallPredictionUtil;
+import com.eru.rlbot.bot.path.Plan;
 import com.eru.rlbot.bot.prediction.CarPrediction;
 import com.eru.rlbot.common.Lists;
 import com.eru.rlbot.common.Moment;
@@ -25,7 +25,7 @@ import com.eru.rlbot.common.vector.Vector3;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import java.awt.Color;
-import java.util.List;
+import java.util.Optional;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -52,7 +52,7 @@ public class AerialTactician extends Tactician {
     if (input.car.hasWheelContact && input.car.position.z < 50) {
 
       // TODO: Put this into a sort of aerial planning object.
-      Path fastPath = PathPlanner.fastPath(input.car, target);
+      Path fastPath = PathPlanner.oneTurn(input.car, target);
 
       AerialLookUp.AerialInfo aerialProfile = AerialLookUp.averageBoost(target.position.z);
       double airTime = FAST_AERIAL_TIME + aerialProfile.timeToApex;
@@ -102,46 +102,37 @@ public class AerialTactician extends Tactician {
   private static double FAST_AERIAL_BOOST = FAST_AERIAL_TIME * Constants.BOOST_RATE;
   private static double AERIAL_EFFICIENCY = .25;
 
-  // TODO: Move this into a common planning location.
-  public static void doAerialPlanning(DataPacket input) {
-    // Only do planning when you are on the ground.
-    if (!input.car.hasWheelContact && input.car.position.z < 20) {
-      return;
-    }
 
-    BallPredictionUtil ballPredictionUtil = BallPredictionUtil.get(input.car.serialNumber);
+  public static Optional<Plan> doAerialPlanning(CarData car, BallData ball) {
+    AerialLookUp.AerialInfo aerialInfo = AerialLookUp.averageBoost(ball.position.z);
 
-    List<BallPredictionUtil.ExaminedBallData> predictions = Lists.everyNth(ballPredictionUtil.getPredictions(), 5);
-    for (BallPredictionUtil.ExaminedBallData prediction : predictions) {
-      BallData ball = prediction.ball;
+    // Path is turn + straight
+    Path path = PathPlanner.oneTurn(car, ball);
 
-      if (ball.position.z < 300) {
-        continue;
-      }
+    double rotationTime = aerialInfo.boostAngle * 2 * .3; // Boost angle and back to flat with 2 radians per second
+    double jumpTime = aerialInfo.timeToApex + rotationTime + FAST_AERIAL_TIME;
+    double timeToImpact = ball.time - car.elapsedSeconds;
 
-      AerialLookUp.AerialInfo aerialInfo = AerialLookUp.averageBoost(ball.position.z);
+    // TODO: Handle the case where we are already in the air.
+    double timeToJump = timeToImpact - jumpTime;
+    double boostReserve = car.boost - aerialInfo.boostAmount - FAST_AERIAL_BOOST;
+    Accels.AccelResult acceleration = Accels.accelerateForTime(car.groundSpeed, timeToJump, boostReserve);
 
-      // Path is turn + straight
-      Path path = PathPlanner.fastPath(input.car, ball);
+    // Fast plan + .25 for fast aerial + .25 for rotation + aerialInfo time.
+    double carriedDistance = acceleration.speed * jumpTime;
+    double groundDistance = path.length() - aerialInfo.horizontalTravel - carriedDistance;
 
-      double rotationTime = aerialInfo.boostAngle * 2 * .3; // Boost angle and back to flat with 2 radians per second
-      double jumpTime = aerialInfo.timeToApex + rotationTime + FAST_AERIAL_TIME;
-      double timeToImpact = ball.time - input.car.elapsedSeconds;
+    if (timeToJump > 0
+        && groundDistance < acceleration.distance
+        && car.boost > aerialInfo.boostAmount) {
 
-      // TODO: Handle the case where we are already in the air.
-      double timeToJump = timeToImpact - jumpTime;
-      double boostReserve = input.car.boost - aerialInfo.boostAmount - FAST_AERIAL_BOOST;
-      Accels.AccelResult acceleration = Accels.accelerateForTime(input.car.groundSpeed, timeToJump, boostReserve);
-
-      // Fast plan + .25 for fast aerial + .25 for rotation + aerialInfo time.
-      double carriedDistance = acceleration.speed * jumpTime;
-      double groundDistance = path.length() - aerialInfo.horizontalTravel - carriedDistance;
-
-      if (timeToJump > 0
-          && groundDistance < acceleration.distance
-          && input.car.boost > aerialInfo.boostAmount) {
-        prediction.setHittableBy(Tactic.TacticType.AERIAL);
-      }
+      return Optional.of(
+          Plan.builder()
+              .setPath(path)
+              .setBoostUsed(aerialInfo.boostAmount + acceleration.boost)
+              .build(ball.time - car.elapsedSeconds));
+    } else {
+      return Optional.empty();
     }
   }
 

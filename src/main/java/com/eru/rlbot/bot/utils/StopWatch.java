@@ -29,7 +29,7 @@ public final class StopWatch {
   }
 
   /**
-   * Stops and logs the given action.
+   * Stops and logs the given action. Returns the time in seconds.
    */
   public double stop() {
     if (end == 0) {

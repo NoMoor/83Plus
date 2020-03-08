@@ -4,6 +4,7 @@ import static com.eru.rlbot.bot.common.Constants.STEP_SIZE;
 
 import com.eru.rlbot.bot.common.Accels;
 import com.eru.rlbot.bot.common.Constants;
+import com.eru.rlbot.bot.tactics.Tactic;
 import com.eru.rlbot.common.Numbers;
 import com.eru.rlbot.common.Pair;
 import com.eru.rlbot.common.input.CarData;
@@ -179,11 +180,11 @@ public class Path {
   private static final double SLOWING_BUFFER = 100;
 
   double minimumTraverseTime() {
-    return fastestTraverseTime(currentIndex, start.boost).traverseTime;
+    return minGroundTime(currentIndex, start.boost).traverseTime;
   }
 
   double nonBoostingTraverseTime() {
-    return fastestTraverseTime(currentIndex, 0).traverseTime;
+    return minGroundTime(currentIndex, 0).traverseTime;
   }
 
   private static final float ACCELERATION_BUFFER = 1f;
@@ -192,12 +193,12 @@ public class Path {
   @VisibleForTesting
   Plan makeSpeedPlan(double boostAmount, double targetTime) {
     // TODO: Remove this from production code.
-    Plan boostingPlan = fastestTraverseTime(0, boostAmount);
+    Plan boostingPlan = minGroundTime(0, boostAmount);
     Preconditions.checkState(
         targetTime >= boostingPlan.traverseTime,
         "Should be time under %s but was %s", targetTime, boostingPlan.traverseTime);
 
-    Plan workingPlan = fastestTraverseTime(0, 0);
+    Plan workingPlan = minGroundTime(0, 0);
 
     if (workingPlan.traverseTime < targetTime) {
       return nonBoostingPlan(boostAmount, targetTime);
@@ -280,7 +281,7 @@ public class Path {
         || (searchBoostAmount + BOOST_DELTA > maxBoost);
     while (timeDiff > .0166 && !searchConverged) {
 
-      Plan tempPlan = fastestTraverseTime(0, searchBoostAmount);
+      Plan tempPlan = minGroundTime(0, searchBoostAmount);
       if (tempPlan.traverseTime > targetTime) {
         minBoost = searchBoostAmount;
       } else {
@@ -302,7 +303,12 @@ public class Path {
   }
 
   @VisibleForTesting
-  Plan fastestTraverseTime(int startIndex, double boost) {
+  Plan minGroundTime(double boost) {
+    return minGroundTime(0, boost);
+  }
+
+  @VisibleForTesting
+  Plan minGroundTime(int startIndex, double boost) {
     Plan.Builder planBuilder = Plan.builder()
         .setPath(this);
 
@@ -383,6 +389,7 @@ public class Path {
 
     Plan plan = planBuilder
         .setBoostUsed(boost - boostRemaining)
+        .setTacticType(Tactic.TacticType.STRIKE)
         .build(time);
 
     planMap.put(Pair.of(boost, Double.MAX_VALUE), plan);
@@ -395,7 +402,7 @@ public class Path {
   // TODO: Work in progress
   @VisibleForTesting
   Plan efficientTraverse(double boost, double targetTime) {
-    Plan fastestTraverse = fastestTraverseTime(0, boost);
+    Plan fastestTraverse = minGroundTime(0, boost);
     double extraTime = fastestTraverse.traverseTime - targetTime;
 
     Plan.Builder planBuilder = Plan.builder()

@@ -3,21 +3,25 @@ package com.eru.rlbot.bot.strats;
 import com.eru.rlbot.bot.common.Goal;
 import com.eru.rlbot.bot.common.PredictionUtils;
 import com.eru.rlbot.bot.main.ApolloGuidanceComputer;
-import com.eru.rlbot.bot.path.PathPlanner;
+import com.eru.rlbot.bot.plan.Marker;
+import com.eru.rlbot.bot.prediction.BallPrediction;
 import com.eru.rlbot.bot.prediction.BallPredictionUtil;
-import com.eru.rlbot.bot.tactics.AerialTactician;
 import com.eru.rlbot.bot.tactics.KickoffTactician;
 import com.eru.rlbot.bot.tactics.Tactic;
 import com.eru.rlbot.bot.tactics.TakeTheShotTactician;
 import com.eru.rlbot.common.Moment;
 import com.eru.rlbot.common.input.DataPacket;
 
-/** Responsible for dribbling, shooting, and passing. */
+/**
+ * Responsible for dribbling, shooting, and passing.
+ */
 public class AttackStrategist extends Strategist {
 
   AttackStrategist(ApolloGuidanceComputer bot) {
     super(bot);
   }
+
+  private long index;
 
   @Override
   public boolean assign(DataPacket input) {
@@ -38,10 +42,10 @@ public class AttackStrategist extends Strategist {
       return true;
     }
 
-    // Do Ground planning
-    PathPlanner.doGroundShotPlanning(input);
+    int carPredictionIndex = getPredictionIndex(input.allCars.size());
+    Marker.get(input.serialNumber).mark(input, carPredictionIndex);
 
-    if (true) {
+    if (false) {
       tacticManager.setTactic(Tactic.builder()
           .setSubject(Moment.from(input.ball))
           .setTacticType(Tactic.TacticType.DEMO)
@@ -51,12 +55,9 @@ public class AttackStrategist extends Strategist {
 
     // TODO: Update when the opponent can get to the ball.
 
-    // Do Aerial planning
-    AerialTactician.doAerialPlanning(input);
-
     // TODO: Select a ball to hit, not just the first one.
     // Execute that shot.
-    BallPredictionUtil.ExaminedBallData ballToHit = BallPredictionUtil.forCar(input.car).getFirstHittableLocation();
+    BallPrediction ballToHit = BallPredictionUtil.get(input.car).getFirstHittableLocation();
 
     if (ballToHit != null) {
       tacticManager.setTactic(Tactic.builder()
@@ -82,6 +83,10 @@ public class AttackStrategist extends Strategist {
         .setTacticType(Tactic.TacticType.HIT_BALL)
         .build());
     return true;
+  }
+
+  private int getPredictionIndex(int size) {
+    return (int) (index++ % size);
   }
 
   @Override

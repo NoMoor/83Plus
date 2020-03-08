@@ -4,21 +4,15 @@ import com.eru.rlbot.bot.common.Accels;
 import com.eru.rlbot.bot.common.CarDataUtils;
 import com.eru.rlbot.bot.common.Circle;
 import com.eru.rlbot.bot.common.Constants;
-import com.eru.rlbot.bot.common.Goal;
 import com.eru.rlbot.bot.optimizer.CarBallOptimizer;
-import com.eru.rlbot.bot.prediction.BallPredictionUtil;
-import com.eru.rlbot.bot.tactics.Tactic;
-import com.eru.rlbot.common.Lists;
 import com.eru.rlbot.common.Moment;
 import com.eru.rlbot.common.input.BallData;
 import com.eru.rlbot.common.input.BoundingBox;
 import com.eru.rlbot.common.input.CarData;
-import com.eru.rlbot.common.input.DataPacket;
 import com.eru.rlbot.common.input.Orientation;
 import com.eru.rlbot.common.vector.Vector3;
 import com.eru.rlbot.common.vector.Vector3s;
 import com.google.common.collect.ImmutableList;
-import java.util.List;
 import java.util.Optional;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -27,66 +21,39 @@ public class PathPlanner {
 
   private static final Logger logger = LogManager.getLogger("PathPlanner");
 
-  public static void doGroundShotPlanning(DataPacket input) {
-    // Only do planning when you are on the ground.
-    if (!input.car.hasWheelContact && input.car.position.z < 20) {
-      return;
+  public static Optional<Plan> getGroundPath(CarData car, BallData ball) {
+    if (ball.position.z > 200) {
+      return Optional.empty();
     }
 
-    BallPredictionUtil ballPredictionUtil = BallPredictionUtil.get(input.car.serialNumber);
+    CarData closestHit = closestStrike(car, Moment.from(ball));
+    Path path = planPath(car, closestHit);
+    Plan plan = path.minGroundTime(car.boost);
 
-    List<BallPredictionUtil.ExaminedBallData> ballPredictions =
-        Lists.everyNth(ballPredictionUtil.getPredictions(), 5);
-
-    // Check if we can even get to the ball.
-    for (BallPredictionUtil.ExaminedBallData examinedBall : ballPredictions) {
-      if (examinedBall.ball.position.z > 200 || examinedBall.isHittableBy().isPresent()) {
-        continue;
-      }
-
-      CarData fastPlan = fastPlan(input.car, examinedBall);
-      Path path = planPath(input.car, fastPlan);
-      Plan time = path.fastestTraverseTime(0, input.car.boost);
-      if (time.traverseTime < examinedBall.ball.time - input.car.elapsedSeconds) {
-        examinedBall.addPath(path);
-        examinedBall.addFastPlan(time);
-        examinedBall.setHittableBy(Tactic.TacticType.STRIKE);
-      } else {
-        examinedBall.setNotHittableBy(Tactic.TacticType.STRIKE);
-      }
+    if (plan.traverseTime < ball.time - car.elapsedSeconds) {
+      return Optional.of(plan);
+    } else {
+      return Optional.empty();
     }
   }
 
-  private static Path planShotOnGoal(DataPacket input, BallData ball) {
-    return plan(input.car, ball, Goal.opponentGoal(input.car.team).centerTop.addZ(-Constants.BALL_RADIUS));
-  }
-
-  private static Path plan(CarData currentCar, BallData targetBall, Vector3 target) {
+  private static Path planForResult(CarData currentCar, BallData targetBall, Vector3 target) {
     // Fast Plan
-    CarData approximateApproach = fastPlan(currentCar, targetBall);
-
+    CarData approximateApproach = closestStrike(currentCar, Moment.from(targetBall));
     CarData optimalCar = CarBallOptimizer.getOptimalApproach(targetBall, target, approximateApproach);
-
     return planPath(currentCar, optimalCar);
   }
 
-  public static Path fastPath(CarData car, Moment moment) {
-    CarData targetCar = fastPlan(car, moment);
+  public static Path oneTurn(CarData car, Moment moment) {
+    CarData targetCar = closestStrike(car, moment);
     return planPath(car, targetCar);
   }
 
-  public static Path fastPath(CarData car, BallData ball) {
-    return fastPath(car, Moment.from(ball));
+  public static Path oneTurn(CarData car, BallData ball) {
+    return oneTurn(car, Moment.from(ball));
   }
 
-  private static CarData fastPlan(CarData car, BallPredictionUtil.ExaminedBallData ball) {
-    CarData fastPlan = fastPlan(car, ball.ball);
-    ball.setFastTarget(fastPlan);
-    return fastPlan;
-  }
-
-  private static CarData fastPlan(CarData car, Moment moment) {
-    // TODO: This should return a Path.
+  private static CarData closestStrike(CarData car, Moment moment) {
     Circle turnToBall = Paths.closeTurningRadius(moment.position, car);
     Paths.TangentPoints tangentPoints = Paths.tangents(turnToBall, moment.position);
 
@@ -101,10 +68,6 @@ public class PathPlanner {
         .setVelocity(approachBall.toMagnitude(Math.max(car.groundSpeed, 1500)))
         .setPosition(makeGroundCar(orientation, moment.position))
         .build();
-  }
-
-  private static CarData fastPlan(CarData car, BallData ball) {
-    return fastPlan(car, Moment.from(ball));
   }
 
   private static Vector3 makeGroundCar(Orientation orientation, Vector3 ballPosition) {
