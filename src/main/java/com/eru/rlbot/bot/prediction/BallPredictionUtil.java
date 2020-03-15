@@ -20,6 +20,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import rlbot.flat.BallPrediction;
 import rlbot.flat.PredictionSlice;
+import rlbot.flat.Touch;
 
 /**
  * Keep track of which ball locations have been examined.
@@ -44,7 +45,7 @@ public class BallPredictionUtil {
     return balls;
   }
 
-  public com.eru.rlbot.bot.prediction.BallPrediction getFirstHittableLocation() {
+  public com.eru.rlbot.bot.prediction.BallPrediction getTarget() {
     if (balls.isEmpty()) {
       return null;
     }
@@ -53,7 +54,7 @@ public class BallPredictionUtil {
         .filter(ball -> ball.forCar(serialNumber).isHittable())
         .findFirst();
 
-    return firstHittable.orElse(null);
+    return firstHittable.orElseGet(() -> Iterables.getLast(balls));
   }
 
   private boolean refreshInternal(BallData ball) {
@@ -111,13 +112,14 @@ public class BallPredictionUtil {
         }
 
         boolean isTheSame = prediction.fuzzyEquals(nextBall.ball);
-        float lastTouchTime = Teams.getBallTouchTime().gameSeconds();
+        Touch touch = Teams.getBallTouchTime();
+        float lastTouchTime = touch != null ? touch.gameSeconds() : 0;
         if (!isTheSame && nextBall.ball.time - lastTouchTime > .5) {
           // Logging to check the diffs when the ball prediction is refreshed.
           logger.debug(
               " time: {} last touch: {} data {}",
               nextBall.ball.time,
-              Teams.getBallTouchTime().gameSeconds(),
+              lastTouchTime,
               StateLogger.format(nextBall.ball));
         }
         return !isTheSame;

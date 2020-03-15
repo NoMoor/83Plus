@@ -5,11 +5,11 @@ package com.eru.rlbot.bot.flags;
  */
 public final class GlobalDebugOptions {
 
-  private static boolean slowTimeNearBallEnabled = false;
-  private static boolean kickoffGameEnabled = false;
-  private static boolean stateLoggerEnabled = false;
-  private static int slowedGameSpeed = 5; // in [0, 10]
-  private static boolean renderStats;
+  private static volatile boolean slowTimeNearBallEnabled = false;
+  private static volatile boolean kickoffGameEnabled = false;
+  private static volatile boolean stateLoggerEnabled = false;
+  private static volatile int slowedGameSpeed = 5; // in [0, 10]
+  private static volatile boolean renderStats;
 
   public static boolean isSlowTimeNearBallEnabled() {
     return slowTimeNearBallEnabled;

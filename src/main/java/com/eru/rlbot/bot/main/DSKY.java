@@ -171,9 +171,9 @@ public class DSKY {
     p1.add(kickoffGameEnabled);
 
     JCheckBox stateLoggerEnabled = new JCheckBox("State logger", GlobalDebugOptions.isStateLoggerEnabled());
-    kickoffGameEnabled.addActionListener((e) ->
+    stateLoggerEnabled.addActionListener((e) ->
         GlobalDebugOptions.setStateLoggerEnabled(stateLoggerEnabled.getModel().isSelected()));
-    stateLoggerEnabled.setBackground(Color.WHITE);
+    stateLoggerEnabled.setOpaque(false);
     p1.setOpaque(false);
     p1.add(stateLoggerEnabled);
 

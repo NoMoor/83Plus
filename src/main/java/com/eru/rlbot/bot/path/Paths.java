@@ -8,6 +8,7 @@ import com.eru.rlbot.common.vector.Vector2;
 import com.eru.rlbot.common.vector.Vector3;
 import com.google.common.collect.ImmutableList;
 import java.util.Comparator;
+import java.util.Optional;
 import java.util.stream.Stream;
 
 public class Paths {
@@ -61,24 +62,35 @@ public class Paths {
     Circles carTurningCircles =
         turningRadiusCircles(source.position, Math.max(800, source.groundSpeed), source.orientation.getNoseVector());
 
-    ImmutableList<Segment> cwcw = biArcSegments(source.position, carTurningCircles.cw, target.position, ballStrikingCircles.cw, CircleTangents.Shape.CWCW);
-    ImmutableList<Segment> ccwcw = biArcSegments(source.position, carTurningCircles.ccw, target.position, ballStrikingCircles.cw, CircleTangents.Shape.CCWCW);
-    ImmutableList<Segment> cwccw = biArcSegments(source.position, carTurningCircles.cw, target.position, ballStrikingCircles.ccw, CircleTangents.Shape.CWCCW);
-    ImmutableList<Segment> ccwccw = biArcSegments(source.position, carTurningCircles.ccw, target.position, ballStrikingCircles.ccw, CircleTangents.Shape.CCWCCW);
+    Optional<ImmutableList<Segment>> cwcw = biArcSegments(
+        source.position, carTurningCircles.cw, target.position, ballStrikingCircles.cw, CircleTangents.Shape.CWCW);
+    Optional<ImmutableList<Segment>> ccwcw = biArcSegments(
+        source.position, carTurningCircles.ccw, target.position, ballStrikingCircles.cw, CircleTangents.Shape.CCWCW);
+    Optional<ImmutableList<Segment>> cwccw = biArcSegments(
+        source.position, carTurningCircles.cw, target.position, ballStrikingCircles.ccw, CircleTangents.Shape.CWCCW);
+    Optional<ImmutableList<Segment>> ccwccw = biArcSegments(
+        source.position, carTurningCircles.ccw, target.position, ballStrikingCircles.ccw, CircleTangents.Shape.CCWCCW);
 
     return Stream.of(cwcw, ccwcw, cwccw, ccwccw)
+        .filter(Optional::isPresent)
+        .map(Optional::get)
         .min(Comparator.comparingDouble(segments -> segments.stream().mapToDouble(Segment::flatDistance).sum()))
-        .get();
+        .orElse(ImmutableList.of());
   }
 
   private static double MIN_SEGMENT_LENGTH = 100;
-  private static ImmutableList<Segment> biArcSegments(
+
+  private static Optional<ImmutableList<Segment>> biArcSegments(
       Vector3 start, Circle circle1, Vector3 end, Circle circle2, CircleTangents.Shape shape) {
     Segment connector = tangents(circle1, circle2).getSegment(shape);
     Segment arc1 = Segment.arc(start, connector.start, circle1, shape.startsClockWise());
     Segment arc2 = Segment.arc(connector.end, end, circle2, shape.endsClockWise());
 
     ImmutableList.Builder<Segment> segmentListBuilder = ImmutableList.builder();
+
+    if (Double.isNaN(connector.start.x)) {
+      return Optional.empty();
+    }
 
     // Check arc 1 for inclusion
     if (arc1.flatDistance() > MIN_SEGMENT_LENGTH &&
@@ -102,7 +114,7 @@ public class Paths {
           .add(Segment.straight(connector.start, arc2.end));
     }
 
-    return segmentListBuilder.build();
+    return Optional.of(segmentListBuilder.build());
   }
 
   public static TangentPoints tangents(Circle circle, Vector3 point) {

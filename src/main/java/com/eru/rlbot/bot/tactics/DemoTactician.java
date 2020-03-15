@@ -116,7 +116,7 @@ public class DemoTactician extends Tactician {
       }
     }
 
-    BallPrediction ball = BallPredictionUtil.get(input.car).getFirstHittableLocation();
+    BallPrediction ball = BallPredictionUtil.get(input.car).getTarget();
 
     Vector3 target;
     if (demoTarget != null && ball != null) {

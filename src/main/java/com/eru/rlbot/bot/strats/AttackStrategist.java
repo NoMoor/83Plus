@@ -1,14 +1,12 @@
 package com.eru.rlbot.bot.strats;
 
 import com.eru.rlbot.bot.common.Goal;
-import com.eru.rlbot.bot.common.PredictionUtils;
 import com.eru.rlbot.bot.main.ApolloGuidanceComputer;
 import com.eru.rlbot.bot.plan.Marker;
 import com.eru.rlbot.bot.prediction.BallPrediction;
 import com.eru.rlbot.bot.prediction.BallPredictionUtil;
 import com.eru.rlbot.bot.tactics.KickoffTactician;
 import com.eru.rlbot.bot.tactics.Tactic;
-import com.eru.rlbot.bot.tactics.TakeTheShotTactician;
 import com.eru.rlbot.common.Moment;
 import com.eru.rlbot.common.input.DataPacket;
 
@@ -57,7 +55,7 @@ public class AttackStrategist extends Strategist {
 
     // TODO: Select a ball to hit, not just the first one.
     // Execute that shot.
-    BallPrediction ballToHit = BallPredictionUtil.get(input.car).getFirstHittableLocation();
+    BallPrediction ballToHit = BallPredictionUtil.get(input.car).getTarget();
 
     if (ballToHit != null) {
       tacticManager.setTactic(Tactic.builder()
@@ -68,21 +66,7 @@ public class AttackStrategist extends Strategist {
       return true;
     }
 
-    if (TakeTheShotTactician.takeTheShot(input)) {
-      tacticManager.setTactic(
-          Tactic.builder()
-              .setObject(Goal.opponentGoal(input.car.team).center)
-              .setSubject(Moment.from(input.ball))
-              .setTacticType(Tactic.TacticType.STRIKE)
-              .build());
-      return true;
-    }
-
-    tacticManager.setTactic(Tactic.builder()
-        .setSubject(PredictionUtils.getFirstHittableBall(input))
-        .setTacticType(Tactic.TacticType.HIT_BALL)
-        .build());
-    return true;
+    return false;
   }
 
   private int getPredictionIndex(int size) {

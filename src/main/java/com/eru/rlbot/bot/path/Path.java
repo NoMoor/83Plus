@@ -11,7 +11,6 @@ import com.eru.rlbot.common.input.CarData;
 import com.eru.rlbot.common.input.DataPacket;
 import com.eru.rlbot.common.vector.Vector3;
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -193,10 +192,10 @@ public class Path {
   @VisibleForTesting
   Plan makeSpeedPlan(double boostAmount, double targetTime) {
     // TODO: Remove this from production code.
-    Plan boostingPlan = minGroundTime(0, boostAmount);
-    Preconditions.checkState(
-        targetTime >= boostingPlan.traverseTime,
-        "Should be time under %s but was %s", targetTime, boostingPlan.traverseTime);
+//    Plan boostingPlan = minGroundTime(0, boostAmount);
+//    Preconditions.checkState(
+//        targetTime >= boostingPlan.traverseTime,
+//        "Should be time under %s but was %s", targetTime, boostingPlan.traverseTime);
 
     Plan workingPlan = minGroundTime(0, 0);
 

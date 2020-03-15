@@ -89,7 +89,9 @@ public class BotRenderer {
   }
 
   public void renderText(Color color, Vector3 location, String text) {
-    getRenderer().drawString3d(text, color, location, 2, 2);
+    if (PerBotDebugOptions.get(bot.getIndex()).isRenderDebugText()) {
+      getRenderer().drawString3d(text, color, location, 2, 2);
+    }
   }
 
   private boolean skipLineRendering() {

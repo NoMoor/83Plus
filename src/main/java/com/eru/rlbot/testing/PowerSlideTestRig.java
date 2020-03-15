@@ -1,6 +1,7 @@
 package com.eru.rlbot.testing;
 
 import com.eru.rlbot.bot.common.Angles;
+import com.eru.rlbot.bot.flags.GlobalDebugOptions;
 import com.eru.rlbot.bot.renderer.BotRenderer;
 import com.eru.rlbot.common.StateLogger;
 import com.eru.rlbot.common.input.DataPacket;
@@ -13,19 +14,19 @@ import com.eru.rlbot.common.vector.Vector3;
 public final class PowerSlideTestRig {
 
   private static final float SPEED_INCREMENT = 100;
-  private static final int HOLD_TICKS_INCREMENT = 5;
+  private static final int HOLD_TICKS_INCREMENT = 1;
   private static final float STEER_INCREMENT = .2f;
 
-  private static final float minSpeed = 500;
-  private static final int minHoldTicks = 5;
+  private static final float minSpeed = 2000;
+  private static final int minHoldTicks = 0;
   private static final float maxSteeringAngle = 1;
 
-  private static final float maxSpeed = 2300;
+  private static final float maxSpeed = 2000;
   private static final int maxHoldTicks = 100;
-  private static final float minSteeringAngle = 0;
+  private static final float minSteeringAngle = 1;
 
   private static float lastSpeed = maxSpeed;
-  private static int lastHoldTicks = maxHoldTicks;
+  private static int lastHoldTicks = minHoldTicks;
   private static float lastSteerAngle = maxSteeringAngle;
 
   private static long lastTestId;
@@ -50,13 +51,17 @@ public final class PowerSlideTestRig {
       BotRenderer.forIndex(input.car.serialNumber)
           .addAlertText("Testing complete");
       return;
+    } else if (!GlobalDebugOptions.isStateLoggerEnabled()) {
+      BotRenderer.forIndex(input.car.serialNumber)
+          .addAlertText("Enable state logging to begin testing");
+      return;
     }
 
     double percentComplete = count / totalIterations;
     BotRenderer.forIndex(input.car.serialNumber)
         .setBranchInfo(
             "Percent: %s Speed:%d Steer:%f hold:%d",
-            String.format("%.2f", percentComplete), (int) input.car.groundSpeed, lastSteerAngle, lastHoldTicks);
+            String.format("%.2f", 100 * percentComplete), (int) input.car.groundSpeed, lastSteerAngle, lastHoldTicks);
 
     if (TrainingId.getId() != lastTestId) {
       lastTestId = TrainingId.getId();
@@ -67,8 +72,8 @@ public final class PowerSlideTestRig {
     // Drive until we hit (0,0)
     if (driveForward) {
       output
-          .withThrottle(input.car.groundSpeed + 5 > lastSpeed ? 0 : input.car.groundSpeed > lastSpeed ? .02 : 1)
-          .withBoost(input.car.groundSpeed + 5 < lastSpeed)
+          .withThrottle(input.car.groundSpeed + 7 > lastSpeed ? 0 : input.car.groundSpeed > lastSpeed ? .02 : 1)
+          .withBoost(input.car.groundSpeed + 15 < lastSpeed)
           // Drive straight north
           .withSteer(Angles.flatCorrectionAngle(Vector3.zero(), input.car.velocity, Vector3.of(0, 1, 0)));
 
@@ -90,7 +95,9 @@ public final class PowerSlideTestRig {
         pullHandbreak = false;
       }
     } else if (releaseHandbreak) {
-      output.withThrottle(1.0);
+      output
+          .withThrottle(1.0)
+          .withBoost();
       if (input.car.angularVelocity.magnitude() < .01) {
         StateLogger.log(input, "rotation complete");
         // done

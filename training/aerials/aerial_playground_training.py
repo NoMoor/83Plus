@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
-from math import pi
 
+from math import pi
 from rlbot.utils.game_state_util import GameState, BoostState, BallState, CarState, Physics, Vector3, Rotator
 from rlbottraining.common_graders.goal_grader import StrikerGrader
 from rlbottraining.common_graders.tick_wrapper import GameTickPacketWrapperGrader
@@ -16,7 +16,7 @@ class PlayGround(TrainingExercise):
         StrikerGrader(timeout_seconds=10.0, ally_team=0)))
     ball_x: float = 0
     ball_y: float = 2000
-    ball_z: float = 1000
+    ball_z: float = 0
     ball_vx: float = 0
     ball_vy: float = 0
     ball_vz: float = 0

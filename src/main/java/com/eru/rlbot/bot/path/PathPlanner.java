@@ -65,7 +65,7 @@ public class PathPlanner {
     return CarData.builder()
         .setTime(moment.time)
         .setOrientation(orientation)
-        .setVelocity(approachBall.toMagnitude(Math.max(car.groundSpeed, 1500)))
+        .setVelocity(approachBall.toMagnitude(Constants.BOOSTED_MAX_SPEED))
         .setPosition(makeGroundCar(orientation, moment.position))
         .build();
   }
