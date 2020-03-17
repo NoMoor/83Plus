@@ -1,9 +1,15 @@
 package com.eru.rlbot.bot.tactics;
 
 import com.eru.rlbot.bot.common.Accels;
+import com.eru.rlbot.bot.common.Goal;
+import com.eru.rlbot.bot.common.RelativeUtils;
 import com.eru.rlbot.bot.main.ApolloGuidanceComputer;
+import com.eru.rlbot.bot.optimizer.CarBallOptimizer;
+import com.eru.rlbot.bot.optimizer.OptimizationResult;
 import com.eru.rlbot.bot.path.Path;
 import com.eru.rlbot.bot.path.PathPlanner;
+import com.eru.rlbot.bot.prediction.BallPredictionUtil;
+import com.eru.rlbot.common.Moment;
 import com.eru.rlbot.common.input.BallData;
 import com.eru.rlbot.common.input.CarData;
 import com.eru.rlbot.common.input.DataPacket;
@@ -34,14 +40,29 @@ public class TakeTheShotTactician extends Tactician {
     return false;
   }
 
+  private Path path;
+
   @Override
   public void internalExecute(DataPacket input, Controls output, Tactic tactic) {
-    bot.botRenderer.setIntersectionTarget(tactic.getTargetPosition());
+    if (path == null || path.isOffCourse() || BallPredictionUtil.get(input.car).wasTouched()) {
+      CarData target = PathPlanner.closestStrike(input.car, tactic.subject);
+      OptimizationResult optimalHit =
+          CarBallOptimizer.xSpeed(tactic.subject, Goal.opponentGoal(input.car.team).center, target);
 
-    Path path = PathPlanner.oneTurn(input.car, tactic.subject);
-    path.lockAndSegment();
+      path = PathPlanner.oneTurn(input.car, Moment.from(optimalHit.car));
+      path.lockAndSegment();
+      path.extendThroughBall();
+
+      bot.botRenderer.renderHitBox(optimalHit.car);
+      bot.botRenderer.setIntersectionTarget(target.position);
+    }
 
     bot.botRenderer.renderPath(input, path);
     pathExecutor.executePath(input, output, path);
+
+    if (output.getThrottle() < 0 && !output.holdBoost() && input.ball.velocity.magnitude() < .1) {
+      BallData relativeBall = RelativeUtils.noseRelativeBall(input);
+      logger.info("Slowing down! throttle: {} ballSpeed: {} ballDistance: {}", output.getThrottle(), input.ball.velocity.magnitude(), relativeBall.position);
+    }
   }
 }

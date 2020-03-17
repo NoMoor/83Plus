@@ -29,6 +29,10 @@ public class PathExecutor {
   private static final double D = 0.00 * Path.LEAD_FRAMES;
 
   public void executePath(DataPacket input, Controls output, Path path) {
+    if (path.getEndTime() < input.car.elapsedSeconds) {
+      path.markOffCourse();
+    }
+
     Vector3 target = path.pidTarget(input);
     Segment currentSegment = path.getSegment(input);
 
@@ -69,7 +73,6 @@ public class PathExecutor {
     double currentAngularVelocity = input.car.angularVelocity.z;
     double diffAngularVelocity = currentAngularVelocity - maxAngularVelocity;
 
-//    output.withSteer((diffAngularVelocity * P) - (currentAngularVelocity * D));
     output.withSteer(2 * correctionAngularVelocity / maxAngularVelocity);
 
     double timeToTarget = distanceDiff.magnitude() / input.car.velocity.magnitude();
@@ -79,7 +82,7 @@ public class PathExecutor {
       Accels.AccelResult boostTime =
           Accels.boostedTimeToDistance(input.car.velocity.magnitude(), distanceDiff.magnitude());
 
-      if (boostTime.time * 1.25 > Path.LEAD_TIME) {
+      if (boostTime.time > Path.LEAD_TIME) {
         output
             .withBoost()
             .withThrottle(1.0);
@@ -89,7 +92,7 @@ public class PathExecutor {
         double savings = timeToTarget - accelTime.time;
         output.withThrottle((savings * 10) / Path.LEAD_TIME);
       }
-    } else if (timeToTarget > Path.LEAD_TIME * .9) {
+    } else if (timeToTarget > Path.LEAD_TIME * .4) {
       output.withThrottle(0);
     } else {
       output.withThrottle(-1);

@@ -3,6 +3,7 @@ package com.eru.rlbot.bot.path;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 
 import com.eru.rlbot.bot.common.Circle;
+import com.eru.rlbot.common.input.BoundingBox;
 import com.eru.rlbot.common.input.CarData;
 import com.eru.rlbot.common.vector.Vector2;
 import com.eru.rlbot.common.vector.Vector3;
@@ -209,6 +210,21 @@ public class Paths {
     Vector2 perpVelocity = noseVector.flatten().clockwisePerpendicular();
     Circle cw = Circle.forPath(position.plus(perpVelocity.asVector3().toMagnitude(radius)), radius);
     Circle ccw = Circle.forPath(position.plus(perpVelocity.asVector3().toMagnitude(-radius)), radius);
+
+    return new Circles(cw, ccw);
+  }
+
+  public static Circles innerTurningRadiusCircles(CarData car) {
+    return innerTurningRadiusCircles(car.position, car.groundSpeed, car.orientation.getNoseVector());
+  }
+
+  public static Circles innerTurningRadiusCircles(Vector3 position, double speed, Vector3 noseVector) {
+    double radius = Circle.radiusForPath(speed) - BoundingBox.halfWidth;
+    double centerOffset = radius + BoundingBox.halfWidth;
+
+    Vector2 perpVelocity = noseVector.flatten().clockwisePerpendicular();
+    Circle cw = Circle.forPath(position.plus(perpVelocity.asVector3().toMagnitude(centerOffset)), radius);
+    Circle ccw = Circle.forPath(position.plus(perpVelocity.asVector3().toMagnitude(-centerOffset)), radius);
 
     return new Circles(cw, ccw);
   }

@@ -54,6 +54,11 @@ public class Accels {
       velocity = newVelocity;
       t += STEP_SIZE;
     }
+
+    if (distance < 0) {
+      t -= STEP_SIZE;
+    }
+
     return new AccelResult(velocity, t, initialDistance, 0);
   }
 

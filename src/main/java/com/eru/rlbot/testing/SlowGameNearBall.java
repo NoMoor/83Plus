@@ -24,7 +24,7 @@ public final class SlowGameNearBall {
     double closestCar = input.allCars.stream()
         .mapToDouble(car -> car.position.distance(input.ball.position))
         .min().getAsDouble();
-    return closestCar < 500;
+    return closestCar < 500 || true;
   }
 
   private static void setSpeed(int speed) {

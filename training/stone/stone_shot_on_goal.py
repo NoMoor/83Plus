@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
-from math import pi
 
+from math import pi
 from rlbot.utils.game_state_util import GameState, BoostState, BallState, CarState, Physics, Vector3, Rotator
 from rlbottraining.common_exercises.common_base_exercises import StrikerExercise
 from rlbottraining.common_graders.goal_grader import StrikerGrader
@@ -10,8 +10,7 @@ from rlbottraining.training_exercise import Playlist, TrainingExercise
 
 
 def make_grader():
-    # return StrikerGrader(timeout_seconds=6.0)
-    return StrikerGrader(timeout_seconds=4.0)
+    return StrikerGrader(timeout_seconds=6.0)
 
 @dataclass
 class StoneShotOnGoal(TrainingExercise):
@@ -92,11 +91,11 @@ class RollingAcross(StrikerExercise):
 
 
 @dataclass
-class BallDrop(TrainingExercise):
+class Setup(TrainingExercise):
     grader: Grader = field(default_factory=make_grader)
     ball_x: float = 0
     ball_y: float = 10
-    ball_z: float = 150
+    ball_z: float = 100
     ball_vx: float = 0
     ball_vy: float = 0
     ball_vz: float = 0
@@ -107,7 +106,7 @@ class BallDrop(TrainingExercise):
     car_x: float = 0
     car_y: float = 10
     car_z: float = 17
-    car_spin: float = 0
+    car_spin: float = pi / 2
     car_pitch: float = 0
     car_roll: float = 0
 

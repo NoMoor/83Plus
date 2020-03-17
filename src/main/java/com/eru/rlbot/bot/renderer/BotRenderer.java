@@ -10,6 +10,8 @@ import com.eru.rlbot.bot.flags.PerBotDebugOptions;
 import com.eru.rlbot.bot.path.Path;
 import com.eru.rlbot.bot.path.Paths;
 import com.eru.rlbot.bot.path.Segment;
+import com.eru.rlbot.bot.prediction.BallPredictionUtil;
+import com.eru.rlbot.bot.prediction.BallPredictionUtil.ChallengeData;
 import com.eru.rlbot.bot.prediction.BallPredictor;
 import com.eru.rlbot.bot.strats.Strategist;
 import com.eru.rlbot.bot.tactics.Tactic;
@@ -36,6 +38,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.PriorityQueue;
 import java.util.stream.IntStream;
 import org.apache.logging.log4j.Level;
@@ -127,8 +130,9 @@ public class BotRenderer {
     if (renderOptions.isRenderLines()) {
       renderProjections(input);
       renderHitBox(input.car);
-      //    renderTacticLines(input.car);
       //    renderTurningRadius(input);
+
+      //    renderTacticLines(input.car);
       //    renderPredictionDiff(input);
       //    renderRelativeBallData(input);
       //    renderTouchIndicator(input);
@@ -142,6 +146,7 @@ public class BotRenderer {
       renderControls(output);
       renderAcceleration(input);
       renderLocation(input);
+      renderChallengeData(input);
     }
 
     if (GlobalDebugOptions.isRenderStats()) {
@@ -149,8 +154,29 @@ public class BotRenderer {
     }
   }
 
+  private void renderChallengeData(DataPacket input) {
+    Optional<ChallengeData> challengeDataOptional =
+        BallPredictionUtil.get(input.car).getChallengeData();
+    if (!challengeDataOptional.isPresent()) {
+      return;
+    }
+    ChallengeData challengeData = challengeDataOptional.get();
+
+    float timeToTouch = challengeData.firstTouch.ball.time - input.car.elapsedSeconds;
+
+    float timeToSecond = BallPredictionUtil.PREDICTION_TIME_LIMIT;
+    if (challengeData.firstTouchByOtherTeam.isPresent()) {
+      timeToSecond = challengeData.firstTouchByOtherTeam.get().ball.time - input.car.elapsedSeconds;
+    }
+
+    int controllingTeam = challengeData.controllingTeam;
+
+    renderText(controllingTeam == 0 ? Color.BLUE : Color.ORANGE, 500, 100, "Impact: %.2fs - Pressure: %.2fs", timeToTouch, timeToSecond - timeToTouch);
+  }
+
   private PriorityQueue<RenderRequest> renderRequests =
       new PriorityQueue<>(Comparator.comparingDouble(rr -> rr.renderTimeEnd));
+
   public void renderProjection(Vector3 source, Vector3 target, Color color, float renderUntil) {
     renderProjection(source, target, color, renderUntil, "");
   }
@@ -179,7 +205,9 @@ public class BotRenderer {
   }
 
   public void renderTarget(Color color, Vector3 target) {
-    if (skipLineRendering()) return;
+    if (skipLineRendering()) {
+      return;
+    }
 
     int size = 50;
     getRenderer().drawLine3d(color, target.addX(-size).addY(-size).addZ(-size), target.addX(size).addY(size).addZ(size));
@@ -216,8 +244,9 @@ public class BotRenderer {
   }
 
   public void renderPath(Color color, ImmutableList<Vector3> path) {
-    if (skipLineRendering())
+    if (skipLineRendering()) {
       return;
+    }
 
     renderPathInternal(color, path);
   }
@@ -233,8 +262,9 @@ public class BotRenderer {
   }
 
   public void renderPath(DataPacket input, Path path) {
-    if (skipLineRendering())
+    if (skipLineRendering()) {
       return;
+    }
 
     ImmutableList<Segment> pathNodes = path.allNodes();
 
@@ -285,18 +315,13 @@ public class BotRenderer {
   }
 
   private void renderTurningRadius(DataPacket input) {
-    Paths.Circles radiusCircles = Paths.turningRadiusCircles(input.car);
-
-    if (input.ball.position.distance(radiusCircles.cw.center)
-        < input.ball.position.distance(radiusCircles.cw.center)) {
-      renderCircle(Color.orange, radiusCircles.cw);
-    } else {
-      renderCircle(Color.blue, radiusCircles.ccw);
-    }
+    Paths.Circles radiusCircles = Paths.innerTurningRadiusCircles(input.car);
+    renderCircle(Color.blue, radiusCircles.ccw);
+    renderCircle(Color.orange, radiusCircles.cw);
   }
 
   public void renderHitBox(CarData car) {
-    JumpManager jumpManager = JumpManager.forCar(car);
+    JumpManager jumpManager = car.isLiveData ? JumpManager.forCar(car) : JumpManager.copyForCar(car);
     Color color = jumpManager.canJump()
         ? Color.GREEN
         : jumpManager.canFlip()
@@ -661,7 +686,7 @@ public class BotRenderer {
     }
   }
 
-  private static final int POINT_COUNT = 15;
+  private static final int POINT_COUNT = 20;
   private ImmutableList<Vector3> toCirclePoints(Vector3 center, Vector3 initialPoint, double radius, double radians) {
     Vector2 ray = initialPoint.minus(center).flatten();
     double radianOffset = Vector2.WEST.correctionAngle(ray);

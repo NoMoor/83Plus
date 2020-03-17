@@ -72,11 +72,18 @@ public class Vector3 extends rlbot.vector.Vector3 {
     if (isZero()) {
       throw new IllegalStateException("Cannot scale up a vector with length zero!");
     }
+    return toMagnitudeUnchecked(magnitude);
+  }
+
+  public Vector3 toMagnitudeUnchecked(double magnitude) {
     double scaleRequired = magnitude / magnitude();
     return multiply(scaleRequired);
   }
 
-  /** Returns the distance between the two vector locations. */
+
+  /**
+   * Returns the distance between the two vector locations.
+   */
   public double distance(Vector3 other) {
     double xDiff = x - other.x;
     double yDiff = y - other.y;

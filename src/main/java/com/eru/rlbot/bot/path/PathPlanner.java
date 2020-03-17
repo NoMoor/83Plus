@@ -4,7 +4,6 @@ import com.eru.rlbot.bot.common.Accels;
 import com.eru.rlbot.bot.common.CarDataUtils;
 import com.eru.rlbot.bot.common.Circle;
 import com.eru.rlbot.bot.common.Constants;
-import com.eru.rlbot.bot.optimizer.CarBallOptimizer;
 import com.eru.rlbot.common.Moment;
 import com.eru.rlbot.common.input.BallData;
 import com.eru.rlbot.common.input.BoundingBox;
@@ -37,13 +36,6 @@ public class PathPlanner {
     }
   }
 
-  private static Path planForResult(CarData currentCar, BallData targetBall, Vector3 target) {
-    // Fast Plan
-    CarData approximateApproach = closestStrike(currentCar, Moment.from(targetBall));
-    CarData optimalCar = CarBallOptimizer.getOptimalApproach(targetBall, target, approximateApproach);
-    return planPath(currentCar, optimalCar);
-  }
-
   public static Path oneTurn(CarData car, Moment moment) {
     CarData targetCar = closestStrike(car, moment);
     return planPath(car, targetCar);
@@ -53,32 +45,40 @@ public class PathPlanner {
     return oneTurn(car, Moment.from(ball));
   }
 
-  private static CarData closestStrike(CarData car, Moment moment) {
+  // TODO: Include how far max left-right and closest to the middle point as possible for optimization.
+  public static CarData closestStrike(CarData car, Moment moment) {
     Circle turnToBall = Paths.closeTurningRadius(moment.position, car);
-    Paths.TangentPoints tangentPoints = Paths.tangents(turnToBall, moment.position);
+    Paths.TangentPoints tangentPoints = Paths.tangents(turnToBall, moment.position); // TODO: Turn moment.position into a circle range.
 
     Vector3 approachSpot = turnToBall.isClockwise(car) ? tangentPoints.right : tangentPoints.left;
     Vector3 approachBall = moment.position.minus(approachSpot);
 
     Orientation orientation = Orientation.fromFlatVelocity(approachBall);
 
+    Vector3 position = makeGroundCar(orientation, moment);
+    Vector3 velocity = approachBall.toMagnitude(Constants.BOOSTED_MAX_SPEED);
+
     return CarData.builder()
         .setTime(moment.time)
         .setOrientation(orientation)
-        .setVelocity(approachBall.toMagnitude(Constants.BOOSTED_MAX_SPEED))
-        .setPosition(makeGroundCar(orientation, moment.position))
+        .setVelocity(velocity)
+        .setPosition(position)
         .build();
   }
 
-  private static Vector3 makeGroundCar(Orientation orientation, Vector3 ballPosition) {
-    double collisionHeightOffset = -(Constants.BALL_RADIUS - BoundingBox.height); // Assumes the ball and car are resting on the same surface.
-    double collisionLengthOffset = Math.cos(Math.atan(collisionHeightOffset / Constants.BALL_RADIUS)) * Constants.BALL_RADIUS;
+  private static Vector3 makeGroundCar(Orientation orientation, Moment target) {
+    Vector3 offset = Vector3.zero();
 
-    double verticalOffset = Constants.BALL_RADIUS - (BoundingBox.height - Constants.CAR_AT_REST);
-    double carLengthOffset = BoundingBox.RJ_OFFSET.x + BoundingBox.halfLength;
+    if (target.type == Moment.Type.BALL) {
+      double collisionHeightOffset = -(Constants.BALL_RADIUS - BoundingBox.height); // Assumes the ball and car are resting on the same surface.;
+      double collisionLengthOffset = Math.cos(Math.atan(collisionHeightOffset / Constants.BALL_RADIUS)) * Constants.BALL_RADIUS;
 
-    Vector3 offset = Vector3.of(collisionLengthOffset + carLengthOffset, 0, verticalOffset);
-    return ballPosition.minus(orientation.getOrientationMatrix().dot(offset));
+      double verticalOffset = Constants.BALL_RADIUS - (BoundingBox.height - Constants.CAR_AT_REST);
+      double carLengthOffset = BoundingBox.RJ_OFFSET.x + BoundingBox.halfLength;
+      offset = Vector3.of(collisionLengthOffset + carLengthOffset, 0, verticalOffset);
+    }
+
+    return target.position.minus(orientation.getOrientationMatrix().dot(offset));
   }
 
   // TODO: Pick up boosts.
@@ -115,6 +115,7 @@ public class PathPlanner {
 
     CarData projectedCardData = CarDataUtils.rewindDistance(workingTarget, 300);
     if (!addPathSegment(car, Segment.straight(projectedCardData.position, workingTarget.position), pathBuilder)) {
+      // TODO: Fix this...
       return pathBuilder
           .addEarlierSegment(Segment.straight(car.position, workingTarget.position))
           .build();
@@ -143,8 +144,8 @@ public class PathPlanner {
     Vector3 carToEnd = segment.end.minus(car.position);
     Vector3 carToStart = segment.start.minus(car.position);
 
-    boolean goingTowardEnd = carToEnd.dot(car.velocity) > 0;
-    boolean goingTowardStart = carToStart.dot(car.velocity) > 0;
+    boolean goingTowardEnd = carToEnd.dot(car.orientation.getNoseVector()) > 0;
+    boolean goingTowardStart = carToStart.dot(car.orientation.getNoseVector()) > 0;
 
     return goingTowardEnd
         && !goingTowardStart

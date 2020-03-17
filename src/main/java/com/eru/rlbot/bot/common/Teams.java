@@ -36,6 +36,10 @@ public class Teams {
     return Pair.of(packet.teams(0).score(), packet.teams(1).score());
   }
 
+  public static int otherTeam(int team) {
+    return (team + 1) % 2;
+  }
+
   private Teams() {
   }
 }

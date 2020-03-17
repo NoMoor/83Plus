@@ -26,7 +26,7 @@ public final class Circle {
   }
 
   public static double radiusForPath(double speed) {
-    return radius(speed) * 1.6;
+    return radius(speed);
   }
 
   private static double radius(double velocity) {

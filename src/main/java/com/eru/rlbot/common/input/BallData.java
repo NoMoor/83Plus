@@ -12,16 +12,20 @@ import rlbot.flat.PredictionSlice;
  */
 public class BallData {
 
-    public final Vector3 position;
-    public final Vector3 velocity;
+  public final Vector3 position;
+  public final Vector3 velocity;
   public final Vector3 spin;
   public final float time;
 
-    /** True if this is where the ball is currently, either in absolute or relative terms. */
-    public final boolean isLiveData;
+  /**
+   * True if this is where the ball is currently, either in absolute or relative terms.
+   */
+  public final boolean isLiveData;
 
-    /** False if this ball data is a transformation of ball data. True otherwise. */
-    public final boolean isAbsolute;
+  /**
+   * False if this ball data is a transformation of ball data. True otherwise.
+   */
+  public final boolean isAbsolute;
 
   /**
    * Constructs a {@link BallData} object from the flat buffer data.
@@ -40,27 +44,29 @@ public class BallData {
   }
 
   private BallData(PredictionSlice predictionSlice) {
-        this.position = Vector3.of(predictionSlice.physics().location());
-        this.velocity = Vector3.of(predictionSlice.physics().velocity());
+    this.position = Vector3.of(predictionSlice.physics().location());
+    this.velocity = Vector3.of(predictionSlice.physics().velocity());
     this.spin = Vector3.of(predictionSlice.physics().angularVelocity());
     this.time = predictionSlice.gameSeconds();
     this.isLiveData = false;
-        this.isAbsolute = true;
-    }
+    this.isAbsolute = true;
+  }
 
-    private BallData(Builder builder) {
-        this.position = builder.position;
-        this.velocity = builder.velocity;
-      this.spin = builder.spin;
-      this.time = builder.time;
-      this.isLiveData = builder.isLiveData;
-        this.isAbsolute = !builder.isRelativeData;
-    }
+  private BallData(Builder builder) {
+    this.position = builder.position;
+    this.velocity = builder.velocity;
+    this.spin = builder.spin;
+    this.time = builder.time;
+    this.isLiveData = builder.isLiveData;
+    this.isAbsolute = !builder.isRelativeData;
+  }
 
-    /** Returns a new empty builder for {@link BallData}. */
-    public static Builder builder() {
-        return new Builder();
-    }
+  /**
+   * Returns a new empty builder for {@link BallData}.
+   */
+  public static Builder builder() {
+    return new Builder();
+  }
 
   public static String csvHeader(String label) {
     return Stream.of("x", "y", "z", "vx", "vy", "vz")
@@ -91,16 +97,16 @@ public class BallData {
    * A builder for {@link BallData}.
    */
   public final static class Builder {
-    private Vector3 position;
-    private Vector3 velocity;
-    private Vector3 spin;
+    private Vector3 position = Vector3.zero();
+    private Vector3 velocity = Vector3.zero();
+    private Vector3 spin = Vector3.zero();
     private float time;
     private boolean isLiveData;
     private boolean isRelativeData;
 
     public Builder setPosition(Vector3 position) {
       this.position = position;
-            return this;
+      return this;
     }
 
     public Builder setVelocity(Vector3 velocity) {
@@ -125,11 +131,11 @@ public class BallData {
 
     public Builder isRelative() {
       this.isRelativeData = true;
-            return this;
-        }
-
-        public BallData build() {
-            return new BallData(this);
-        }
+      return this;
     }
+
+    public BallData build() {
+      return new BallData(this);
+    }
+  }
 }

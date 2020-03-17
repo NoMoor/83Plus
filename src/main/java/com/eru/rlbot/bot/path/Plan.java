@@ -45,7 +45,7 @@ public class Plan {
 
     @Override
     public String toString() {
-      return "b:" + boost + "t:" + throttle + "j:" + jump;
+      return "b:" + boost + " t:" + throttle + " j:" + jump;
     }
   }
 

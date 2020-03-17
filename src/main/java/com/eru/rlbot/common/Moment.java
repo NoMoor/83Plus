@@ -3,8 +3,10 @@ package com.eru.rlbot.common;
 import com.eru.rlbot.bot.prediction.BallPrediction;
 import com.eru.rlbot.common.boost.BoostPad;
 import com.eru.rlbot.common.input.BallData;
+import com.eru.rlbot.common.input.CarData;
 import com.eru.rlbot.common.vector.Vector3;
 import com.google.common.base.Objects;
+import com.google.common.base.Preconditions;
 import rlbot.flat.PredictionSlice;
 
 /**
@@ -71,6 +73,10 @@ public class Moment {
     return from(ballToHit.ball);
   }
 
+  public static Moment from(CarData car) {
+    return new Moment(car.position, car.velocity, car.elapsedSeconds, Type.CAR);
+  }
+
   @Override
   public boolean equals(Object o) {
     if (o == this) return true;
@@ -88,6 +94,15 @@ public class Moment {
   @Override
   public int hashCode() {
     return Objects.hashCode(velocity, position, time, type);
+  }
+
+  public BallData toBall() {
+    Preconditions.checkArgument(type == Moment.Type.BALL);
+    return BallData.builder()
+        .setPosition(position)
+        .setTime(time)
+        .setVelocity(velocity)
+        .build();
   }
 
   public enum Type {

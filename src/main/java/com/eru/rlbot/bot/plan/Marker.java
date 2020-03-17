@@ -53,7 +53,7 @@ public class Marker {
     BallPredictionUtil.get(ownerBot).getPredictions().forEach(ballPrediction -> mark(ballPrediction, car));
     double timeMs = watch.stop() * 1000;
     if (timeMs > 5) {
-      logger.info("Marking for car {} done: {}", botIndex, String.format("%.2fms", timeMs));
+      logger.debug("Marking for car {} done: {}", botIndex, String.format("%.2fms", timeMs));
     }
   }
 

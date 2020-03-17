@@ -18,7 +18,6 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import rlbot.flat.BallPrediction;
 import rlbot.flat.PredictionSlice;
 import rlbot.flat.Touch;
 
@@ -28,10 +27,13 @@ import rlbot.flat.Touch;
 public class BallPredictionUtil {
 
   private static final Logger logger = LogManager.getLogger("BallPredictionUtil");
+
+  public static final int PREDICTION_TIME_LIMIT = 3;
   private static final int PREDICTION_FPS = 60;
-  private static final long PREDICTION_LIMIT = 3 * PREDICTION_FPS;
+  private static final long PREDICTION_LIMIT = PREDICTION_TIME_LIMIT * PREDICTION_FPS;
 
   private static ConcurrentHashMap<Integer, BallPredictionUtil> MAP = new ConcurrentHashMap<>();
+  private static boolean wasTouched;
 
   private final int serialNumber;
 
@@ -39,18 +41,41 @@ public class BallPredictionUtil {
     this.serialNumber = serialNumber;
   }
 
-  private volatile List<com.eru.rlbot.bot.prediction.BallPrediction> balls = new LinkedList<>();
+  private volatile List<BallPrediction> balls = new LinkedList<>();
 
-  public List<com.eru.rlbot.bot.prediction.BallPrediction> getPredictions() {
+  public List<BallPrediction> getPredictions() {
     return balls;
   }
 
-  public com.eru.rlbot.bot.prediction.BallPrediction getTarget() {
+  public Optional<ChallengeData> getChallengeData() {
+    if (balls.isEmpty()) {
+      return Optional.empty();
+    }
+
+    Optional<BallPrediction> hittableByAnyone = balls.stream()
+        .filter(BallPrediction::isHittableBySomeone)
+        .findFirst();
+
+    if (!hittableByAnyone.isPresent()) {
+      return Optional.empty();
+    }
+
+    BallPrediction firstTouch = hittableByAnyone.get();
+    int touchedByTeam = firstTouch.ableToReachTeams().get(0);
+
+    BallPrediction hittableByOtherTeam = balls.stream()
+        .filter(ballPrediction -> ballPrediction.isHittableByTeam(Teams.otherTeam(touchedByTeam)))
+        .findFirst().orElseGet(() -> Iterables.getLast(balls));
+
+    return Optional.of(new ChallengeData(firstTouch, hittableByOtherTeam, touchedByTeam));
+  }
+
+  public BallPrediction getTarget() {
     if (balls.isEmpty()) {
       return null;
     }
 
-    Optional<com.eru.rlbot.bot.prediction.BallPrediction> firstHittable = balls.stream()
+    Optional<BallPrediction> firstHittable = balls.stream()
         .filter(ball -> ball.forCar(serialNumber).isHittable())
         .findFirst();
 
@@ -58,27 +83,27 @@ public class BallPredictionUtil {
   }
 
   private boolean refreshInternal(BallData ball) {
-    Optional<BallPrediction> predictionOptional = DllHelper.getBallPrediction();
+    Optional<rlbot.flat.BallPrediction> predictionOptional = DllHelper.getBallPrediction();
     if (!predictionOptional.isPresent()) {
       return false;
     }
 
-    BallPrediction prediction = predictionOptional.get();
+    rlbot.flat.BallPrediction prediction = predictionOptional.get();
     if (prediction.slicesLength() > 0) {
       PredictionSlice nextSlice = prediction.slices(0);
       if (hasBeenTouched(nextSlice)) {
         balls = stream(prediction)
             .limit(PREDICTION_LIMIT)
             .map(BallData::fromPredictionSlice)
-            .map(com.eru.rlbot.bot.prediction.BallPrediction::new)
+            .map(BallPrediction::new)
             .collect(Collectors.toList());
         return true;
       }
     }
 
-    Iterator<com.eru.rlbot.bot.prediction.BallPrediction> ballIterator = balls.iterator();
+    Iterator<BallPrediction> ballIterator = balls.iterator();
     while (ballIterator.hasNext()) {
-      com.eru.rlbot.bot.prediction.BallPrediction next = ballIterator.next();
+      BallPrediction next = ballIterator.next();
       if (next.ball.time >= ball.time) {
         break;
       }
@@ -93,7 +118,7 @@ public class BallPredictionUtil {
           .filter(predictionSlice -> predictionSlice.gameSeconds() > lastTime)
           .limit(PREDICTION_LIMIT - balls.size())
           .map(BallData::fromPredictionSlice)
-          .map(com.eru.rlbot.bot.prediction.BallPrediction::new)
+          .map(BallPrediction::new)
           .forEach(balls::add);
     }
 
@@ -102,9 +127,9 @@ public class BallPredictionUtil {
 
   private boolean hasBeenTouched(PredictionSlice nextSlice) {
     BallData prediction = BallData.fromPredictionSlice(nextSlice);
-    Iterator<com.eru.rlbot.bot.prediction.BallPrediction> ballIterator = balls.iterator();
+    Iterator<BallPrediction> ballIterator = balls.iterator();
     while (ballIterator.hasNext()) {
-      com.eru.rlbot.bot.prediction.BallPrediction nextBall = ballIterator.next();
+      BallPrediction nextBall = ballIterator.next();
       if (nextBall.ball.time >= prediction.time) {
         if (prediction.time + Constants.STEP_SIZE * 1 < nextBall.ball.time) {
           // This prediction is off-cycle of the ones we have. Don't worry about it.
@@ -138,12 +163,30 @@ public class BallPredictionUtil {
     return get(car.serialNumber);
   }
 
-  public static boolean refresh(DataPacket input) {
-    return get(input.car).refreshInternal(input.ball);
+  public boolean wasTouched() {
+    return wasTouched;
   }
 
-  private static Stream<PredictionSlice> stream(BallPrediction prediction) {
+  public static boolean refresh(DataPacket input) {
+    wasTouched = get(input.car).refreshInternal(input.ball);
+    return wasTouched;
+  }
+
+  private static Stream<rlbot.flat.PredictionSlice> stream(rlbot.flat.BallPrediction prediction) {
     return IntStream.range(0, prediction.slicesLength())
         .mapToObj(prediction::slices);
+  }
+
+  public static class ChallengeData {
+
+    public final BallPrediction firstTouch;
+    public final Optional<BallPrediction> firstTouchByOtherTeam;
+    public final int controllingTeam;
+
+    ChallengeData(BallPrediction firstTouch, BallPrediction firstTouchByOtherTeam, int team) {
+      this.firstTouch = firstTouch;
+      this.firstTouchByOtherTeam = Optional.ofNullable(firstTouchByOtherTeam);
+      this.controllingTeam = team;
+    }
   }
 }

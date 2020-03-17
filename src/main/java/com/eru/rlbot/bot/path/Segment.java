@@ -98,24 +98,16 @@ public class Segment {
     }
   }
 
-  public Segment extend(double distance) {
+  public Segment extend(double time, double speed) {
     if (type == Type.ARC) {
       throw new IllegalStateException("Doh!");
     }
 
-    double deltaT = endTime - startTime;
-    Vector3 velocity = end.minus(start);
-    double speed = velocity.magnitude();
-    double averageSpeed = speed / deltaT;
+    Vector3 direction = end.minus(start);
+    Segment newSegment = Segment.straight(this.end, this.end.plus(direction.toMagnitude(time * speed)));
 
-    Segment newSegment;
-    if (type == Type.STRAIGHT) {
-      newSegment = Segment.straight(this.end, this.end.plus(velocity.toMagnitude(distance)));
-    } else {
-      newSegment = Segment.jump(this.end, this.end.plus(velocity.toMagnitude(distance)));
-    }
     newSegment.startTime = this.endTime;
-    newSegment.endTime = this.endTime + (distance / averageSpeed);
+    newSegment.endTime = this.endTime + time;
     return newSegment;
   }
 
@@ -220,5 +212,10 @@ public class Segment {
 
   private double calculateArcLength() {
     return Math.abs(getRadians()) * circle.radius;
+  }
+
+  @Override
+  public String toString() {
+    return String.format("%s d:%d s:%.2f e:%.2f", type.name(), (int) flatDistance(), startTime, endTime);
   }
 }

@@ -5,6 +5,7 @@ import com.eru.rlbot.bot.common.Angles3;
 import com.eru.rlbot.bot.common.Constants;
 import com.eru.rlbot.bot.prediction.CarBallCollision;
 import com.eru.rlbot.common.Matrix3;
+import com.eru.rlbot.common.Moment;
 import com.eru.rlbot.common.input.BallData;
 import com.eru.rlbot.common.input.BoundingBox;
 import com.eru.rlbot.common.input.CarData;
@@ -87,12 +88,12 @@ public final class CarBallOptimizer {
   }
 
   // TODO: Create multiple optimizers out of this (order, clamp, range, precision, etc.)
-  public static CarData getOptimalApproach(BallData ball, Vector3 target, final CarData car) {
+  public static OptimizationResult getOptimalApproach(BallData ball, Vector3 target, final CarData car) {
     // Optimize x offset.
     XOptimizer xOptimizer = new XOptimizer();
     ZOptimizer zOptimizer = new ZOptimizer(ball, car);
     AOptimizer aOptimizer = new AOptimizer(ball);
-    SpeedOptimizer speedOptimizer = new SpeedOptimizer();
+    SpeedOptimizer speedOptimizer = new SpeedOptimizer(car);
 
     ImmutableList<Optimizer> optimizers = ImmutableList.of(xOptimizer, zOptimizer, aOptimizer, speedOptimizer);
 
@@ -102,13 +103,40 @@ public final class CarBallOptimizer {
       }
     }
 
-    CarData optimal = car;
+    CarData optimalCar = car;
     for (Optimizer optimizer : optimizers) {
-      optimal = optimizer.adjust(optimal, optimizer.currentValue);
+      optimalCar = optimizer.adjust(optimalCar, optimizer.currentValue);
     }
 
-    return optimal;
+    return OptimizationResult.create(optimalCar, xOptimizer.currentValue, zOptimizer.currentValue, aOptimizer.currentValue, speedOptimizer.currentValue);
   }
 
-  private CarBallOptimizer() {}
+  public static OptimizationResult xSpeed(Moment moment, Vector3 target, final CarData car) {
+    return xSpeed(moment.toBall(), target, car);
+  }
+
+  // TODO: Create multiple optimizers out of this (order, clamp, range, precision, etc.)
+  public static OptimizationResult xSpeed(BallData ball, Vector3 target, final CarData car) {
+    // Optimize x offset.
+    XOptimizer xOptimizer = new XOptimizer();
+    SpeedOptimizer speedOptimizer = new SpeedOptimizer(car);
+
+    ImmutableList<Optimizer> optimizers = ImmutableList.of(xOptimizer, speedOptimizer);
+
+    while (optimizers.stream().anyMatch(optimizer -> !optimizer.isDone())) {
+      for (Optimizer optimizer : optimizers) {
+        optimizer.doStep(ball, car, target);
+      }
+    }
+
+    CarData optimalCar = car;
+    for (Optimizer optimizer : optimizers) {
+      optimalCar = optimizer.adjust(optimalCar, optimizer.currentValue);
+    }
+
+    return OptimizationResult.create(optimalCar, xOptimizer.currentValue, 0, 0, car.groundSpeed);
+  }
+
+  private CarBallOptimizer() {
+  }
 }

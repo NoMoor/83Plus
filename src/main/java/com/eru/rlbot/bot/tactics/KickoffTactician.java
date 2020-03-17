@@ -53,6 +53,7 @@ public class KickoffTactician extends Tactician {
   private static boolean isBallInKickoff(BallData ball) {
     return Math.abs(ball.position.x) < .1
         && Math.abs(ball.position.y) < .1
+        && ball.position.z > 50 // This check is to see if state setting is being triggered.
         && ball.velocity.magnitude() < 100
         && ball.position.z < 120;
   }

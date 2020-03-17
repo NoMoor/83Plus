@@ -12,8 +12,8 @@ public final class PerBotDebugOptions {
   private final int playerIndex;
 
   private volatile boolean renderAllDebugLinesEnabled;
-  private volatile boolean renderLines;
-  private volatile boolean renderDebugText;
+  private volatile boolean renderLines = true;
+  private volatile boolean renderDebugText = true;
   private volatile boolean renderCarTrails;
   private volatile boolean renderBallPrediction;
 

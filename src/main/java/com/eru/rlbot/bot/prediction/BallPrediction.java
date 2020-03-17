@@ -2,6 +2,7 @@ package com.eru.rlbot.bot.prediction;
 
 import static com.google.common.collect.ImmutableList.toImmutableList;
 
+import com.eru.rlbot.bot.common.Teams;
 import com.eru.rlbot.bot.path.Path;
 import com.eru.rlbot.bot.path.Plan;
 import com.eru.rlbot.bot.tactics.Tactic;
@@ -29,6 +30,10 @@ public class BallPrediction {
     return ball.position.z > 300 ? Tactic.TacticType.AERIAL : Tactic.TacticType.STRIKE;
   }
 
+  public boolean isHittableBySomeone() {
+    return botPotential.values().stream().anyMatch(Potential::isHittable);
+  }
+
   public boolean isHittable(CarData car) {
     return getPotential(car.serialNumber).isHittable();
   }
@@ -46,6 +51,19 @@ public class BallPrediction {
         .filter(Potential::isHittable)
         .map(potential -> potential.index)
         .collect(toImmutableList());
+  }
+
+  public ImmutableList<Integer> ableToReachTeams() {
+    return botPotential.values().stream()
+        .filter(Potential::isHittable)
+        .map(potential -> Teams.getTeamForBot(potential.index))
+        .collect(toImmutableList());
+  }
+
+  public boolean isHittableByTeam(int team) {
+    return botPotential.values().stream()
+        .filter(Potential::isHittable)
+        .anyMatch(potential -> Teams.getTeamForBot(potential.index) == team);
   }
 
   public static class Potential {

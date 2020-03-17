@@ -46,11 +46,15 @@ public class JumpManager {
       throw new IllegalStateException("Not supported for non-live data");
     }
 
+    return get(car);
+  }
+
+  private static JumpManager get(CarData car) {
     return MANAGER_MAP.computeIfAbsent(car.serialNumber, index -> new JumpManager());
   }
 
   public static JumpManager copyForCar(CarData car) {
-    JumpManager copy = forCar(car).copy();
+    JumpManager copy = get(car).copy();
     copy.trackInput(car);
     return copy;
   }

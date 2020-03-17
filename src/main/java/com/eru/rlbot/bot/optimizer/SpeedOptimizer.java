@@ -15,6 +15,11 @@ public class SpeedOptimizer extends Optimizer {
   private static final double S_EPSILON = 10; // Proportionate step size to take
   private static final double S_GAMMA = 500; // How small of an area to evaluate Z gradient
   private static Range<Float> SPEED = Range.closed(0f, (float) Constants.BOOSTED_MAX_SPEED);
+  private final float initialSpeed;
+
+  public SpeedOptimizer(CarData car) {
+    initialSpeed = (float) car.groundSpeed;
+  }
 
   @Override
   Range<Float> getRange() {
@@ -45,7 +50,7 @@ public class SpeedOptimizer extends Optimizer {
 
   @Override
   float getInitialValue() {
-    return 1400;
+    return initialSpeed;
   }
 
   @Override

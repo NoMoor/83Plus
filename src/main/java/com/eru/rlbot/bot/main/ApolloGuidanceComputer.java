@@ -99,7 +99,12 @@ public final class ApolloGuidanceComputer implements Bot {
     StateLogger.track(input);
     TrainingId.track(input);
     CarLocationPredictor.track(input);
+
+    KickoffGame.track(input);
+    SlowGameNearBall.track(input);
+
     ComputeTracker.init(input.serialNumber);
+
 
     // TODO: Remove this.
     if (false) {
@@ -121,9 +126,6 @@ public final class ApolloGuidanceComputer implements Bot {
     }
 
     ComputeTracker.stop(input.serialNumber);
-
-    KickoffGame.track(input);
-    SlowGameNearBall.track(input);
 
     // Must do ball before updating the jump manager
     NextFramePredictor.getPrediction(input, output);

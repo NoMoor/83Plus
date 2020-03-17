@@ -2,6 +2,7 @@ package com.eru.rlbot.bot.optimizer;
 
 import com.eru.rlbot.bot.common.Constants;
 import com.eru.rlbot.bot.prediction.CarBallCollision;
+import com.eru.rlbot.common.Moment;
 import com.eru.rlbot.common.Numbers;
 import com.eru.rlbot.common.input.BallData;
 import com.eru.rlbot.common.input.CarData;
@@ -60,6 +61,10 @@ public abstract class Optimizer {
     currentValue = Numbers.clamp(currentValue, getRange().lowerEndpoint(), getRange().upperEndpoint());
   }
 
+  public void doStep(Moment moment, CarData car, Vector3 target) {
+
+  }
+
   protected double getGradient(BallData ball, Vector3 target, CarData car, double currentValue) {
     BallData resultA = CarBallCollision.calculateCollision(ball, adjust(car, currentValue));
     double aScore = score(resultA, target);
@@ -79,11 +84,12 @@ public abstract class Optimizer {
     double groundSpeed = ballData.velocity.flatten().magnitude();
     double timeToTarget = flatDistance / groundSpeed;
 
-    double verticalAngleOffset = 10_000; // Arbitrarily large number
-    if (groundSpeed != 0) {
-      double heightOffset = heightOffset(ballData.velocity.z, timeToTarget);
-      verticalAngleOffset = Math.atan((ballTarget.z - heightOffset) / ballTarget.magnitude());
-    }
+    double verticalAngleOffset = 0;
+//    double verticalAngleOffset = 10_000; // Arbitrarily large number
+//    if (groundSpeed != 0) {
+//      double heightOffset = heightOffset(ballData.velocity.z, timeToTarget);
+//      verticalAngleOffset = Math.atan((ballTarget.z - heightOffset) / ballTarget.magnitude());
+//    }
 
     return Math.abs(flatAngleOffset) + Math.abs(verticalAngleOffset);
   }

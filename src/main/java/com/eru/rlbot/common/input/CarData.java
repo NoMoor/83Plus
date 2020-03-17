@@ -239,4 +239,9 @@ public class CarData {
     float noseZ = this.orientation.getNoseVector().z;
     return low <= noseZ && noseZ <= high;
   }
+
+  @Override
+  public String toString() {
+    return (this.isLiveData ? "live" : "sim") + String.format(" time: %.2f", this.elapsedSeconds);
+  }
 }

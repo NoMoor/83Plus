@@ -120,7 +120,7 @@ public class Path {
 
   public void extendThroughBall() {
     Segment lastSegment = nodes.get(nodes.size() - 1);
-    this.extension = lastSegment.extend(Path.LEAD_TIME * target.velocity.magnitude());
+    this.extension = lastSegment.extend(Path.LEAD_TIME * 2, target.velocity.magnitude());
   }
 
   public void markOffCourse() {
@@ -176,27 +176,12 @@ public class Path {
     }
   }
 
-  private static final double SLOWING_BUFFER = 100;
-
-  double minimumTraverseTime() {
-    return minGroundTime(currentIndex, start.boost).traverseTime;
-  }
-
-  double nonBoostingTraverseTime() {
-    return minGroundTime(currentIndex, 0).traverseTime;
-  }
-
+  private static final double SLOWING_BUFFER = 20;
   private static final float ACCELERATION_BUFFER = 1f;
   private static final double BOOST_DELTA = .275;
 
   @VisibleForTesting
   Plan makeSpeedPlan(double boostAmount, double targetTime) {
-    // TODO: Remove this from production code.
-//    Plan boostingPlan = minGroundTime(0, boostAmount);
-//    Preconditions.checkState(
-//        targetTime >= boostingPlan.traverseTime,
-//        "Should be time under %s but was %s", targetTime, boostingPlan.traverseTime);
-
     Plan workingPlan = minGroundTime(0, 0);
 
     if (workingPlan.traverseTime < targetTime) {
@@ -326,44 +311,20 @@ public class Path {
 
       double segmentDistance = segment.flatDistance();
 
-      double flipTime = 0;
-      boolean flipImpulseUsed = false;
       while (segmentDistance > 0) {
         double nextAcceleration;
         boolean canGoFaster = canGoFaster(currentVelocity, segment.maxSpeed(), speedTarget, segmentDistance, segment.type);
         boolean isBoosting = false;
-        boolean jumpPressed = false;
         double throttle;
 
-        if (flipTime > 0) {
-          nextAcceleration = 0;
-          throttle = 0;
-          if (flipTime + .25 > time && !flipImpulseUsed) {
-            nextAcceleration = 60000; // Flip impulse
-            flipImpulseUsed = true;
-          }
+        if (canGoFaster) {
+          isBoosting = boostRemaining > 0;
+          throttle = 1.0;
+          nextAcceleration = Accels.acceleration(currentVelocity) * ACCELERATION_BUFFER
+              + (isBoosting ? Constants.BOOSTED_ACCELERATION : 0);
 
-          // Car has landed. Reset values.
-          if (flipTime + FLIP_TIME > time) {
-            flipTime = 0;
-            flipImpulseUsed = false;
-          }
-        } else if (canGoFaster) {
-          double segmentTime = segmentDistance / currentVelocity;
-          if (currentVelocity > 1300 && segmentTime > FLIP_TIME && false) { // Figure out this flipping business
-            flipTime = time;
-            nextAcceleration = Accels.acceleration(currentVelocity);
-            throttle = 0;
-            jumpPressed = true;
-          } else {
-            isBoosting = boostRemaining > 0;
-            throttle = 1.0;
-            nextAcceleration = Accels.acceleration(currentVelocity) * ACCELERATION_BUFFER
-                + (isBoosting ? Constants.BOOSTED_ACCELERATION : 0);
-
-            if (isBoosting) {
-              boostRemaining -= STEP_SIZE * 33;
-            }
+          if (isBoosting) {
+            boostRemaining -= STEP_SIZE * 33;
           }
         } else if (breakNow(currentVelocity, segmentDistance, speedTarget)) {
           throttle = -1;
@@ -378,11 +339,7 @@ public class Path {
         segmentDistance -= ((currentVelocity + newVelocity) / 2) * STEP_SIZE;
         currentVelocity = newVelocity;
         time += STEP_SIZE;
-        if (jumpPressed) {
-          planBuilder.addJumpInput(jumpPressed);
-        } else {
-          planBuilder.addThrottleInput(isBoosting, throttle);
-        }
+        planBuilder.addThrottleInput(isBoosting, throttle);
       }
     }
 
@@ -500,7 +457,8 @@ public class Path {
 
     ListIterator<Segment> segmentIterator = nodes.listIterator();
     while (segmentIterator.hasNext()) {
-      Segment nextSegment = segmentIterator.next();
+      Segment terseSegment = segmentIterator.next();
+      Segment nextSegment = terseSegment;
       nextSegment.startTime = start.elapsedSeconds + time;
 
       double segmentDistance = nextSegment.flatDistance();
@@ -546,6 +504,8 @@ public class Path {
       }
 
       nextSegment.endTime = start.elapsedSeconds + time;
+      terseSegment.endTime = nextSegment.endTime;
+
       timedSegments.add(nextSegment);
     }
 
@@ -568,13 +528,17 @@ public class Path {
     this.isTimed = isTimed;
   }
 
-  private boolean canGoFaster(double currentVelocity, double segmentSpeedLimit, double endSegmentSpeedTarget, double segmentRemainingDistance, Segment.Type type) {
-    if (type == Segment.Type.JUMP) {
-      return false;
-    }
+  private boolean canGoFaster(
+      double currentVelocity,
+      double segmentSpeedLimit,
+      double endSegmentSpeedTarget,
+      double segmentRemainingDistance,
+      Segment.Type type) {
 
-    if (segmentSpeedLimit <= currentVelocity) {
+    if (type == Segment.Type.JUMP || segmentSpeedLimit <= currentVelocity) {
       return false;
+    } else if (segmentSpeedLimit > currentVelocity && endSegmentSpeedTarget > currentVelocity) {
+      return true;
     }
 
     Accels.AccelResult slowingDistance = Accels.distanceToSlow(currentVelocity, endSegmentSpeedTarget);

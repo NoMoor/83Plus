@@ -1,6 +1,15 @@
-from stone.stone_shot_on_goal import StoneShotOnGoal
+from stone.stone_shot_on_goal import Setup
 
 stone_exercises = [
+    # Setup('Too Close for turning', ball_x=0, ball_y=100, car_x=120, car_y=-50),
+
+    # Setup('Stationary centered mid-field', ball_x=0, ball_y=100, car_y=-2200),
+    # Setup('Stationary left mid-field', ball_x=400, ball_y=100, car_y=-2200),
+    # Setup('Stationary car very close to ball', ball_y=100, car_y=-200),
+    Setup('Rolling away left mid-field', ball_x=400, ball_y=100, ball_vy=400, car_y=-2200),
+    # Setup('Rolling r2l mid-field', ball_x=-400, ball_vx=400, ball_y=100, car_y=-2200),
+    # Setup('Fast rolling r2l mid-field', ball_x=-1500, ball_vx=1500, ball_y=100, car_y=-2200),
+
     # StoneKickoff('Stone Kickoff'),
     # StoneShotOnGoal('Stone Shot On Goal'),
     # RollingTowardsGoalShot("Rolling shot"),
@@ -35,7 +44,7 @@ stone_exercises = [
 
     # StoneShotOnGoal('Jump Shot', ball_x=-1120, ball_y=-500, ball_z=92, ball_vx=1000, ball_vy=400, car_x=0, car_y=-1800),
 
-    StoneShotOnGoal('Testing', ball_x=0, ball_y=1000, ball_z=92, car_x=0, car_y=-2200),
+    # StoneShotOnGoal('Testing', ball_x=0, ball_y=1000, ball_z=92, car_x=0, car_y=-2200),
     # StoneShotOnGoal('Testing', ball_x=-10, ball_y=10, ball_z=92, car_x=0, car_y=-1800),
     # StoneShotOnGoal('Testing', ball_x=20, ball_y=10, ball_z=92, car_x=0, car_y=-1800),
     # StoneShotOnGoal('Testing', ball_x=50, ball_y=10, ball_z=92, car_x=0, car_y=-1800),
