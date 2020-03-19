@@ -43,8 +43,12 @@ public class SpeedOptimizer extends Optimizer {
 
   @Override
   CarData adjust(CarData car, double value) {
+    Vector3 velocity = car.velocity;
+    if (velocity.isZero()) {
+      velocity = car.orientation.getNoseVector();
+    }
     return car.toBuilder()
-        .setVelocity(car.velocity.toMagnitude(value))
+        .setVelocity(velocity.toMagnitude(value))
         .build();
   }
 

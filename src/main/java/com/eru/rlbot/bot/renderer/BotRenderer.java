@@ -129,8 +129,8 @@ public class BotRenderer {
     PerBotDebugOptions renderOptions = PerBotDebugOptions.get(input.serialNumber);
     if (renderOptions.isRenderLines()) {
       renderProjections(input);
-      renderHitBox(input.car);
-      //    renderTurningRadius(input);
+      // renderHitBox(input.car); // TODO: Add checkbox for rendering the hitbox.
+      renderTurningRadius(input);
 
       //    renderTacticLines(input.car);
       //    renderPredictionDiff(input);
@@ -316,8 +316,12 @@ public class BotRenderer {
 
   private void renderTurningRadius(DataPacket input) {
     Paths.Circles radiusCircles = Paths.innerTurningRadiusCircles(input.car);
-    renderCircle(Color.blue, radiusCircles.ccw);
-    renderCircle(Color.orange, radiusCircles.cw);
+
+    if (radiusCircles.ccw.center.distance(input.car.position) < radiusCircles.cw.center.distance(input.car.position)) {
+      renderCircle(Color.blue, radiusCircles.ccw);
+    } else {
+      renderCircle(Color.orange, radiusCircles.cw);
+    }
   }
 
   public void renderHitBox(CarData car) {

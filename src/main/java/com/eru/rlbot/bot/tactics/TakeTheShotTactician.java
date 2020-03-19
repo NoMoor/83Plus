@@ -1,6 +1,5 @@
 package com.eru.rlbot.bot.tactics;
 
-import com.eru.rlbot.bot.common.Accels;
 import com.eru.rlbot.bot.common.Goal;
 import com.eru.rlbot.bot.common.RelativeUtils;
 import com.eru.rlbot.bot.main.ApolloGuidanceComputer;
@@ -14,6 +13,7 @@ import com.eru.rlbot.common.input.BallData;
 import com.eru.rlbot.common.input.CarData;
 import com.eru.rlbot.common.input.DataPacket;
 import com.eru.rlbot.common.output.Controls;
+import java.util.Optional;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -29,12 +29,6 @@ public class TakeTheShotTactician extends Tactician {
     super(bot, tacticManager);
   }
 
-  private static double timeToBall(BallData relativeBall, CarData car) {
-    return car.boost > 40
-        ? Accels.minTimeToDistance(car, relativeBall.position.flatten().magnitude()).time
-        : Accels.nonBoostedTimeToDistance(car.velocity.flatten().magnitude(), relativeBall.position.flatten().magnitude()).time;
-  }
-
   @Override
   public boolean isLocked() {
     return false;
@@ -45,7 +39,16 @@ public class TakeTheShotTactician extends Tactician {
   @Override
   public void internalExecute(DataPacket input, Controls output, Tactic tactic) {
     if (path == null || path.isOffCourse() || BallPredictionUtil.get(input.car).wasTouched()) {
-      CarData target = PathPlanner.closestStrike(input.car, tactic.subject);
+      Optional<CarData> targetOptional = PathPlanner.closestStrike(input.car, tactic.subject);
+
+      if (!targetOptional.isPresent()) {
+        bot.botRenderer.setBranchInfo("Target not found");
+        return;
+      } else {
+        bot.botRenderer.setBranchInfo("Target acquired");
+      }
+
+      CarData target = targetOptional.get();
       OptimizationResult optimalHit =
           CarBallOptimizer.xSpeed(tactic.subject, Goal.opponentGoal(input.car.team).center, target);
 

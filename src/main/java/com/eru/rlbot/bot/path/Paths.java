@@ -188,12 +188,7 @@ public class Paths {
   }
 
   public static Circle closeTurningRadius(Vector3 point, CarData car) {
-    Circles circles =
-        turningRadiusCircles(
-            car.position,
-            Math.max(800, car.groundSpeed),
-            car.orientation.getNoseVector());
-
+    Circles circles = turningRadiusCircles(car);
     if (circles.cw.center.distance(point) < circles.ccw.center.distance(point)) {
       return circles.cw;
     }
@@ -201,7 +196,7 @@ public class Paths {
   }
 
   public static Circles turningRadiusCircles(CarData car) {
-    return turningRadiusCircles(car.position, car.groundSpeed, car.orientation.getNoseVector());
+    return turningRadiusCircles(car.position, Math.max(800, car.groundSpeed), car.orientation.getNoseVector());
   }
 
   public static Circles turningRadiusCircles(Vector3 position, double speed, Vector3 noseVector) {
@@ -214,13 +209,23 @@ public class Paths {
     return new Circles(cw, ccw);
   }
 
+  public static Circle closeTracedRadius(Vector3 point, CarData car) {
+    Circles circles = innerTurningRadiusCircles(car);
+    if (circles.cw.center.distance(point) < circles.ccw.center.distance(point)) {
+      return circles.cw;
+    }
+    return circles.ccw;
+  }
+
   public static Circles innerTurningRadiusCircles(CarData car) {
-    return innerTurningRadiusCircles(car.position, car.groundSpeed, car.orientation.getNoseVector());
+    return innerTurningRadiusCircles(car.position, Math.max(800, car.groundSpeed), car.orientation.getNoseVector());
   }
 
   public static Circles innerTurningRadiusCircles(Vector3 position, double speed, Vector3 noseVector) {
-    double radius = Circle.radiusForPath(speed) - BoundingBox.halfWidth;
-    double centerOffset = radius + BoundingBox.halfWidth;
+    double radiusOffset = BoundingBox.halfWidth * .75;
+
+    double radius = Circle.radiusForPath(speed) - radiusOffset;
+    double centerOffset = radius + radiusOffset;
 
     Vector2 perpVelocity = noseVector.flatten().clockwisePerpendicular();
     Circle cw = Circle.forPath(position.plus(perpVelocity.asVector3().toMagnitude(centerOffset)), radius);
@@ -304,6 +309,10 @@ public class Paths {
 
     public ImmutableList<Vector3> getPoints() {
       return ImmutableList.of(left, right);
+    }
+
+    public boolean exist() {
+      return !left.isNan() || !right.isNan();
     }
   }
 

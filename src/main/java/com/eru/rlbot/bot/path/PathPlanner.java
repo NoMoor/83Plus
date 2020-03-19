@@ -4,6 +4,7 @@ import com.eru.rlbot.bot.common.Accels;
 import com.eru.rlbot.bot.common.CarDataUtils;
 import com.eru.rlbot.bot.common.Circle;
 import com.eru.rlbot.bot.common.Constants;
+import com.eru.rlbot.common.Matrix3;
 import com.eru.rlbot.common.Moment;
 import com.eru.rlbot.common.input.BallData;
 import com.eru.rlbot.common.input.BoundingBox;
@@ -12,6 +13,7 @@ import com.eru.rlbot.common.input.Orientation;
 import com.eru.rlbot.common.vector.Vector3;
 import com.eru.rlbot.common.vector.Vector3s;
 import com.google.common.collect.ImmutableList;
+import java.util.Comparator;
 import java.util.Optional;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -25,8 +27,12 @@ public class PathPlanner {
       return Optional.empty();
     }
 
-    CarData closestHit = closestStrike(car, Moment.from(ball));
-    Path path = planPath(car, closestHit);
+    Optional<CarData> closestHit = closestStrike(car, Moment.from(ball));
+    if (!closestHit.isPresent()) {
+      return Optional.empty();
+    }
+
+    Path path = planPath(car, closestHit.get());
     Plan plan = path.minGroundTime(car.boost);
 
     if (plan.traverseTime < ball.time - car.elapsedSeconds) {
@@ -37,8 +43,8 @@ public class PathPlanner {
   }
 
   public static Path oneTurn(CarData car, Moment moment) {
-    CarData targetCar = closestStrike(car, moment);
-    return planPath(car, targetCar);
+    Optional<CarData> targetCar = closestStrike(car, moment);
+    return targetCar.map(carData -> planPath(car, carData)).orElse(null);
   }
 
   public static Path oneTurn(CarData car, BallData ball) {
@@ -46,24 +52,82 @@ public class PathPlanner {
   }
 
   // TODO: Include how far max left-right and closest to the middle point as possible for optimization.
-  public static CarData closestStrike(CarData car, Moment moment) {
+  public static Optional<CarData> closestStrike(CarData car, Moment moment) {
     Circle turnToBall = Paths.closeTurningRadius(moment.position, car);
-    Paths.TangentPoints tangentPoints = Paths.tangents(turnToBall, moment.position); // TODO: Turn moment.position into a circle range.
+    Paths.TangentPoints tangentPoints = Paths.tangents(turnToBall, moment.position);
 
-    Vector3 approachSpot = turnToBall.isClockwise(car) ? tangentPoints.right : tangentPoints.left;
-    Vector3 approachBall = moment.position.minus(approachSpot);
+    // If there is a turn - straight path using circle tangent, use that.
+    if (tangentPoints.exist()) {
+      Vector3 approachSpot = turnToBall.isClockwise(car) ? tangentPoints.right : tangentPoints.left;
+      Vector3 approachBall = moment.position.minus(approachSpot);
 
-    Orientation orientation = Orientation.fromFlatVelocity(approachBall);
+      Orientation orientation = Orientation.fromFlatVelocity(approachBall);
 
-    Vector3 position = makeGroundCar(orientation, moment);
-    Vector3 velocity = approachBall.toMagnitude(Constants.BOOSTED_MAX_SPEED);
+      Vector3 position = makeGroundCar(orientation, moment);
+      Vector3 velocity = approachBall.toMagnitude(Constants.BOOSTED_MAX_SPEED);
 
-    return CarData.builder()
-        .setTime(moment.time)
-        .setOrientation(orientation)
-        .setVelocity(velocity)
+      return Optional.of(CarData.builder()
+          .setTime(moment.time)
+          .setOrientation(orientation)
+          .setVelocity(velocity)
+          .setPosition(position)
+          .build());
+    }
+
+    // Check to see if the ball circle and the circle traced by the front corner of the car intersect.
+    Circle closeTracedCircle = Paths.closeTracedRadius(moment.position, car);
+    Circle targetCircle = Circle.fromMoment(moment);
+    double centerDistance = targetCircle.center.distance(closeTracedCircle.center);
+    if (centerDistance < 1 || centerDistance < closeTracedCircle.radius - targetCircle.radius) {
+      // The ball is inside the turning radius and cannot be hit.
+      return Optional.empty();
+    }
+
+    // https://stackoverflow.com/questions/3349125/circle-circle-intersection-points
+    Optional<Vector3> intersectionPoint = closeTracedCircle.intersections(targetCircle).stream()
+        .min(Comparator.comparing(point -> Segment.calculateArcLength(car.position, point, closeTracedCircle, car)));
+
+    // Cannot hit without slowing or powersliding.
+    if (!intersectionPoint.isPresent()) {
+      return Optional.empty();
+    }
+
+    Vector3 intersection = intersectionPoint.get();
+
+    boolean isClockWise = closeTracedCircle.isClockwise(car);
+    Vector3 position = positionFromIntersectionCorner(intersection, closeTracedCircle, isClockWise);
+    double speed = Math.max(car.groundSpeed, 800);
+    Vector3 velocity = getFrontToBackAngle(intersection, closeTracedCircle, isClockWise)
+        .toMagnitude(-speed);
+    Orientation orientation = Orientation.fromFlatVelocity(velocity);
+
+    CarData intersectionCar = car.toBuilder()
         .setPosition(position)
+        .setVelocity(velocity)
+        .setOrientation(orientation)
         .build();
+
+    return Optional.of(intersectionCar);
+  }
+
+  private static Matrix3 ccwRotation = Orientation.convert(0, -.26, 0).getOrientationMatrix();
+  private static Matrix3 cwRotation = Orientation.convert(0, .26, 0).getOrientationMatrix();
+
+  private static Vector3 getFrontToBackAngle(Vector3 intersection, Circle circle, boolean isClockwise) {
+    return intersection.minus(circle.center)
+        .dot(isClockwise ? cwRotation : ccwRotation)
+        .clockwisePerpendicular()
+        .toMagnitude(isClockwise ? 1 : -1);
+  }
+
+  private static Vector3 positionFromIntersectionCorner(Vector3 intersection, Circle circle, boolean isClockwise) {
+    Vector3 frontToBack = getFrontToBackAngle(intersection, circle, isClockwise);
+
+    Vector3 lrOffset = frontToBack.clockwisePerpendicular()
+        .toMagnitude((isClockwise ? -1 : 1) * BoundingBox.halfWidth);
+    Vector3 fbOffset = frontToBack.toMagnitude(BoundingBox.frontToRj);
+
+    return intersection.plus(lrOffset).plus(fbOffset);
   }
 
   private static Vector3 makeGroundCar(Orientation orientation, Moment target) {
@@ -90,10 +154,8 @@ public class PathPlanner {
 
     CarData workingTarget = targetCar;
 
-    // TODO: Handle when the car is very close to the ball.
-
+    // This seems to jump too often.
     if (requiresJump(targetCar)) {
-      // TODO: Make this work for walls.
       Optional<Float> time = Accels.jumpTimeToHeight(workingTarget.position.z);
       if (time.isPresent()) {
         CarData tempTarget = CarDataUtils.rewindTime(workingTarget, time.get());

@@ -3,6 +3,7 @@ package com.eru.rlbot.bot.path;
 import com.eru.rlbot.bot.common.Circle;
 import com.eru.rlbot.bot.common.Constants;
 import com.eru.rlbot.common.Pair;
+import com.eru.rlbot.common.input.CarData;
 import com.eru.rlbot.common.vector.Vector2;
 import com.eru.rlbot.common.vector.Vector3;
 import java.util.Objects;
@@ -115,28 +116,15 @@ public class Segment {
     return flatDistance() / (endTime - startTime);
   }
 
+  public boolean isOnGround() {
+    return type == Type.STRAIGHT || type == Type.ARC;
+  }
+
   public enum Type {
     STRAIGHT,
     ARC,
     JUMP,
     FLIP
-  }
-
-  public double getRadians() {
-    Objects.requireNonNull(circle);
-
-    Vector3 legA = circle.center.minus(start);
-    Vector3 legB = circle.center.minus(end);
-
-    double value = legA.flatten().correctionAngle(legB.flatten());
-
-    // TODO: This is not tested...
-    if (value < 0 && clockWise) {
-      value += Math.PI * 2;
-    } else if (value > 0 && !clockWise) {
-      value -= Math.PI * 2;
-    }
-    return value;
   }
 
   private Double distance;
@@ -212,6 +200,32 @@ public class Segment {
 
   private double calculateArcLength() {
     return Math.abs(getRadians()) * circle.radius;
+  }
+
+  public double getRadians() {
+    return getRadians(circle, start, end, clockWise);
+  }
+
+  public static double getRadians(Circle circle, Vector3 start, Vector3 end, boolean clockWise) {
+    Objects.requireNonNull(circle);
+
+    Vector3 legA = circle.center.minus(start);
+    Vector3 legB = circle.center.minus(end);
+
+    double value = legA.flatten().correctionAngle(legB.flatten());
+
+    // TODO: This is not tested...
+    if (value < 0 && clockWise) {
+      value += Math.PI * 2;
+    } else if (value > 0 && !clockWise) {
+      value -= Math.PI * 2;
+    }
+    return value;
+  }
+
+  public static double calculateArcLength(Vector3 start, Vector3 end, Circle circle, CarData input) {
+    double radians = getRadians(circle, start, end, circle.isClockwise(input));
+    return Math.abs(radians) * circle.radius;
   }
 
   @Override

@@ -217,7 +217,7 @@ public class Vector3 extends rlbot.vector.Vector3 {
   }
 
   public Vector3 clockwisePerpendicular() {
-    // TODO: Verify that this is correct.
+    // TODO: Verify that this is correct. ... This seems wrong.
     return this.cross(Vector3.of(0, 0, 1));
   }
 
@@ -230,6 +230,10 @@ public class Vector3 extends rlbot.vector.Vector3 {
         .withX(x)
         .withY(y)
         .withZ(z);
+  }
+
+  public boolean isNan() {
+    return Double.isNaN(x) || Double.isNaN(y) || Double.isNaN(z);
   }
 
   public class RoughComparator {

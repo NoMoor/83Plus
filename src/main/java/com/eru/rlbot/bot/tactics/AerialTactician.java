@@ -52,7 +52,12 @@ public class AerialTactician extends Tactician {
     if (input.car.hasWheelContact && input.car.position.z < 50) {
 
       // TODO: Put this into a sort of aerial planning object.
-      Path fastPath = PathPlanner.oneTurn(input.car, target);
+      Path oneTurn = PathPlanner.oneTurn(input.car, target);
+
+      if (oneTurn == null) {
+        logger.info("Got null path. Doing nothing.");
+        return;
+      }
 
       AerialLookUp.AerialInfo aerialProfile = AerialLookUp.averageBoost(target.position.z);
       double airTime = FAST_AERIAL_TIME + aerialProfile.timeToApex;
@@ -68,7 +73,7 @@ public class AerialTactician extends Tactician {
       double aerialMargin = aerialProfile.nonBoostingTime * (boostReserves * .15 / Constants.BOOST_RATE) * Constants.BOOSTED_ACCELERATION * AERIAL_EFFICIENCY;
 
       // The distance to travel on the ground.
-      double groundDistance = fastPath.length() - carriedGroundDistance - aerialProfile.horizontalTravel - aerialMargin;
+      double groundDistance = oneTurn.length() - carriedGroundDistance - aerialProfile.horizontalTravel - aerialMargin;
 
       // The average speed needed to travel on the ground.
       double requiredGroundSpeed = groundDistance / groundTime;
@@ -107,7 +112,10 @@ public class AerialTactician extends Tactician {
     AerialLookUp.AerialInfo aerialInfo = AerialLookUp.averageBoost(ball.position.z);
 
     // Path is turn + straight
-    Path path = PathPlanner.oneTurn(car, ball);
+    Path oneTurn = PathPlanner.oneTurn(car, ball);
+    if (oneTurn == null) {
+      return Optional.empty();
+    }
 
     double rotationTime = aerialInfo.boostAngle * 2 * .3; // Boost angle and back to flat with 2 radians per second
     double jumpTime = aerialInfo.timeToApex + rotationTime + FAST_AERIAL_TIME;
@@ -120,7 +128,7 @@ public class AerialTactician extends Tactician {
 
     // Fast plan + .25 for fast aerial + .25 for rotation + aerialInfo time.
     double carriedDistance = acceleration.speed * jumpTime;
-    double groundDistance = path.length() - aerialInfo.horizontalTravel - carriedDistance;
+    double groundDistance = oneTurn.length() - aerialInfo.horizontalTravel - carriedDistance;
 
     if (timeToJump > 0
         && groundDistance < acceleration.distance
@@ -128,7 +136,7 @@ public class AerialTactician extends Tactician {
 
       return Optional.of(
           Plan.builder()
-              .setPath(path)
+              .setPath(oneTurn)
               .setBoostUsed(aerialInfo.boostAmount + acceleration.boost)
               .build(ball.time - car.elapsedSeconds));
     } else {

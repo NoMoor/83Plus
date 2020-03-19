@@ -317,7 +317,7 @@ public class Path {
         boolean isBoosting = false;
         double throttle;
 
-        if (canGoFaster) {
+        if (canGoFaster && segment.isOnGround()) {
           isBoosting = boostRemaining > 0;
           throttle = 1.0;
           nextAcceleration = Accels.acceleration(currentVelocity) * ACCELERATION_BUFFER
