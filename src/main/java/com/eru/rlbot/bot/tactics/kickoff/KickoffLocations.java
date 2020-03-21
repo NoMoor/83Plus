@@ -1,4 +1,4 @@
-package com.eru.rlbot.bot.common;
+package com.eru.rlbot.bot.tactics.kickoff;
 
 import com.eru.rlbot.common.input.CarData;
 import com.eru.rlbot.common.vector.Vector2;
@@ -33,33 +33,43 @@ public class KickoffLocations {
   private static final double NEG = -1.0;
   private static final double SIT = 0;
 
-  public enum KickoffLocation {
-    CENTER_BLUE(Vector2.of(CENTER_X, -CENTER_Y), KickoffStation.CENTER, SIT),
-    LEFT_CENTER_BLUE(Vector2.of(CENTER_MID_X, -CENTER_MID_Y), KickoffStation.LEFT_CENTER, POS),
-    RIGHT_CENTER_BLUE(Vector2.of(-CENTER_MID_X, -CENTER_MID_Y), KickoffStation.RIGHT_CENTER, NEG),
-    LEFT_BLUE(Vector2.of(FAR_X, -FAR_Y), KickoffStation.LEFT, POS),
-    RIGHT_BLUE(Vector2.of(-FAR_X, -FAR_Y), KickoffStation.RIGHT, NEG),
+  public static KickoffLocation defaultLocation(int team) {
+    return KickoffLocation.defaultLocation(team);
+  }
 
-    CENTER_ORANGE(Vector2.of(CENTER_X, CENTER_Y), KickoffStation.CENTER, SIT),
-    LEFT_CENTER_ORANGE(Vector2.of(-CENTER_MID_X, CENTER_MID_Y), KickoffStation.LEFT_CENTER, NEG),
-    RIGHT_CENTER_ORANGE(Vector2.of(CENTER_MID_X, CENTER_MID_Y), KickoffStation.RIGHT_CENTER, POS),
-    LEFT_ORANGE(Vector2.of(-FAR_X, FAR_Y), KickoffStation.LEFT, NEG),
-    RIGHT_ORANGE(Vector2.of(FAR_X, FAR_Y), KickoffStation.RIGHT, POS);
+  public enum KickoffLocation {
+    CENTER_BLUE(Vector2.of(CENTER_X, -CENTER_Y), KickoffStation.CENTER, SIT, 5),
+    LEFT_CENTER_BLUE(Vector2.of(CENTER_MID_X, -CENTER_MID_Y), KickoffStation.LEFT_CENTER, POS, 3),
+    RIGHT_CENTER_BLUE(Vector2.of(-CENTER_MID_X, -CENTER_MID_Y), KickoffStation.RIGHT_CENTER, NEG, 4),
+    LEFT_BLUE(Vector2.of(FAR_X, -FAR_Y), KickoffStation.LEFT, POS, 1),
+    RIGHT_BLUE(Vector2.of(-FAR_X, -FAR_Y), KickoffStation.RIGHT, NEG, 2),
+
+    CENTER_ORANGE(Vector2.of(CENTER_X, CENTER_Y), KickoffStation.CENTER, SIT, 5),
+    LEFT_CENTER_ORANGE(Vector2.of(-CENTER_MID_X, CENTER_MID_Y), KickoffStation.LEFT_CENTER, NEG, 3),
+    RIGHT_CENTER_ORANGE(Vector2.of(CENTER_MID_X, CENTER_MID_Y), KickoffStation.RIGHT_CENTER, POS, 4),
+    LEFT_ORANGE(Vector2.of(-FAR_X, FAR_Y), KickoffStation.LEFT, NEG, 1),
+    RIGHT_ORANGE(Vector2.of(FAR_X, FAR_Y), KickoffStation.RIGHT, POS, 2);
 
     public final Vector2 location;
     public final KickoffStation station;
     public final double pushModifier;
     public final double turnModifier;
+    public final int priority;
 
-    KickoffLocation(Vector2 location, KickoffStation station, double pushModifier) {
+    KickoffLocation(Vector2 location, KickoffStation station, double pushModifier, int priority) {
       this.location = location;
       this.station = station;
       this.turnModifier = station.turnModifier;
       this.pushModifier = pushModifier;
+      this.priority = priority;
     }
 
     public static KickoffLocation defaultLocation(int team) {
       return team == 0 ? CENTER_BLUE : CENTER_ORANGE;
+    }
+
+    public int getPriority() {
+      return priority;
     }
   }
 
