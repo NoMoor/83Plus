@@ -15,6 +15,8 @@ import com.eru.rlbot.bot.tactics.kickoff.KickoffLocations.KickoffLocation;
 import com.eru.rlbot.bot.tactics.kickoff.KickoffLocations.KickoffStation;
 import com.eru.rlbot.bot.tactics.kickoff.KickoffTactic;
 import com.eru.rlbot.bot.utils.Monitor;
+import com.eru.rlbot.common.boost.BoostManager;
+import com.eru.rlbot.common.boost.BoostPad;
 import com.eru.rlbot.common.input.BallData;
 import com.eru.rlbot.common.input.CarData;
 import com.eru.rlbot.common.input.DataPacket;
@@ -79,6 +81,12 @@ public class KickoffTactician extends Tactician {
     if (kickoffTactic.type == KickoffTactic.Type.FAKE) {
       return;
     } else if (kickoffTactic.type == KickoffTactic.Type.GRAB_BOOST) {
+      double steeringCorrection = Angles.flatCorrectionAngle(input.car, kickoffTactic.target);
+      output
+          .withThrottle(1.0)
+          .withSlide(input.car.groundSpeed > 500 && Math.abs(steeringCorrection) > .5)
+          .withSteer(steeringCorrection)
+          .withBoost(Math.abs(steeringCorrection) < .3);
       return;
     }
 
@@ -113,8 +121,11 @@ public class KickoffTactician extends Tactician {
   private KickoffTactic selectTactic(DataPacket input, KickoffLocation location) {
     if (!hasPriority(input, location)) {
       // TODO: Grab boost
-      Vector3 target = input.car.position;
-      return KickoffTactic.create(location, target, KickoffTactic.Type.FAKE);
+      Vector3 target = BoostManager.getLargeBoosts().stream()
+          .map(BoostPad::getLocation)
+          .min(Comparator.comparing(boostLocation -> boostLocation.distance(input.car.position)))
+          .get();
+      return KickoffTactic.create(location, target, KickoffTactic.Type.GRAB_BOOST);
     } else {
       boolean hasTeammates = hasTeammates(input);
       Random random = new Random();
