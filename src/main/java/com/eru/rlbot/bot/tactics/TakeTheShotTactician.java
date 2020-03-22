@@ -3,6 +3,7 @@ package com.eru.rlbot.bot.tactics;
 import com.eru.rlbot.bot.common.Goal;
 import com.eru.rlbot.bot.common.RelativeUtils;
 import com.eru.rlbot.bot.main.ApolloGuidanceComputer;
+import com.eru.rlbot.bot.maneuver.WallHelper;
 import com.eru.rlbot.bot.optimizer.CarBallOptimizer;
 import com.eru.rlbot.bot.optimizer.OptimizationResult;
 import com.eru.rlbot.bot.path.Path;
@@ -38,7 +39,12 @@ public class TakeTheShotTactician extends Tactician {
 
   @Override
   public void internalExecute(DataPacket input, Controls output, Tactic tactic) {
-    if (path == null || path.isOffCourse() || BallPredictionUtil.get(input.car).wasTouched()) {
+    if (WallHelper.isOnWall(input.car)) {
+      bot.botRenderer.setBranchInfo("Get off the wall");
+
+      WallHelper.drive(input, output, input.ball.position);
+      return;
+    } else if (path == null || path.isOffCourse() || BallPredictionUtil.get(input.car).wasTouched()) {
       Optional<CarData> targetOptional = PathPlanner.closestStrike(input.car, tactic.subject);
 
       if (!targetOptional.isPresent()) {
@@ -55,6 +61,7 @@ public class TakeTheShotTactician extends Tactician {
       path = PathPlanner.oneTurn(input.car, Moment.from(optimalHit.car));
       path.lockAndSegment();
       path.extendThroughBall();
+      path.setTimed(true);
 
       bot.botRenderer.renderHitBox(optimalHit.car);
       bot.botRenderer.setIntersectionTarget(target.position);
@@ -62,10 +69,16 @@ public class TakeTheShotTactician extends Tactician {
 
     bot.botRenderer.renderPath(input, path);
     pathExecutor.executePath(input, output, path);
+    bot.botRenderer.setBranchInfo("Target acquired: %s", path.isTimed() ? "timed" : "untimed");
 
     if (output.getThrottle() < 0 && !output.holdBoost() && input.ball.velocity.magnitude() < .1) {
       BallData relativeBall = RelativeUtils.noseRelativeBall(input);
       logger.info("Slowing down! throttle: {} ballSpeed: {} ballDistance: {}", output.getThrottle(), input.ball.velocity.magnitude(), relativeBall.position);
     }
+  }
+
+  @Override
+  public boolean allowDelegate() {
+    return true;
   }
 }

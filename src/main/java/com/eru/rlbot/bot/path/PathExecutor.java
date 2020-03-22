@@ -16,6 +16,7 @@ public class PathExecutor {
   private static final Logger logger = LogManager.getLogger("PathExecutor");
 
   private final Tactician tactician;
+  public static final float MIN_FLIP_SPEED = 1100f;
 
   private PathExecutor(Tactician tactician) {
     this.tactician = tactician;
@@ -29,6 +30,8 @@ public class PathExecutor {
   private static final double D = 0.00 * Path.LEAD_FRAMES;
 
   public void executePath(DataPacket input, Controls output, Path path) {
+
+    // TODO: Handle what to do when you are ahead of schedule.
     if (path.getEndTime() < input.car.elapsedSeconds) {
       path.markOffCourse();
     }
@@ -47,14 +50,7 @@ public class PathExecutor {
       }
     }
 
-    if (currentSegment.type == Segment.Type.FLIP) {
-      tactician.requestDelegate(Flip.builder()
-          .setTarget(target)
-          .flipEarly()
-          .build());
-    } else {
-      drive(input, output, target, currentSegment, distanceDiff);
-    }
+    drive(input, output, target, currentSegment, distanceDiff);
 
     if (!path.isTimed()) {
       output.withBoost(input.car.boost > 50);
@@ -73,7 +69,8 @@ public class PathExecutor {
     double currentAngularVelocity = input.car.angularVelocity.z;
     double diffAngularVelocity = currentAngularVelocity - maxAngularVelocity;
 
-    output.withSteer(2 * correctionAngularVelocity / maxAngularVelocity);
+    float segmentModifier = currentSegment.isStraight() ? .5f : 2; // Be more gentle on the steering if we are going straight.
+    output.withSteer(segmentModifier * (correctionAngularVelocity / maxAngularVelocity));
 
     double timeToTarget = distanceDiff.magnitude() / input.car.velocity.magnitude();
 
@@ -100,6 +97,17 @@ public class PathExecutor {
 
     if (currentSegment.type == Segment.Type.JUMP) {
       output.withJump();
+    }
+
+    boolean hasSpeed = input.car.groundSpeed > MIN_FLIP_SPEED;
+    boolean isStraight = currentSegment.type == Segment.Type.STRAIGHT;
+    boolean hasTime = (currentSegment.flatDistance() / Math.max(MIN_FLIP_SPEED, input.car.groundSpeed)) > 1;
+    if (hasSpeed && isStraight && hasTime) {
+      this.tactician.requestDelegate(
+          Flip.builder()
+              .setTarget(currentSegment.end)
+              .flipEarly()
+              .build());
     }
   }
 }

@@ -129,4 +129,8 @@ public class Orientation {
   public int hashCode() {
     return orientation.hashCode();
   }
+
+  public Vector3 localCoordinates(Vector3 global) {
+    return getOrientationMatrix().transpose().dot(global);
+  }
 }

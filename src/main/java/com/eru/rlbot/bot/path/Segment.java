@@ -120,6 +120,10 @@ public class Segment {
     return type == Type.STRAIGHT || type == Type.ARC;
   }
 
+  public boolean isStraight() {
+    return type != Type.ARC;
+  }
+
   public enum Type {
     STRAIGHT,
     ARC,

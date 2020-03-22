@@ -3,6 +3,7 @@ package com.eru.rlbot.bot.common;
 import com.eru.rlbot.common.input.BallData;
 import com.eru.rlbot.common.input.CarData;
 import com.eru.rlbot.common.input.DataPacket;
+import com.eru.rlbot.common.input.Orientation;
 import com.eru.rlbot.common.vector.Vector2;
 import com.eru.rlbot.common.vector.Vector3;
 
@@ -19,6 +20,10 @@ public final class Angles {
 
   public static double flatCorrectionAngle(Vector3 sourcePoint, Vector3 sourceOrientation, Vector3 targetPoint) {
     return flatCorrectionAngle(sourcePoint.flatten(), sourceOrientation.flatten(), targetPoint.flatten());
+  }
+
+  public static double flatCorrectionAngle(Vector2 sourcePoint, Vector2 targetPoint, Orientation orientation) {
+    return flatCorrectionAngle(sourcePoint, orientation.getNoseVector().flatten(), targetPoint);
   }
 
   public static double flatCorrectionAngle(Vector2 sourcePoint, Vector2 sourceOrientation, Vector2 targetPoint) {

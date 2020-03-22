@@ -204,6 +204,10 @@ public class BotRenderer {
     renderTarget(Color.white, target);
   }
 
+  public void renderTarget(Color color, Vector2 target) {
+    renderTarget(color, target.asVector3());
+  }
+
   public void renderTarget(Color color, Vector3 target) {
     if (skipLineRendering()) {
       return;
@@ -295,6 +299,14 @@ public class BotRenderer {
     renderPoint(Color.ORANGE, path.currentTarget(input), 10);
 
     renderHitBox(Color.BLACK, path.getTarget());
+  }
+
+  public void renderRelativeProjection(Color color, CarData car, Vector2 projectedVector) {
+    renderProjection(color, car, car.position.plus(projectedVector.asVector3()));
+  }
+
+  public void renderProjection(Color color, CarData car, Vector2 projectedVector) {
+    renderProjection(color, car, projectedVector.asVector3());
   }
 
   public void renderProjection(Color color, CarData car, Vector3 projectedVector) {
