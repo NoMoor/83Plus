@@ -327,6 +327,10 @@ public class BotRenderer {
   }
 
   private void renderTurningRadius(DataPacket input) {
+    if (input.car.position.z > 20) {
+      return;
+    }
+
     Paths.Circles radiusCircles = Paths.innerTurningRadiusCircles(input.car);
 
     if (radiusCircles.ccw.center.distance(input.car.position) < radiusCircles.cw.center.distance(input.car.position)) {

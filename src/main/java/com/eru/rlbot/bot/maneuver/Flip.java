@@ -30,6 +30,8 @@ public class Flip extends Maneuver {
   private boolean done;
   private boolean flipAtTarget;
 
+  private boolean isFirstFrame = true;
+
   public Flip(Builder builder) {
     this.aggressiveness = builder.aggressiveness;
     this.target = builder.target;
@@ -53,7 +55,11 @@ public class Flip extends Maneuver {
     JumpManager jumpManager = JumpManager.forCar(input.car);
 
     double framesToTarget = (input.car.position.distance(target) / input.car.groundSpeed) * Constants.STEP_SIZE_COUNT;
-    boolean forceFlip = flipAtTarget && framesToTarget < 13;
+    boolean flipIntoTarget = flipAtTarget && framesToTarget < 13;
+    boolean maxHeightJump = jumpManager.hasMaxJumpHeight();
+    boolean flipImmediately = !flipAtTarget && input.car.position.z > 50;
+
+    boolean holdJump = !(flipIntoTarget || maxHeightJump || flipImmediately);
 
     if (flipComplete) {
       if (input.car.hasWheelContact) {
@@ -65,24 +71,29 @@ public class Flip extends Maneuver {
         output
             .withBoost(-.1 < noseZ && noseZ < .2)
             .withThrottle(1.0f);
-        Angles3.setControlsFor(input.car, Orientation.fromFlatVelocity(input.car).getOrientationMatrix(), output);
+
+        if (!JumpManager.forCar(input.car).isFlipping()) {
+          // TODO: Replace this with generic landing helper.
+          Angles3.setControlsFor(input.car, Orientation.fromFlatVelocity(input.car).getOrientationMatrix(), output);
+        }
       }
     } else {
       if (!input.car.jumped) {
-        if (initialJump) {
-          flipComplete = true;
-        }
         botRenderer.setBranchInfo("Initial Jump");
-        initialJump = !JumpManager.forCar(input.car).jumpPressedLastFrame();
+        boolean isRotating = input.car.angularVelocity.flat().magnitude() > .1;
+        boolean jumpThisFrame = (!JumpManager.forCar(input.car).jumpPressedLastFrame() || !isFirstFrame) && !isRotating;
+        isFirstFrame = false;
+
+        if (!initialJump) {
+          initialJump = jumpThisFrame;
+        }
+
         // Jump now
         output
             .withJump(initialJump)
             .withThrottle(1.0)
             .withBoost();
-      } else if (jumpManager.getElapsedJumpTime() < (JumpManager.MAX_JUMP_TIME * ((.8 * (1 - aggressiveness)) + .2))
-          && input.car.velocity.z >= 0
-          && !jumpManager.hasMaxJumpHeight()
-          && !forceFlip) {
+      } else if (holdJump) {
         botRenderer.setBranchInfo("Hold Jump");
         output
             .withThrottle(1.0)
@@ -93,7 +104,7 @@ public class Flip extends Maneuver {
         output.withBoost();
         // Release Jump
       } else if (jumpManager.canFlip()) {
-        if (flipAtTarget && !forceFlip) {
+        if (this.flipAtTarget && !flipIntoTarget) {
           return;
         }
 

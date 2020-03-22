@@ -4,6 +4,7 @@ import com.eru.rlbot.bot.common.Accels;
 import com.eru.rlbot.bot.common.Angles;
 import com.eru.rlbot.bot.common.Constants;
 import com.eru.rlbot.bot.maneuver.Flip;
+import com.eru.rlbot.bot.renderer.BotRenderer;
 import com.eru.rlbot.bot.tactics.Tactician;
 import com.eru.rlbot.common.input.DataPacket;
 import com.eru.rlbot.common.output.Controls;
@@ -25,9 +26,6 @@ public class PathExecutor {
   public static PathExecutor forTactician(Tactician tactician) {
     return new PathExecutor(tactician);
   }
-
-  private static final double P = 50;
-  private static final double D = 0.00 * Path.LEAD_FRAMES;
 
   public void executePath(DataPacket input, Controls output, Path path) {
 
@@ -57,6 +55,9 @@ public class PathExecutor {
     }
   }
 
+  private static final double P = 1;
+  private static final double D = 500 * Path.LEAD_FRAMES;
+
   private void drive(DataPacket input, Controls output, Vector3 target, Segment currentSegment, Vector3 distanceDiff) {
     // Determine the angular velocity to hit the point
     double correctionAngle = Angles.flatCorrectionAngle(input.car, target);
@@ -67,10 +68,15 @@ public class PathExecutor {
     double maxAngularVelocity = maxCurvature * input.car.groundSpeed;
 
     double currentAngularVelocity = input.car.angularVelocity.z;
-    double diffAngularVelocity = currentAngularVelocity - maxAngularVelocity;
+    double diffAngularVelocity = correctionAngularVelocity - currentAngularVelocity;
 
     float segmentModifier = currentSegment.isStraight() ? .5f : 2; // Be more gentle on the steering if we are going straight.
-    output.withSteer(segmentModifier * (correctionAngularVelocity / maxAngularVelocity));
+
+    double p = (correctionAngularVelocity / maxAngularVelocity) * P;
+    double d = (diffAngularVelocity / maxAngularVelocity) * D;
+
+    output.withSteer(segmentModifier * (p + d));
+    BotRenderer.forCar(input.car).setBranchInfo("P %.2f D %.2f", p, d);
 
     double timeToTarget = distanceDiff.magnitude() / input.car.velocity.magnitude();
 
@@ -102,7 +108,8 @@ public class PathExecutor {
     boolean hasSpeed = input.car.groundSpeed > MIN_FLIP_SPEED;
     boolean isStraight = currentSegment.type == Segment.Type.STRAIGHT;
     boolean hasTime = (currentSegment.flatDistance() / Math.max(MIN_FLIP_SPEED, input.car.groundSpeed)) > 1;
-    if (hasSpeed && isStraight && hasTime) {
+    boolean straightSteer = Math.abs(output.getSteer()) < 1;
+    if (hasSpeed && isStraight && hasTime && straightSteer) {
       this.tactician.requestDelegate(
           Flip.builder()
               .setTarget(currentSegment.end)

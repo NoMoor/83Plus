@@ -69,7 +69,6 @@ public class TakeTheShotTactician extends Tactician {
 
     bot.botRenderer.renderPath(input, path);
     pathExecutor.executePath(input, output, path);
-    bot.botRenderer.setBranchInfo("Target acquired: %s", path.isTimed() ? "timed" : "untimed");
 
     if (output.getThrottle() < 0 && !output.holdBoost() && input.ball.velocity.magnitude() < .1) {
       BallData relativeBall = RelativeUtils.noseRelativeBall(input);
