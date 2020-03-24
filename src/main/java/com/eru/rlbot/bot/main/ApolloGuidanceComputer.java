@@ -16,6 +16,7 @@ import com.eru.rlbot.bot.prediction.NextFramePredictor;
 import com.eru.rlbot.bot.renderer.BallPredictionRenderer;
 import com.eru.rlbot.bot.renderer.BotRenderer;
 import com.eru.rlbot.bot.renderer.TrailRenderer;
+import com.eru.rlbot.bot.strats.Rotations;
 import com.eru.rlbot.bot.strats.StrategyManager;
 import com.eru.rlbot.bot.utils.ComputeTracker;
 import com.eru.rlbot.common.StateLogger;
@@ -104,7 +105,8 @@ public final class ApolloGuidanceComputer implements Bot {
     SlowGameNearBall.track(input);
 
     ComputeTracker.init(input.serialNumber);
-
+    Rotations rotations = Rotations.get(input);
+    rotations.track(input);
 
     // TODO: Remove this.
     if (false) {
@@ -132,6 +134,7 @@ public final class ApolloGuidanceComputer implements Bot {
     JumpManager.trackOutput(input, output);
 
     // Do Rendering.
+    Rotations.render(input);
     TrailRenderer.render(input, output);
     botRenderer.renderInfo(input, output);
     ballPredictionRenderer.renderBallPrediction();

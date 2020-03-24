@@ -340,7 +340,7 @@ public class DSKY {
 
     PerBotDebugOptions options = PerBotDebugOptions.get(serialNumber);
 
-    JCheckBox freezeCarCheckbox = new JCheckBox("Freeze rocket", options.isImmobilizeCar());
+    JCheckBox freezeCarCheckbox = new JCheckBox("Immobilize car", options.isImmobilizeCar());
     freezeCarCheckbox.addActionListener((e) ->
         options.setImmobilizeCar(freezeCarCheckbox.getModel().isSelected()));
     freezeCarCheckbox.setOpaque(false);
@@ -352,11 +352,17 @@ public class DSKY {
     renderAllDebugLinesCheckbox.setOpaque(false);
     optionsPanel.add(renderAllDebugLinesCheckbox);
 
-    JCheckBox renderDebugLines = new JCheckBox("Render lines", options.isRenderLines());
+    JCheckBox renderDebugLines = new JCheckBox("Render paths", options.isRenderLines());
     renderDebugLines.addActionListener((e) ->
         options.setRenderLines(renderDebugLines.getModel().isSelected()));
     renderDebugLines.setOpaque(false);
     optionsPanel.add(renderDebugLines);
+
+    JCheckBox renderRotations = new JCheckBox("Render rotations", options.isRenderRotationsEnabled());
+    renderRotations.addActionListener((e) ->
+        options.setRenderRotationsEnabled(renderRotations.getModel().isSelected()));
+    renderRotations.setOpaque(false);
+    optionsPanel.add(renderRotations);
 
     JCheckBox renderText = new JCheckBox("Render text", options.isRenderDebugText());
     renderText.addActionListener((e) ->

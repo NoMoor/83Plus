@@ -12,7 +12,7 @@ public final class PerBotDebugOptions {
   private final int playerIndex;
 
   private volatile boolean renderAllDebugLinesEnabled;
-  private volatile boolean renderLines = true;
+  private volatile boolean renderLines;
   private volatile boolean renderDebugText;
   private volatile boolean renderCarTrails;
   private volatile boolean renderBallPrediction;
@@ -20,6 +20,7 @@ public final class PerBotDebugOptions {
   private volatile boolean immobilizeCar;
   private volatile boolean prerenderNextFrame;
   private volatile boolean renderOpponentPaths;
+  private volatile boolean renderRotations;
 
   public PerBotDebugOptions(int playerIndex) {
     this.playerIndex = playerIndex;
@@ -92,5 +93,13 @@ public final class PerBotDebugOptions {
 
   public void setRenderDebugText(boolean renderDebugText) {
     this.renderDebugText = renderDebugText;
+  }
+
+  public void setRenderRotationsEnabled(boolean renderRotations) {
+    this.renderRotations = renderRotations;
+  }
+
+  public boolean isRenderRotationsEnabled() {
+    return this.renderRotations || renderAllDebugLinesEnabled;
   }
 }

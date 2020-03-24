@@ -25,10 +25,12 @@ import com.eru.rlbot.common.input.BallData;
 import com.eru.rlbot.common.input.BoundingBox;
 import com.eru.rlbot.common.input.CarData;
 import com.eru.rlbot.common.input.DataPacket;
+import com.eru.rlbot.common.input.Orientation;
 import com.eru.rlbot.common.jump.JumpManager;
 import com.eru.rlbot.common.output.Controls;
 import com.eru.rlbot.common.vector.Vector2;
 import com.eru.rlbot.common.vector.Vector3;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import java.awt.Color;
@@ -107,6 +109,28 @@ public class BotRenderer {
 
   public void renderStateSetWarning() {
     renderText(Color.ORANGE, 300, 150, 4, "State Setting Enabled");
+  }
+
+  private static double VISUAL_OFFSET = 1.2;
+
+  public void renderRotation(CarData car, int rotationNumber) {
+    if (!PerBotDebugOptions.get(bot.getIndex()).isRenderRotationsEnabled()) {
+      return;
+    }
+
+    Circle coverage = Circle.forPath(car.position, car.groundSpeed);
+    double visualCenter = Orientation.fromFlatVelocity(car).toEuclidianVector().yaw;
+    Vector3 leftVision = coverage.pointOnCircle(visualCenter - VISUAL_OFFSET);
+    Vector3 rightVision = coverage.pointOnCircle(visualCenter + VISUAL_OFFSET);
+    Segment segment = Segment.arc(leftVision, rightVision, coverage, true);
+
+    Color color = car.team == 0 ? Color.CYAN : Color.PINK;
+    getRenderer().drawString3d(String.valueOf(rotationNumber), color, car.position.addZ(100), 2, 2);
+
+    renderArc(color, segment);
+    getRenderer().drawLine3d(color, car.position, leftVision);
+    getRenderer().drawLine3d(color, car.position, rightVision);
+    getRenderer().drawLine3d(color, leftVision, rightVision);
   }
 
   private static class RenderRequest {
@@ -678,14 +702,15 @@ public class BotRenderer {
   }
 
   private void renderArc(Color color, Segment arc) {
+    Preconditions.checkArgument(arc.type == Segment.Type.ARC, "Segment must be of type ARC");
     renderCircle(color, arc.circle.center, arc.start, arc.circle.radius, arc.getRadians());
   }
 
-  public void renderCircle(Color color, Circle circle) {
+  private void renderCircle(Color color, Circle circle) {
     renderCircle(color, circle.center, circle.radius);
   }
 
-  public void renderCircle(Color color, Vector3 center, double radius) {
+  private void renderCircle(Color color, Vector3 center, double radius) {
     renderCircle(color, center, center.plus(Vector3.of(radius, 0, 0)), radius, FULL_CIRCLE);
   }
 
@@ -762,17 +787,15 @@ public class BotRenderer {
   }
 
   private void render3DLine(Color color, Vector3 loc1, Vector3 loc2) {
-    if (!skipLineRendering())
-      getRenderer().drawLine3d(color, loc1, loc2);
+    getRenderer().drawLine3d(color, loc1, loc2);
   }
 
   private void render3DSquare(Color color, Vector3 center, float sideLength) {
-    if (!skipLineRendering())
-      getRenderer().drawCenteredRectangle3d(
-          color,
-          center,
-          (int) sideLength,
-          (int) sideLength,
-          false);
+    getRenderer().drawCenteredRectangle3d(
+        color,
+        center,
+        (int) sideLength,
+        (int) sideLength,
+        false);
   }
 }

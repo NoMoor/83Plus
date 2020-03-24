@@ -39,6 +39,10 @@ public final class Circle {
     return (1 / Constants.curvature(velocity));
   }
 
+  public Vector3 pointOnCircle(double radians) {
+    return pointOnCircle(center, radius, radians);
+  }
+
   public static Vector3 pointOnCircle(Vector3 center, double radius, double radians) {
     double x = center.x + (radius * Math.cos(radians));
     double y = center.y + (radius * Math.sin(radians));

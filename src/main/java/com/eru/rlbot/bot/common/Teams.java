@@ -2,6 +2,7 @@ package com.eru.rlbot.bot.common;
 
 import com.eru.rlbot.common.Pair;
 import com.google.common.base.Preconditions;
+import java.util.stream.IntStream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import rlbot.flat.GameTickPacket;
@@ -27,6 +28,13 @@ public class Teams {
   public static int getTeamForBot(int index) {
     Preconditions.checkState(packet.playersLength() > index, "No player for index " + index);
     return packet.players(index).team();
+  }
+
+  public static int getTeamSize(int team) {
+    return (int) IntStream.range(0, packet.playersLength())
+        .mapToObj(packet::players)
+        .filter(playerInfo -> playerInfo.team() == team)
+        .count();
   }
 
   public static Pair<Integer, Integer> getScore() {
