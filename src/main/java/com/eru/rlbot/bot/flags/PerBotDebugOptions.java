@@ -19,7 +19,7 @@ public final class PerBotDebugOptions {
 
   private volatile boolean immobilizeCar;
   private volatile boolean prerenderNextFrame;
-  private volatile boolean renderOpponentPaths;
+  private volatile boolean renderCarPredictions;
   private volatile boolean renderRotations;
 
   public PerBotDebugOptions(int playerIndex) {
@@ -79,12 +79,12 @@ public final class PerBotDebugOptions {
     this.prerenderNextFrame = prerenderNextFrame;
   }
 
-  public boolean isRenderOpponentPaths() {
-    return renderOpponentPaths;
+  public boolean isRenderCarPredictionsEnabled() {
+    return renderCarPredictions;
   }
 
-  public void setRenderOpponentPaths(boolean renderOpponentPaths) {
-    this.renderOpponentPaths = renderOpponentPaths;
+  public void setRenderCarPredictions(boolean renderCarPredictions) {
+    this.renderCarPredictions = renderCarPredictions;
   }
 
   public boolean isRenderDebugText() {

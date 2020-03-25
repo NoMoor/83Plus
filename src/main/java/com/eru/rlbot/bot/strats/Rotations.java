@@ -2,11 +2,15 @@ package com.eru.rlbot.bot.strats;
 
 import static com.google.common.collect.ImmutableList.toImmutableList;
 
+import com.eru.rlbot.bot.common.Goal;
 import com.eru.rlbot.bot.common.Teams;
+import com.eru.rlbot.bot.prediction.CarLocationPredictor;
 import com.eru.rlbot.bot.renderer.BotRenderer;
 import com.eru.rlbot.common.input.CarData;
 import com.eru.rlbot.common.input.DataPacket;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.MoreCollectors;
+import java.util.Comparator;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class Rotations {
@@ -47,27 +51,38 @@ public class Rotations {
   }
 
   public void track(DataPacket input) {
-    ImmutableList<CarData> allies = input.allCars.stream()
-        .filter(car -> car.team == team)
-        .collect(toImmutableList());
+    Goal ownGoal = Goal.ownGoal(input.car.team);
 
-    one = allies.get(0);
+    ImmutableList<CarLocationPredictor.CarLocationPrediction> allies =
+        CarLocationPredictor.forCar(input.car).allies().stream()
+            .sorted(Comparator.comparing(prediction -> -prediction.oneSec().distance(ownGoal.center)))
+            .collect(toImmutableList());
+
+    one = extract(input, allies.get(0).getPlayerIndex());
     if (teamSize > 1) {
-      two = allies.get(1);
+      two = extract(input, allies.get(1).getPlayerIndex());
     }
     if (teamSize > 2) {
-      three = allies.get(2);
+      three = extract(input, allies.get(2).getPlayerIndex());
     }
     if (teamSize > 3) {
-      four = allies.get(3);
+      four = extract(input, allies.get(3).getPlayerIndex());
     }
 
     // TODO: Priority is defined as the next person to hit the ball. This is different from the rotation order which is
     // closer to a defense order.
     priority = input.car;
 
-    // TODO: Determine if one of our teammates is already aerialing at the ball.
-    teammateCommitted = false;
+    teammateCommitted = allies.stream()
+        .filter(car -> car.getPlayerIndex() != playerIndex)
+        .map(CarLocationPredictor.CarLocationPrediction::oneSec)
+        .anyMatch(prediction -> prediction.z > 200);
+  }
+
+  private CarData extract(DataPacket input, int index) {
+    return input.allCars.stream()
+        .filter(car -> car.serialNumber == index)
+        .collect(MoreCollectors.onlyElement());
   }
 
   private void renderRotation() {
@@ -113,5 +128,13 @@ public class Rotations {
 
   public boolean teammateCommitted() {
     return teammateCommitted;
+  }
+
+  public boolean isFirstMan() {
+    return one.serialNumber == playerIndex;
+  }
+
+  public CarData getFirstMan() {
+    return one;
   }
 }

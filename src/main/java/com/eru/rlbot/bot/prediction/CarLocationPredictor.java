@@ -10,6 +10,7 @@ import com.eru.rlbot.common.input.CarData;
 import com.eru.rlbot.common.input.DataPacket;
 import com.eru.rlbot.common.vector.Vector3;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.MoreCollectors;
 import java.awt.Color;
 import java.util.LinkedHashMap;
@@ -62,11 +63,6 @@ public class CarLocationPredictor {
   private void trackInternal(DataPacket input) {
     if (input.gameInfo.isRoundActive()) {
       for (CarData car : input.allCars) {
-        // Skip self.
-        if (car == input.car) {
-          continue;
-        }
-
         CarLocationPrediction prediction =
             predictions.computeIfAbsent(car.serialNumber, index -> new CarLocationPrediction(input.serialNumber));
 
@@ -74,7 +70,7 @@ public class CarLocationPredictor {
       }
     }
 
-    if (PerBotDebugOptions.get(input.serialNumber).isRenderOpponentPaths()) {
+    if (PerBotDebugOptions.get(input.serialNumber).isRenderCarPredictionsEnabled()) {
       predictions.values().forEach(CarLocationPrediction::renderPrediction);
     }
   }
@@ -146,6 +142,10 @@ public class CarLocationPredictor {
 
     public ImmutableList<CarPrediction.PredictionNode> getPredictions() {
       return predictions;
+    }
+
+    public Vector3 oneSec() {
+      return Iterables.getLast(predictions).position;
     }
   }
 }

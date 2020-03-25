@@ -370,17 +370,18 @@ public class DSKY {
     renderText.setOpaque(false);
     optionsPanel.add(renderText);
 
-    JCheckBox renderBallCheckbox = new JCheckBox("Render ball trajectory", options.isRenderBallPrediction());
+    JCheckBox renderBallCheckbox = new JCheckBox("Render ball prediction", options.isRenderBallPrediction());
     renderBallCheckbox.addActionListener((e) ->
         options.setRenderBallPrediction(renderBallCheckbox.getModel().isSelected()));
     renderBallCheckbox.setOpaque(false);
     optionsPanel.add(renderBallCheckbox);
 
-    JCheckBox renderOpponentPathsCheckbox = new JCheckBox("Render opponent paths", options.isRenderOpponentPaths());
-    renderOpponentPathsCheckbox.addActionListener((e) ->
-        options.setRenderOpponentPaths(renderOpponentPathsCheckbox.getModel().isSelected()));
-    renderOpponentPathsCheckbox.setOpaque(false);
-    optionsPanel.add(renderOpponentPathsCheckbox);
+    JCheckBox renderCarPredictionsCheckbox =
+        new JCheckBox("Render car predictions", options.isRenderCarPredictionsEnabled());
+    renderCarPredictionsCheckbox.addActionListener((e) ->
+        options.setRenderCarPredictions(renderCarPredictionsCheckbox.getModel().isSelected()));
+    renderCarPredictionsCheckbox.setOpaque(false);
+    optionsPanel.add(renderCarPredictionsCheckbox);
 
     JCheckBox trailRendererCheckbox = new JCheckBox("Trail Renderer", options.isRenderCarTrails());
     trailRendererCheckbox.addActionListener((e) ->

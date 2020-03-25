@@ -3,14 +3,11 @@ package com.eru.rlbot.bot.tactics;
 import com.eru.rlbot.bot.common.Angles3;
 import com.eru.rlbot.bot.common.Goal;
 import com.eru.rlbot.bot.main.ApolloGuidanceComputer;
+import com.eru.rlbot.bot.maneuver.WallHelper;
 import com.eru.rlbot.bot.path.Path;
 import com.eru.rlbot.bot.path.PathPlanner;
-import com.eru.rlbot.common.input.CarData;
 import com.eru.rlbot.common.input.DataPacket;
-import com.eru.rlbot.common.input.Orientation;
 import com.eru.rlbot.common.output.Controls;
-import com.eru.rlbot.common.vector.Vector3;
-import java.awt.Color;
 
 /**
  * Moves the ball back toward the given location.
@@ -41,24 +38,22 @@ public class RotateTactician extends Tactician {
   }
 
   private void usingPathPlanner(DataPacket input, Controls output, Tactic tactic) {
-    // TODO: Uses current ball position and future car position.
-    Vector3 targetVelocity = input.ball.position.minus(tactic.subject.position).addX(.01).toMagnitude(1800);
+    if (WallHelper.isOnWall(input.car)) {
+      bot.botRenderer.setBranchInfo("Get off the wall");
 
-    CarData targetCar = CarData.builder()
-        .setPosition(tactic.subject.position)
-        .setVelocity(targetVelocity)
-        .setOrientation(Orientation.fromFlatVelocity(targetVelocity))
-        .build();
+      WallHelper.drive(input, output, input.ball.position);
+      return;
+    }
 
-    Path path = PathPlanner.planPath(input.car, targetCar);
+    Path path = PathPlanner.oneTurn(input.car, tactic.subject);
     path.setTimed(false);
     bot.botRenderer.renderPath(input, path);
-    bot.botRenderer.renderHitBox(Color.BLACK, targetCar);
 
     if (input.car.hasWheelContact) {
       pathExecutor.executePath(input, output, path);
     } else {
       Angles3.setControlsForFlatLanding(input.car, output);
+      output.withThrottle(1.0);
     }
   }
 

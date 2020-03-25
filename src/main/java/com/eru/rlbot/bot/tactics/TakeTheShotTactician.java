@@ -1,5 +1,6 @@
 package com.eru.rlbot.bot.tactics;
 
+import com.eru.rlbot.bot.common.Angles3;
 import com.eru.rlbot.bot.common.Goal;
 import com.eru.rlbot.bot.common.RelativeUtils;
 import com.eru.rlbot.bot.main.ApolloGuidanceComputer;
@@ -73,6 +74,8 @@ public class TakeTheShotTactician extends Tactician {
     if (output.getThrottle() < 0 && !output.holdBoost() && input.ball.velocity.magnitude() < .1) {
       BallData relativeBall = RelativeUtils.noseRelativeBall(input);
       logger.info("Slowing down! throttle: {} ballSpeed: {} ballDistance: {}", output.getThrottle(), input.ball.velocity.magnitude(), relativeBall.position);
+    } else if (!input.car.hasWheelContact) {
+      Angles3.setControlsForFlatLanding(input.car, output);
     }
   }
 

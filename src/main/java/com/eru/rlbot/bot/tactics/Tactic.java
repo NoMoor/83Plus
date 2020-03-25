@@ -1,6 +1,7 @@
 package com.eru.rlbot.bot.tactics;
 
 import com.eru.rlbot.common.Moment;
+import com.eru.rlbot.common.input.BallData;
 import com.eru.rlbot.common.vector.Vector3;
 import com.google.common.base.MoreObjects;
 import com.google.common.base.Objects;
@@ -116,6 +117,11 @@ public class Tactic {
 
     public Builder setSubject(Vector3 location) {
       this.moment = new Moment(location, Vector3.zero());
+      return this;
+    }
+
+    public Builder setSubject(BallData ball) {
+      this.moment = Moment.from(ball);
       return this;
     }
 

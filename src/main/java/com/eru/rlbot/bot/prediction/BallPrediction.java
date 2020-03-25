@@ -68,7 +68,7 @@ public class BallPrediction {
 
   public static class Potential {
 
-    private final int index;
+    public final int index;
     private final List<Plan> plans = new ArrayList<>();
 
     public Potential(int index) {

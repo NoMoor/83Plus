@@ -120,7 +120,7 @@ public class KickoffTactician extends Tactician {
 
   private KickoffTactic selectTactic(DataPacket input, KickoffLocation location) {
     if (!hasPriority(input, location)) {
-      // TODO: Grab boost
+      // TODO: Make sure someone else isn't already close to that boost.
       Vector3 target = BoostManager.getLargeBoosts().stream()
           .map(BoostPad::getLocation)
           .min(Comparator.comparing(boostLocation -> boostLocation.distance(input.car.position)))

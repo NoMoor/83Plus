@@ -23,11 +23,11 @@ public final class Locations {
   }
 
   private static Vector3 toOutsideLeftGoal(CarData car, Vector3 target) {
-    return Vector3.from(target, Goal.ownGoal(car.team).leftOutside);
+    return Vector3.from(target, Goal.ownGoal(car.team).leftWide);
   }
 
   private static Vector3 toOutsideRightGoal(CarData car, Vector3 position) {
-    return Vector3.from(position, Goal.ownGoal(car.team).rightOutside);
+    return Vector3.from(position, Goal.ownGoal(car.team).rightWide);
   }
 
   public static Vector3 ballToOppGoalCenter(DataPacket input) {
