@@ -127,7 +127,7 @@ public class DemoTactician extends Tactician {
     } else if (ball != null) {
       target = ball.ball.position;
     } else {
-      target = Goal.ownGoal(input.car.team).getSameSidePost(input.car);
+      target = Goal.ownGoal(input.car.team).getNearPost(input.car);
     }
 
     if (input.car.boost < 5 && !input.car.isSupersonic) {

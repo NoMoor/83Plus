@@ -1,5 +1,6 @@
 package com.eru.rlbot.common.vector;
 
+import com.eru.rlbot.bot.common.Constants;
 import com.eru.rlbot.common.Matrix3;
 import com.google.common.base.Objects;
 import com.google.flatbuffers.FlatBufferBuilder;
@@ -35,17 +36,30 @@ public class Vector3 extends rlbot.vector.Vector3 {
     this(vec.x(), vec.y(), vec.z());
   }
 
-  /** Returns a new vector pointing from source to target. */
+  /**
+   * Returns a new vector pointing from source to target.
+   */
   public static Vector3 from(Vector3 source, Vector3 target) {
     return target.minus(source);
   }
 
-  /** Translates a vector to the framework flat vector format. */
+  /**
+   * Creates a Vector3 at car height.
+   */
+  public static Vector3 fieldLevel(double x, double y) {
+    return of(x, y, Constants.CAR_AT_REST);
+  }
+
+  /**
+   * Translates a vector to the framework flat vector format.
+   */
   public int toFlatbuffer(FlatBufferBuilder builder) {
     return rlbot.flat.Vector3.createVector3(builder, x, y, z);
   }
 
-  /** Adds the two vectors together. */
+  /**
+   * Adds the two vectors together.
+   */
   public Vector3 plus(Vector3 other) {
     return new Vector3(x + other.x, y + other.y, z + other.z);
   }

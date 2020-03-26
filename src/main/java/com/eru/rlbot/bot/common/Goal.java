@@ -58,8 +58,14 @@ public final class Goal {
     this.rightUpperCorner = right.addZ(Constants.GOAL_HEIGH - BALL_RADIUS);
   }
 
-  /** Returns the post on the same side as the given car. */
-  public Vector3 getSameSidePost(CarData car) {
+  /**
+   * Returns the post on the same side as the given car.
+   */
+  public Vector3 getNearPost(CarData car) {
     return Math.signum(car.position.x) == Math.signum(right.x) ? right : left;
+  }
+
+  public Vector3 getFarPost(Vector3 supportLocation) {
+    return Math.signum(supportLocation.x) == -Math.signum(right.x) ? right : left;
   }
 }

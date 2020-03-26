@@ -132,7 +132,7 @@ public class KickoffTactician extends Tactician {
       if (location.station == KickoffStation.RIGHT || location.station == KickoffStation.LEFT) {
         if (hasTeammates || (hasScoreDiff(input, 2) && random.nextBoolean())) {
           // Aim for the goal.
-          Vector3 goalAngle = input.ball.position.minus(Goal.opponentGoal(input.alliance).getSameSidePost(input.car));
+          Vector3 goalAngle = input.ball.position.minus(Goal.opponentGoal(input.alliance).getNearPost(input.car));
           Vector3 target = input.ball.position.plus(goalAngle.toMagnitude(Constants.BALL_RADIUS * 1.3));
           return KickoffTactic.create(location, target, KickoffTactic.Type.SHOOT);
         } else {

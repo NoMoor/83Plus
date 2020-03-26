@@ -133,6 +133,12 @@ public class BotRenderer {
     getRenderer().drawLine3d(color, leftVision, rightVision);
   }
 
+  public void renderRegions(ImmutableList<Circle> regions) {
+    for (Circle region : regions) {
+      renderCircle(Color.pink, region);
+    }
+  }
+
   private static class RenderRequest {
     private final float renderTimeEnd;
     private final Vector3 source;
@@ -200,6 +206,11 @@ public class BotRenderer {
 
   private PriorityQueue<RenderRequest> renderRequests =
       new PriorityQueue<>(Comparator.comparingDouble(rr -> rr.renderTimeEnd));
+
+  // TODO: Refactor this to put color first.
+  public void renderProjection(Vector3 source, Vector3 target, Color color) {
+    renderProjection(source, target, color, 0);
+  }
 
   public void renderProjection(Vector3 source, Vector3 target, Color color, float renderUntil) {
     renderProjection(source, target, color, renderUntil, "");
@@ -706,7 +717,7 @@ public class BotRenderer {
     renderCircle(color, arc.circle.center, arc.start, arc.circle.radius, arc.getRadians());
   }
 
-  private void renderCircle(Color color, Circle circle) {
+  public void renderCircle(Color color, Circle circle) {
     renderCircle(color, circle.center, circle.radius);
   }
 
@@ -731,7 +742,7 @@ public class BotRenderer {
     }
   }
 
-  private static final int POINT_COUNT = 20;
+  private static final int POINT_COUNT = 10;
   private ImmutableList<Vector3> toCirclePoints(Vector3 center, Vector3 initialPoint, double radius, double radians) {
     Vector2 ray = initialPoint.minus(center).flatten();
     double radianOffset = Vector2.WEST.correctionAngle(ray);

@@ -92,12 +92,12 @@ public class AttackStrategist extends Strategist {
     Rotations rotations = Rotations.get(input);
     Goal ownGoal = Goal.ownGoal(input.car.team);
 
+    // TODO: Use Regions.
     if (rotations.isFirstMan()) {
       // Rotate to the back.
-      Vector3 goalPost = Goal.ownGoal(input.car.team).getSameSidePost(input.car);
+      Vector3 goalPost = Goal.ownGoal(input.car.team).getFarPost(firstTouchBall.position);
       goalPost = goalPost.addY(-Math.signum(goalPost.y) * 1000);
-
-      return Moment.from(goalPost); // TODO: Rotate back post.
+      return Moment.from(goalPost);
     } else if (rotations.isLastManBack()) {
       Vector3 touchGoalCenter = firstTouchBall.position.minus(ownGoal.center);
       Vector3 towardGoal = touchGoalCenter.multiply(.5);
