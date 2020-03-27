@@ -174,8 +174,10 @@ public class BotRenderer {
       renderAlert(input);
 
       renderControls(output);
-      renderAcceleration(input);
-      renderLocation(input);
+
+      renderBallVel(input);
+//      renderCarAccel(input);
+//      renderCarLocation(input);
       renderChallengeData(input);
     }
 
@@ -668,8 +670,14 @@ public class BotRenderer {
     renderText(250, 550, String.format("Roll %.2f %s", output.getRoll(), lor(output.getRoll())));
   }
 
+  private void renderBallVel(DataPacket input) {
+    BallData ball = input.ball;
 
-  private void renderLocation(DataPacket input) {
+    renderText(0, 400, String.format("bV3: %.0f", ball.velocity.magnitude()));
+    renderText(0, 430, String.format("bV2: %.0f", ball.velocity.flat().magnitude()));
+  }
+
+  private void renderCarLocation(DataPacket input) {
     CarData car = input.car;
 
     renderText(0, 400, String.format("X: %.0f", car.position.x));
@@ -677,7 +685,7 @@ public class BotRenderer {
     renderText(0, 460, String.format("Z: %.0f", car.position.z));
   }
 
-  private void renderAcceleration(DataPacket input) {
+  private void renderCarAccel(DataPacket input) {
     CarData car = input.car;
 
     if (previousVelocities.size() == SMOOTHING_INTERVAL) {

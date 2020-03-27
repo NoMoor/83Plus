@@ -40,6 +40,17 @@ public class TakeTheShotTactician extends Tactician {
 
   @Override
   public void internalExecute(DataPacket input, Controls output, Tactic tactic) {
+    // If the tactic location is above 300 uu, move it down since this tactician cannot aerial.
+    if (tactic.subject.position.z > 500) {
+      Moment subject = tactic.subject.toBuilder()
+          .setPosition(tactic.subject.position.addZ(500 - tactic.subject.position.z)) // set Z to 500
+          .build();
+
+      tactic = tactic.toBuilder()
+          .setSubject(subject)
+          .build();
+    }
+
     if (WallHelper.isOnWall(input.car)) {
       bot.botRenderer.setBranchInfo("Get off the wall");
 
@@ -60,7 +71,13 @@ public class TakeTheShotTactician extends Tactician {
           CarBallOptimizer.xSpeed(tactic.subject, Goal.opponentGoal(input.car.team).center, target);
 
       path = PathPlanner.oneTurn(input.car, Moment.from(optimalHit.car));
-      path.lockAndSegment();
+
+      if (path == null || !path.lockAndSegment()) {
+        path = null;
+        pathExecutor.executeSimplePath(input, output, tactic);
+        return;
+      }
+
       path.extendThroughBall();
       path.setTimed(true);
 

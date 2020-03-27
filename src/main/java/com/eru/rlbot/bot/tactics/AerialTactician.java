@@ -45,10 +45,10 @@ public class AerialTactician extends Tactician {
     target = tactic.subject;
 
     float timeToImpact = target.time - input.car.elapsedSeconds;
-    bot.botRenderer.renderText(Color.RED, target.position, "" + timeToImpact);
 
-    bot.botRenderer.renderTarget(Color.CYAN, target.position);
-    bot.botRenderer.renderTarget(Color.WHITE, computeInterceptLocation(target, tactic.object));
+    bot.botRenderer.renderTarget(Color.CYAN, tactic.object);
+    bot.botRenderer.renderTarget(Color.WHITE, tactic.subject.position);
+    bot.botRenderer.renderTarget(Color.MAGENTA, computeInterceptLocation(target, tactic.object));
     if (input.car.hasWheelContact && input.car.position.z < 50) {
 
       // TODO: Put this into a sort of aerial planning object.
@@ -107,7 +107,6 @@ public class AerialTactician extends Tactician {
   private static double FAST_AERIAL_BOOST = FAST_AERIAL_TIME * Constants.BOOST_RATE;
   private static double AERIAL_EFFICIENCY = .25;
 
-
   public static Optional<Plan> doAerialPlanning(CarData car, BallData ball) {
     AerialLookUp.AerialInfo aerialInfo = AerialLookUp.averageBoost(ball.position.z);
 
@@ -136,6 +135,7 @@ public class AerialTactician extends Tactician {
 
       return Optional.of(
           Plan.builder()
+              .setTacticType(Tactic.TacticType.AERIAL)
               .setPath(oneTurn)
               .setBoostUsed(aerialInfo.boostAmount + acceleration.boost)
               .build(ball.time - car.elapsedSeconds));
@@ -147,6 +147,8 @@ public class AerialTactician extends Tactician {
   private boolean freestyle = false;
 
   private void humanExecution(DataPacket input, Controls output, FlightPlan plan) {
+
+    // TODO: If we have enough boost, Match the angle of impact first and then boost to hit the ball.
     FlightTrajectory trajectory = computeFlightTrajectory(input, plan);
     Vector3 flightPlanDiff = plan.computeDeviation(trajectory);
     float timeToImpact = plan.interceptTime - input.car.elapsedSeconds;
@@ -220,8 +222,6 @@ public class AerialTactician extends Tactician {
   private static Pair<FlightPlan, FlightLog> makePlan(DataPacket input, Moment target, Vector3 targetResult) {
     Vector3 interceptLocation = computeInterceptLocation(target, targetResult);
 
-//    float flightDuration =
-//        (float) ((input.car.position.flatten().distance(interceptLocation.flatten()) / input.car.velocity.magnitude()) * .95);
     float flightDuration = target.time - input.car.elapsedSeconds;
     float startBoostTime = flightDuration * .25f;
     Vector3 boostVector = calculateBoost(input.car, interceptLocation, flightDuration, startBoostTime);
@@ -244,7 +244,17 @@ public class AerialTactician extends Tactician {
 
   private static Vector3 computeInterceptLocation(Moment moment, Vector3 targetPosition) {
     if (moment.type == Moment.Type.BALL) {
-      return moment.position.minus(targetPosition)
+      // Assume that we hit the ball hard (~2000) and aim for the top.
+      Vector3 ballToTarget = moment.position.minus(targetPosition);
+      double flatDistance = ballToTarget.flatten().magnitude();
+      double travelTime = flatDistance / 2000;
+      double verticalDrop = Accels.verticalDistance(moment.velocity.z, travelTime);
+
+      // Pretend the target is higher than it is.
+      Vector3 adjustedTarget = targetPosition.addZ(-verticalDrop);
+      Vector3 newTargetToBall = moment.position.minus(adjustedTarget);
+
+      return newTargetToBall
           .toMagnitude(Constants.BALL_RADIUS)
           .plus(moment.position);
     } else {

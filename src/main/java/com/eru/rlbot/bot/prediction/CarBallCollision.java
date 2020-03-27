@@ -39,7 +39,7 @@ public class CarBallCollision {
       return ball;
     }
 
-    Vector3 normalizedBallCarTouch = touchPoint.minus(ball.position).normalize();
+    Vector3 normalizedBallCarTouch = touchPoint.minus(ball.position).normalizeOrZero();
 
     // Levers of rotation for ball and car.
     Matrix3 ballLever = antisym(touchPoint.minus(ball.position));

@@ -2,9 +2,11 @@ package com.eru.rlbot.bot.path;
 
 import com.eru.rlbot.bot.common.Accels;
 import com.eru.rlbot.bot.common.Angles;
+import com.eru.rlbot.bot.common.Angles3;
 import com.eru.rlbot.bot.common.Constants;
 import com.eru.rlbot.bot.maneuver.Flip;
 import com.eru.rlbot.bot.renderer.BotRenderer;
+import com.eru.rlbot.bot.tactics.Tactic;
 import com.eru.rlbot.bot.tactics.Tactician;
 import com.eru.rlbot.common.input.DataPacket;
 import com.eru.rlbot.common.output.Controls;
@@ -115,6 +117,19 @@ public class PathExecutor {
               .setTarget(currentSegment.end)
               .flipEarly()
               .build());
+    }
+  }
+
+  public void executeSimplePath(DataPacket input, Controls output, Tactic tactic) {
+    if (!input.car.hasWheelContact) {
+      Angles3.setControlsForFlatLanding(input.car, output);
+      output.withThrottle(1.0);
+    } else {
+      double correctionAngle = Angles.flatCorrectionAngle(input.car, tactic.subject.position);
+      output
+          .withThrottle(1.0)
+          .withSteer(correctionAngle)
+          .withSlide(Math.abs(correctionAngle) > 1);
     }
   }
 }

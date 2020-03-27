@@ -123,6 +123,14 @@ public class Vector3 extends rlbot.vector.Vector3 {
     return this.multiply(1 / magnitude());
   }
 
+  public Vector3 normalizeOrZero() {
+
+    if (isZero()) {
+      return Vector3.zero();
+    }
+    return this.multiply(1 / magnitude());
+  }
+
   public Vector3 uncheckedNormalize() {
     if (isZero()) {
       return new Vector3(1, 0, 0);
@@ -130,7 +138,9 @@ public class Vector3 extends rlbot.vector.Vector3 {
     return this.multiply(1 / magnitude());
   }
 
-  /** Returns the dot-product of this vector with the given vector. */
+  /**
+   * Returns the dot-product of this vector with the given vector.
+   */
   public double dot(Vector3 other) {
     return x * other.x + y * other.y + z * other.z;
   }

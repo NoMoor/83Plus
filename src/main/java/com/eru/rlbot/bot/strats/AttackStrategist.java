@@ -65,13 +65,15 @@ public class AttackStrategist extends Strategist {
         BallPredictionUtil.get(input.car).getChallengeData();
     if (!challengeDataOptional.isPresent()) {
       // The ball cannot be hit by anyone. Grab boost and go on defense
-      return getSupportPosition(input, input.ball);
+      return Teams.getTeamSize(input.car.team) == 1
+          ? getStrikingTactic(input, challengeDataOptional)
+          : getSupportPosition(input, input.ball);
     }
 
     BallPredictionUtil.ChallengeData challengeData = challengeDataOptional.get();
     if (challengeData.firstTouch.isHittable(input.car)) {
       // Go hit the ball
-      return getStrikingTactic(input, challengeData);
+      return getStrikingTactic(input, challengeDataOptional);
     } else if (challengeData.firstTouch.isHittableByTeam(input.car.team)) {
       // Hittable by our team
       return getSupportPosition(input, challengeData.firstTouch.ball);
@@ -113,13 +115,27 @@ public class AttackStrategist extends Strategist {
     }
   }
 
-  private Tactic getStrikingTactic(DataPacket input, BallPredictionUtil.ChallengeData challengeData) {
+  private Tactic getStrikingTactic(DataPacket input, Optional<BallPredictionUtil.ChallengeData> challengeDataOptional) {
     Rotations rotations = Rotations.get(input);
     // TODO: Gate this on rotation priority.
+
+    BallData subject = input.ball;
+    Vector3 object = Goal.opponentGoal(input.car.team).center;
+    Tactic.TacticType type = Tactic.TacticType.STRIKE;
+
+    if (challengeDataOptional.isPresent()) {
+      BallPrediction firstTouch = challengeDataOptional.get().firstTouch;
+      BallPrediction.Potential potential = firstTouch.forCar(input.car.serialNumber);
+
+      subject = firstTouch.ball;
+      object = getObject(potential);
+      type = potential.getPlan().type;
+    }
+
     return Tactic.builder()
-        .setTacticType(Tactic.TacticType.STRIKE)
-        .setSubject(challengeData.firstTouch.ball)
-        .setObject(getObject(challengeData.firstTouch.forCar(input.car.serialNumber)))
+        .setTacticType(type)
+        .setSubject(subject)
+        .setObject(object)
         .build();
   }
 
@@ -137,9 +153,9 @@ public class AttackStrategist extends Strategist {
         return Math.abs(rightCorrectionAngle) < Math.abs(leftCorrectionAngle) ? ownGoal.rightWide : ownGoal.leftWide;
       }
 
-      return opponentGoal.center;
+      return opponentGoal.centerTop;
     } else {
-      return opponentGoal.center;
+      return opponentGoal.centerTop;
     }
   }
 

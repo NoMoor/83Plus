@@ -68,17 +68,17 @@ public class Path {
     return new Builder();
   }
 
-  public void lockAndSegment() {
+  public boolean lockAndSegment() {
     float targetTime = target.elapsedSeconds - start.elapsedSeconds;
     if (targetTime < .1) {
-      return;
+      logger.debug("Skip timing");
+      return false;
     }
 
-    long nanoStartTime = System.nanoTime();
     Plan traversePlan = makeSpeedPlan(start.boost, targetTime);
     segmentByPlan(traversePlan);
-    long nanoEndTime = System.nanoTime();
-    logger.debug("Took {}ns to segment", (nanoEndTime - nanoStartTime));
+
+    return true;
   }
 
   static final float LEAD_FRAMES = 12f;
@@ -246,6 +246,7 @@ public class Path {
 
     Plan plan = planBuilder
         .setBoostUsed(striking.boost)
+        .setTacticType(Tactic.TacticType.STRIKE)
         .build(targetTime);
 
     planMap.put(Pair.of(boostAmount, targetTime), plan);

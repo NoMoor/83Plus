@@ -87,6 +87,10 @@ public class BallPrediction {
       plans.add(plan);
     }
 
+    public Plan getPlan() {
+      return plans.isEmpty() ? null : plans.get(0);
+    }
+
     public Path getPath() {
       return plans.isEmpty() ? null : plans.get(0).path;
     }

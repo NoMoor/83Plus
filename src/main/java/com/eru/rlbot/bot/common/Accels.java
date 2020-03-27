@@ -208,7 +208,23 @@ public class Accels {
     return new AccelResult(currentVelocity, initialTime, distanceTraveled, initialBoost - boostRemaining);
   }
 
-  /** The result of an acceleration simulation. */
+  // TODO: Change to AccelResult.
+  public static double verticalDistance(float initialVerticalSpeed, double travelTime) {
+    double time = travelTime;
+    double distance = 0;
+    double speed = initialVerticalSpeed;
+
+    while (time > 0) {
+      speed += Constants.NEG_GRAVITY * STEP_SIZE;
+      distance += speed * STEP_SIZE;
+      time -= STEP_SIZE;
+    }
+    return distance;
+  }
+
+  /**
+   * The result of an acceleration simulation.
+   */
   public static class AccelResult {
     public final double distance;
     public final double speed;

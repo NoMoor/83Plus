@@ -1,6 +1,7 @@
 package com.eru.rlbot.bot.path;
 
 import com.eru.rlbot.bot.tactics.Tactic;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import java.util.LinkedList;
 import java.util.List;
@@ -14,6 +15,7 @@ public class Plan {
   public final Tactic.TacticType type;
 
   public Plan(Builder builder) {
+    Preconditions.checkArgument(builder.type != null, "All plans must have a type.");
     traverseTime = builder.time;
     path = builder.path;
     boostUsed = builder.boostUsed;

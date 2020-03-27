@@ -46,6 +46,12 @@ public class RotateTactician extends Tactician {
     }
 
     Path path = PathPlanner.oneTurn(input.car, tactic.subject);
+
+    if (path == null) {
+      pathExecutor.executeSimplePath(input, output, tactic);
+      return;
+    }
+
     path.setTimed(false);
     bot.botRenderer.renderPath(input, path);
 

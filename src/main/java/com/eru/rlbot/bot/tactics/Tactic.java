@@ -81,7 +81,7 @@ public class Tactic {
     return false;
   }
 
-  private Builder toBuilder() {
+  Builder toBuilder() {
     return new Builder()
         .setSubject(this.subject)
         .setTacticType(this.tacticType)
@@ -97,7 +97,6 @@ public class Tactic {
 
     private TacticType tacticType;
     private Moment moment;
-
     private Vector3 object;
 
     public Builder setTacticType(TacticType tacticType) {

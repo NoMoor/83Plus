@@ -57,6 +57,10 @@ public class Moment {
     this(boostPad.getLocation(), boostPad.isLargeBoost() ? Type.LARGE_BOOST : Type.SMALL_BOOST);
   }
 
+  private Moment(Builder builder) {
+    this(builder.position, builder.velocity, builder.time, builder.type);
+  }
+
   public static Moment from(Vector3 wayPoint) {
     return new Moment(wayPoint, Type.WAY_POINT);
   }
@@ -105,6 +109,18 @@ public class Moment {
         .build();
   }
 
+  public Moment.Builder toBuilder() {
+    return builder()
+        .setPosition(position)
+        .setTime(time)
+        .setType(type)
+        .setVelocity(velocity);
+  }
+
+  public static Builder builder() {
+    return new Builder();
+  }
+
   public enum Type {
     BALL,
     CAR,
@@ -118,6 +134,38 @@ public class Moment {
 
     boolean isBall() {
       return this == BALL;
+    }
+  }
+
+  public static class Builder {
+
+    private Vector3 position;
+    private float time;
+    private Type type;
+    private Vector3 velocity;
+
+    public Builder setPosition(Vector3 position) {
+      this.position = position;
+      return this;
+    }
+
+    public Builder setTime(float time) {
+      this.time = time;
+      return this;
+    }
+
+    public Builder setType(Type type) {
+      this.type = type;
+      return this;
+    }
+
+    public Builder setVelocity(Vector3 velocity) {
+      this.velocity = velocity;
+      return this;
+    }
+
+    public Moment build() {
+      return new Moment(this);
     }
   }
 }
