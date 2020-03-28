@@ -106,6 +106,9 @@ class Setup(TrainingExercise):
     car_x: float = 0
     car_y: float = 10
     car_z: float = 17
+    car_vx: float = 0
+    car_vy: float = 0
+    car_vz: float = 0
     car_spin: float = pi / 2
     car_pitch: float = 0
     car_roll: float = 0
@@ -121,7 +124,7 @@ class Setup(TrainingExercise):
                     physics=Physics(
                         location=Vector3(self.car_x, self.car_y, self.car_z),
                         rotation=Rotator(self.car_pitch, self.car_spin, self.car_roll),
-                        velocity=Vector3(0, 0, 0),
+                        velocity=Vector3(self.car_vx, self.car_vy, self.car_vz),
                         angular_velocity=Vector3(0, 0, 0)),
                     boost_amount=100)
             },

@@ -8,4 +8,4 @@ instead.
 Advanced:
 
 - It's fine to close and restart `.bat` while the framework is active.
-- If there is a port conflict, you can modify the `port.cfg` file in this directory to use another one.
+- If there is a port conflict, you cannot modify the port... change someone else's port.

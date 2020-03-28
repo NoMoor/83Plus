@@ -35,14 +35,6 @@ def dllDirectory = '\\build\\dll'
 
 applicationDefaultJvmArgs = ["-Djna.library.path=" + dllDirectory]
 
-application {
-    // Read the port from file.
-    def portNum = new File('src\\main\\python\\port.cfg').readLines()[0]
-    run {
-        args "--port=$portNum"
-    }
-}
-
 // https://www.mkyong.com/gradle/gradle-application-plugin-app_home-in-applicationdefaultjvmargs/
 startScripts {
     classpath += files('..\\python')
@@ -55,7 +47,7 @@ startScripts {
 
 dependencies {
     // Fetch the framework jar file
-    compile 'org.rlbot.commons:framework:1.+'
+    compile 'org.rlbot.commons:framework:2.+'
     compile 'com.google.guava:guava:27.1-jre'
     compile 'com.google.protobuf:protobuf-java:3.4.0'
     compile 'com.google.protobuf:protobuf-java-util:3.4.0'
@@ -129,7 +121,7 @@ distZip {
 }
 
 // A version number that is included in the dist release. The minor version is incremented each time distZip is run.
-def archiveVersion = '1.0.187'
+def archiveVersion = '1.0.212'
 task incrementVersionNumber {
     def v = archiveVersion
     String minor = v.substring(v.lastIndexOf('.') + 1).toInteger() + 1
@@ -189,8 +181,6 @@ protobuf {
         }
     }
 }
-
-application.class
 
 task printClasspath {
     doLast {

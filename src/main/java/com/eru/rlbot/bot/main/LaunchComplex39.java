@@ -1,11 +1,7 @@
 package com.eru.rlbot.bot.main;
 
 import com.eru.rlbot.bot.common.Constants;
-import com.eru.rlbot.common.util.CommChannelReader;
-import java.util.Arrays;
-import java.util.Optional;
 import rlbot.manager.BotManager;
-import rlbot.pyinterop.PythonServer;
 
 /**
  * The best way to launch a rocket.
@@ -16,23 +12,23 @@ public class LaunchComplex39 {
     BotManager houston = new BotManager();
     houston.setRefreshRate(Constants.STEP_SIZE_COUNT);
 
-    VehicleAssemblyBuilding vehicleAssemblyBuilding = new VehicleAssemblyBuilding(houston);
-    int commChannel = getPort(args);
-
-    PythonServer radioModule = new PythonServer(vehicleAssemblyBuilding, commChannel);
-    radioModule.start();
-
+    int commChannel = readPortFromArgs(args);
+    VehicleAssemblyBuilding vehicleAssemblyBuilding = new VehicleAssemblyBuilding(commChannel, houston);
     DSKY.assemble(vehicleAssemblyBuilding, commChannel);
+
+    vehicleAssemblyBuilding.start();
   }
 
-  private static final String portArg = "--port=";
+  public static int readPortFromArgs(String[] args) {
+    if (args.length > 0) {
+      try {
+        return Integer.parseInt(args[0]);
+      } catch (NumberFormatException e) {
+        System.out.println(e.getMessage());
+      }
+    }
 
-  private static final int getPort(String[] args) {
-    Optional<String> port = Arrays.stream(args)
-        .filter(arg -> arg.startsWith(portArg))
-        .map(arg -> arg.replace(portArg, ""))
-        .findFirst();
-
-    return port.map(Integer::parseInt).orElseGet(() -> CommChannelReader.readPortFromFile("port.cfg"));
+    System.out.println("Could not read port from args, using default!");
+    return 17360;
   }
 }

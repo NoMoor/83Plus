@@ -4,12 +4,12 @@ import com.google.common.collect.ImmutableList;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import rlbot.manager.BotManager;
-import rlbot.pyinterop.DefaultPythonInterface;
+import rlbot.pyinterop.SocketServer;
 
 /**
  * Rockets don't just put themselves together. They require hard work.
  */
-public final class VehicleAssemblyBuilding extends DefaultPythonInterface {
+public final class VehicleAssemblyBuilding extends SocketServer {
 
   /**
    * A collection of rockets, organized by serial number.
@@ -18,8 +18,8 @@ public final class VehicleAssemblyBuilding extends DefaultPythonInterface {
 
   protected final BotManager botManager;
 
-  VehicleAssemblyBuilding(BotManager botManager) {
-    super(botManager);
+  VehicleAssemblyBuilding(int commChannel, BotManager botManager) {
+    super(commChannel, botManager);
     this.botManager = botManager;
   }
 
