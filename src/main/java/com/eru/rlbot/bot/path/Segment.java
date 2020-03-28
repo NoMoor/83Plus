@@ -18,6 +18,7 @@ public class Segment {
   public final Type type;
   public final Circle circle;
   public final boolean clockWise;
+  public Segment parent; // TODO: Move this into a sub-type.
 
   double endTime;
   double startTime;
@@ -122,6 +123,10 @@ public class Segment {
 
   public boolean isStraight() {
     return type != Type.ARC;
+  }
+
+  public Segment getRoot() {
+    return parent == null ? this : parent.getRoot();
   }
 
   public enum Type {

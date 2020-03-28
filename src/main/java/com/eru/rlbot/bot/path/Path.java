@@ -31,9 +31,9 @@ public class Path {
 
   private final CarData start;
   private final CarData target;
+  private float targetTime;
 
   private int currentIndex;
-  private boolean isTimed;
   private boolean isOffCourse;
 
   private Map<Pair<Double, Double>, Plan> planMap = new HashMap<>();
@@ -43,6 +43,7 @@ public class Path {
     this.nodes = nodes;
     this.start = car;
     this.target = targetCar;
+    this.targetTime = target.elapsedSeconds;
   }
 
   private Double distance;
@@ -60,22 +61,24 @@ public class Path {
     return distance;
   }
 
-  public boolean isTimed() {
-    return isTimed;
-  }
-
   public static Builder builder() {
     return new Builder();
   }
 
-  public boolean lockAndSegment() {
-    float targetTime = target.elapsedSeconds - start.elapsedSeconds;
-    if (targetTime < .1) {
-      logger.debug("Skip timing");
-      return false;
+  public boolean lockAndSegment(boolean timed) {
+    Plan traversePlan;
+    if (timed) {
+      float targetTime = this.targetTime - start.elapsedSeconds;
+      if (targetTime < .1) {
+        logger.debug("Skip timing");
+        return false;
+      }
+
+      traversePlan = makeSpeedPlan(start.boost, targetTime);
+    } else {
+      traversePlan = minGroundTime(start.boost > 20 ? start.boost * .4 : 0);
     }
 
-    Plan traversePlan = makeSpeedPlan(start.boost, targetTime);
     segmentByPlan(traversePlan);
 
     return true;
@@ -484,6 +487,8 @@ public class Path {
           double traveledSegmentDistance = nextSegment.flatDistance() - segmentDistance;
           Pair<Segment, Segment> segments =
               nextSegment.splitSegmentWithFlip(traveledSegmentDistance, start.elapsedSeconds + time);
+          segments.getFirst().parent = terseSegment;
+          segments.getSecond().parent = terseSegment;
 
           timedSegments.add(segments.getFirst());
           nextSegment = segments.getSecond();
@@ -495,6 +500,8 @@ public class Path {
             double traveledSegmentDistance = nextSegment.flatDistance() - segmentDistance;
             Pair<Segment, Segment> segments =
                 nextSegment.splitSegment(traveledSegmentDistance, start.elapsedSeconds + time);
+            segments.getFirst().parent = terseSegment;
+            segments.getSecond().parent = terseSegment;
 
             timedSegments.add(segments.getFirst());
             nextSegment = segments.getSecond();
@@ -525,10 +532,6 @@ public class Path {
     }
   }
 
-  public void setTimed(boolean isTimed) {
-    this.isTimed = isTimed;
-  }
-
   private boolean canGoFaster(
       double currentVelocity,
       double segmentSpeedLimit,
@@ -544,6 +547,16 @@ public class Path {
 
     Accels.AccelResult slowingDistance = Accels.distanceToSlow(currentVelocity, endSegmentSpeedTarget);
     return slowingDistance.distance + SLOWING_BUFFER < segmentRemainingDistance;
+  }
+
+  public Segment getTerseSegment(DataPacket input) {
+    Segment nextSegment = nodes.get(currentIndex);
+    if (hasNextSegment() && nextSegment.endTime < input.car.elapsedSeconds) {
+      nextSegment.markComplete();
+      currentIndex++;
+    }
+
+    return nodes.get(currentIndex);
   }
 
   public Segment getSegment(DataPacket input) {

@@ -50,9 +50,10 @@ public class RotateTactician extends Tactician {
     if (path == null) {
       pathExecutor.executeSimplePath(input, output, tactic);
       return;
+    } else {
+      path.lockAndSegment(false);
     }
 
-    path.setTimed(false);
     bot.botRenderer.renderPath(input, path);
 
     if (input.car.hasWheelContact) {

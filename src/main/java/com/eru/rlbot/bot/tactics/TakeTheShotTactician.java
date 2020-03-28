@@ -72,14 +72,13 @@ public class TakeTheShotTactician extends Tactician {
 
       path = PathPlanner.oneTurn(input.car, Moment.from(optimalHit.car));
 
-      if (path == null || !path.lockAndSegment()) {
+      if (path == null || !path.lockAndSegment(true)) {
         path = null;
         pathExecutor.executeSimplePath(input, output, tactic);
         return;
       }
 
       path.extendThroughBall();
-      path.setTimed(true);
 
       bot.botRenderer.renderHitBox(optimalHit.car);
       bot.botRenderer.setIntersectionTarget(target.position);

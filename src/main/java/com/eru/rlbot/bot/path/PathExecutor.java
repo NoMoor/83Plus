@@ -37,7 +37,7 @@ public class PathExecutor {
     }
 
     Vector3 target = path.pidTarget(input);
-    Segment currentSegment = path.getSegment(input);
+    Segment currentSegment = path.getSegment(input).getRoot();
 
     Vector3 distanceDiff = target.minus(input.car.position);
     if (distanceDiff.magnitude() > Constants.BOOSTED_MAX_SPEED * 2 * Path.LEAD_TIME) {
@@ -51,10 +51,6 @@ public class PathExecutor {
     }
 
     drive(input, output, target, currentSegment, distanceDiff);
-
-    if (!path.isTimed()) {
-      output.withBoost(input.car.boost > 50);
-    }
   }
 
   private static final double P = 1;
