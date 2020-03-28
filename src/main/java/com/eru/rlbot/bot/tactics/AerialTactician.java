@@ -38,11 +38,9 @@ public class AerialTactician extends Tactician {
     super(bot, tacticManager);
   }
 
-  private Moment target;
-
   @Override
   public void internalExecute(DataPacket input, Controls output, Tactic tactic) {
-    target = tactic.subject;
+    Moment target = tactic.subject;
 
     float timeToImpact = target.time - input.car.elapsedSeconds;
 
@@ -85,6 +83,7 @@ public class AerialTactician extends Tactician {
         }
         output.withThrottle(1.0);
       } else {
+        output.withThrottle(-1.0);
         // TODO: Figure out how much to slow down.
       }
 
@@ -99,7 +98,7 @@ public class AerialTactician extends Tactician {
       bot.botRenderer.setBranchInfo("Plan / Execute aerial");
       Pair<FlightPlan, FlightLog> pair = makePlan(input, target, tactic.object);
 
-      humanExecution(input, output, pair.getFirst());
+      humanExecution(input, output, pair.getFirst(), pair.getSecond());
     }
   }
 
@@ -146,30 +145,38 @@ public class AerialTactician extends Tactician {
 
   private boolean freestyle = false;
 
-  private void humanExecution(DataPacket input, Controls output, FlightPlan plan) {
+  private void humanExecution(DataPacket input, Controls output, FlightPlan plan, FlightLog second) {
+
+    bot.botRenderer.renderTarget(Color.GREEN, plan.setupLocation);
 
     // TODO: If we have enough boost, Match the angle of impact first and then boost to hit the ball.
     FlightTrajectory trajectory = computeFlightTrajectory(input, plan);
-    Vector3 flightPlanDiff = plan.computeDeviation(trajectory);
+    boolean isSetupPhase = plan.isSetupPhase(trajectory);
+    Vector3 setupDeviation = plan.setUpDeviation(trajectory);
+    Vector3 terminalDeviation = plan.terminalDeviation(trajectory);
     float timeToImpact = plan.interceptTime - input.car.elapsedSeconds;
 
     Vector3 carTarget = input.ball.position.minus(input.car.position);
     double targetNoseAngle = carTarget.angle(input.car.orientation.getNoseVector());
-    if (flightPlanDiff.magnitude() > 20 && flightPlanDiff.angle(input.car.orientation.getNoseVector()) > .05) {
-      pointAnyDirection(input.car, flightPlanDiff, output);
+    if (isSetupPhase) {
+      pointAnyDirection(input.car, setupDeviation, output);
+    } else if (terminalDeviation.magnitude() > 20 && terminalDeviation.angle(input.car.orientation.getNoseVector()) > .05) {
+      pointAnyDirection(input.car, terminalDeviation, output);
     } else if (timeToImpact * 2 < targetNoseAngle) {
       pointAnyDirection(input.car, carTarget, output);
     } else if (freestyle) {
       output.withRoll(1);
     }
 
-    double rotationalOffset = input.car.angularVelocity.angle(flightPlanDiff);
+    Vector3 trackedAngle = isSetupPhase ? setupDeviation : terminalDeviation;
 
-    if (flightPlanDiff.magnitude() > 20) {
+    double rotationalOffset = input.car.angularVelocity.angle(trackedAngle);
+
+    if (trackedAngle.magnitude() > 20) {
       double sensitivity = .1f;
-      double noseOffset = input.car.orientation.getNoseVector().angle(flightPlanDiff);
+      double noseOffset = input.car.orientation.getNoseVector().angle(trackedAngle);
       if (noseOffset < sensitivity || rotationalOffset < sensitivity * 4) {
-        double offTargetDistance = flightPlanDiff.magnitude();
+        double offTargetDistance = trackedAngle.magnitude();
         double boostDistanceChange = timeToImpact * Constants.BOOSTED_ACCELERATION * Constants.STEP_SIZE * getBoostCommitment(input);
         boolean boosting = offTargetDistance > boostDistanceChange;
         output.withBoost(boosting);
@@ -201,7 +208,7 @@ public class AerialTactician extends Tactician {
     bot.botRenderer.renderProjection(
         Color.GREEN,
         input.car,
-        input.car.position.plus(plan.computeDeviation(trajectory)));
+        input.car.position.plus(plan.terminalDeviation(trajectory)));
 //    bot.botRenderer.addDebugText(Color.GREEN, "Target / current trajectory diff");
 
     bot.botRenderer.renderProjection(
@@ -227,7 +234,7 @@ public class AerialTactician extends Tactician {
     Vector3 boostVector = calculateBoost(input.car, interceptLocation, flightDuration, startBoostTime);
 
     return Pair.of(
-        new FlightPlan(interceptLocation, input.car.elapsedSeconds, flightDuration),
+        new FlightPlan(interceptLocation, input.car.elapsedSeconds, flightDuration, target),
         new FlightLog(input.car.elapsedSeconds + flightDuration * .25f, boostVector));
   }
 
@@ -266,15 +273,30 @@ public class AerialTactician extends Tactician {
     final float interceptTime;
     final float flightDuration;
     final Vector3 interceptLocation;
+    final Moment target;
+    final Vector3 setupLocation;
 
-    public FlightPlan(Vector3 interceptLocation, float currentTime, float flightDuration) {
+    public FlightPlan(Vector3 interceptLocation, float currentTime, float flightDuration, Moment target) {
       this.interceptLocation = interceptLocation;
+      this.target = target;
       this.interceptTime = currentTime + flightDuration;
       this.flightDuration = flightDuration;
+      Vector3 setupOffset = interceptLocation.minus(target.position).toMagnitude(250);
+      setupLocation = interceptLocation.plus(setupOffset);
     }
 
-    public Vector3 computeDeviation(FlightTrajectory trajectory) {
+    public Vector3 setUpDeviation(FlightTrajectory trajectory) {
+      return setupLocation.minus(trajectory.flightTerminus);
+    }
+
+    public Vector3 terminalDeviation(FlightTrajectory trajectory) {
       return interceptLocation.minus(trajectory.flightTerminus);
+    }
+
+    public boolean isSetupPhase(FlightTrajectory trajectory) {
+      double distanceToSetup = setupLocation.distance(trajectory.flightTerminus);
+      double distanceToTerminus = setupLocation.distance(trajectory.flightTerminus);
+      return distanceToSetup > 20 && distanceToSetup < distanceToTerminus;
     }
   }
 

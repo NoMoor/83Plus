@@ -154,15 +154,22 @@ public class Paths {
     // Get outside tangents.
     ImmutableList<Segment> outsideSegments =
         tangents(Circle.forPath(larger.center, larger.radius - smaller.radius), smaller.center).getPoints().stream()
-//            .filter(tangentPoint -> !larger.center.equals(tangentPoint))
             .map(tangentPoint -> toOutsideSegments(larger, smaller, aIsLarger, tangentPoint))
             .collect(toImmutableList());
 
-    return new CircleTangents(
-        outsideSegments.get(0),
-        insideSegments.get(0),
-        insideSegments.get(1),
-        outsideSegments.get(1));
+    if (aIsLarger) {
+      return new CircleTangents(
+          outsideSegments.get(1),
+          insideSegments.get(1),
+          insideSegments.get(0),
+          outsideSegments.get(0));
+    } else {
+      return new CircleTangents(
+          outsideSegments.get(0),
+          insideSegments.get(0),
+          insideSegments.get(1),
+          outsideSegments.get(1));
+    }
   }
 
   private static Segment toOutsideSegments(Circle larger, Circle smaller, boolean aIsLarger, Vector3 tangentPoint) {

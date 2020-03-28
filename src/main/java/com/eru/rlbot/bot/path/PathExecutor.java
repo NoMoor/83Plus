@@ -58,7 +58,7 @@ public class PathExecutor {
   }
 
   private static final double P = 1;
-  private static final double D = 500 * Path.LEAD_FRAMES;
+  private static final double D = .5 * Path.LEAD_FRAMES;
 
   private void drive(DataPacket input, Controls output, Vector3 target, Segment currentSegment, Vector3 distanceDiff) {
     // Determine the angular velocity to hit the point
