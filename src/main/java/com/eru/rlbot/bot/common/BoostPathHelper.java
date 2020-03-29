@@ -1,5 +1,6 @@
 package com.eru.rlbot.bot.common;
 
+import com.eru.rlbot.bot.path.Segment;
 import com.eru.rlbot.common.Moment;
 import com.eru.rlbot.common.Pair;
 import com.eru.rlbot.common.boost.BoostManager;
@@ -16,8 +17,54 @@ import java.util.function.Function;
  */
 public final class BoostPathHelper {
 
+  public static Vector3 getNearestPathLocation(Segment segment, BoostPad boostPad) {
+    switch (segment.type) {
+      case STRAIGHT:
+      case JUMP:
+      case FLIP:
+        return Vector3s.nearestPointOnLineSegment(boostPad.getLocation(), segment.start, segment.end);
+      case ARC:
+        // TODO: Check if that part of the segment exists.
+        Vector3 boostToCenter = segment.circle.center.minus(boostPad.getLocation());
+        double distanceToArc = boostToCenter.magnitude() - segment.circle.radius;
+        return boostPad.getLocation().plus(boostToCenter.toMagnitude(distanceToArc));
+      default:
+        throw new IllegalStateException("Unhandled type: " + segment.type);
+    }
+  }
+
+  public static Vector3 getNearestBoostEdge(Segment segment, BoostPad boostPad) {
+    switch (segment.type) {
+      case STRAIGHT:
+      case JUMP:
+      case FLIP:
+        return getNearestBoostEdge(segment.start, segment.end, boostPad);
+      case ARC:
+        return getNearestBoostEdge(segment.circle, segment.start, segment.end, boostPad);
+      default:
+        throw new IllegalStateException("Unhandled type: " + segment.type);
+    }
+  }
+
   public static Vector3 getNearestBoostEdge(Vector3 start, Vector3 end, BoostPad boostPad) {
     return getNearestBoostEdge(start, end, boostPad.getLocation(), boostPad.isLargeBoost());
+  }
+
+  public static Vector3 getNearestBoostEdge(Circle circle, Vector3 start, Vector3 end, BoostPad boostPad) {
+    return getNearestBoostEdge(circle, start, end, boostPad.getLocation(), boostPad.isLargeBoost());
+  }
+
+  private static Vector3 getNearestBoostEdge(Circle circle, Vector3 start, Vector3 end, Vector3 boostLocation,
+                                             boolean isLargeBoost) {
+    // TODO: Finish implementing this
+    Vector3 boostToShortestPath = Vector3.from(boostLocation, circle.center);
+
+    double offsetMagnitude =
+        Math.min(
+            boostToShortestPath.magnitude(),
+            isLargeBoost ? Constants.LARGE_BOOST_PICKUP_RADIUS : Constants.SMALL_BOOST_PICKUP_RADIUS);
+    Vector3 pickUpOffset = boostToShortestPath.toMagnitude(offsetMagnitude);
+    return boostLocation.plus(pickUpOffset);
   }
 
   public static Vector3 getNearestBoostEdge(

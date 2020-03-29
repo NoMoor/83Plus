@@ -1,5 +1,6 @@
 package com.eru.rlbot.common.boost;
 
+import com.eru.rlbot.bot.common.Constants;
 import com.eru.rlbot.common.vector.Vector3;
 
 /**
@@ -12,8 +13,8 @@ public class BoostPad {
     private boolean isActive;
 
     BoostPad(Vector3 location, boolean isFullBoost) {
-        this.location = location;
-        this.isFullBoost = isFullBoost;
+      this.location = location.setZ(Constants.CAR_AT_REST);
+      this.isFullBoost = isFullBoost;
     }
 
     void setActive(boolean active) {

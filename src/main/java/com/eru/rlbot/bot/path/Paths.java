@@ -79,7 +79,7 @@ public class Paths {
         .orElse(ImmutableList.of());
   }
 
-  private static double MIN_SEGMENT_LENGTH = 100;
+  private static double MIN_SEGMENT_LENGTH = 50;
 
   private static Optional<ImmutableList<Segment>> biArcSegments(
       Vector3 start, Circle circle1, Vector3 end, Circle circle2, CircleTangents.Shape shape) {
@@ -160,8 +160,8 @@ public class Paths {
     if (aIsLarger) {
       return new CircleTangents(
           outsideSegments.get(1),
-          insideSegments.get(1),
           insideSegments.get(0),
+          insideSegments.get(1),
           outsideSegments.get(0));
     } else {
       return new CircleTangents(

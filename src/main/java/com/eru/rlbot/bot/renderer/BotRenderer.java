@@ -302,6 +302,25 @@ public class BotRenderer {
     }
   }
 
+  public void renderPath(Color color, Path path) {
+    if (skipLineRendering()) {
+      return;
+    }
+
+    for (Segment segment : path.allNodes()) {
+      switch (segment.type) {
+        case FLIP:
+        case JUMP:
+        case STRAIGHT:
+          render3DLine(color, segment.start, segment.end);
+          break;
+        case ARC:
+          renderArc(color, segment);
+          break;
+      }
+    }
+  }
+
   public void renderPath(DataPacket input, Path path) {
     if (skipLineRendering()) {
       return;
@@ -315,10 +334,6 @@ public class BotRenderer {
       Color color = i == 0
           ? Color.white
           : pathNodes.get(i - 1).avgSpeed() < segment.avgSpeed() ? Color.GREEN : Color.RED;
-
-      if (i % 20 == 0 && !skipTextRendering()) {
-        getRenderer().drawString3d(String.format("%d", segment.avgSpeed().intValue()), color, segment.start, 2, 2);
-      }
 
       switch (segment.type) {
         case FLIP:

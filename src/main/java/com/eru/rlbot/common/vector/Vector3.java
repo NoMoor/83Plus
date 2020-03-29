@@ -90,6 +90,9 @@ public class Vector3 extends rlbot.vector.Vector3 {
   }
 
   public Vector3 toMagnitudeUnchecked(double magnitude) {
+    if (isZero()) {
+      return this;
+    }
     double scaleRequired = magnitude / magnitude();
     return multiply(scaleRequired);
   }
@@ -217,19 +220,46 @@ public class Vector3 extends rlbot.vector.Vector3 {
     }
   }
 
-  /** Returns a new vector with value added to the x component. */
+  /**
+   * Returns a new vector with value added to the x component.
+   */
   public Vector3 addX(double value) {
     return new Vector3(this.x + value, y, z);
   }
 
-  /** Returns a new vector with value added to the y component. */
+  /**
+   * Returns a new vector with x set to the given value.
+   */
+  public Vector3 setX(double value) {
+    return new Vector3(value, y, z);
+  }
+
+  /**
+   * Returns a new vector with value added to the y component.
+   */
   public Vector3 addY(double value) {
     return new Vector3(this.x, this.y + value, z);
   }
 
-  /** Returns a new vector with value added to the z component. */
+  /**
+   * Returns a new vector with y set to the given value.
+   */
+  public Vector3 setY(double value) {
+    return new Vector3(x, value, z);
+  }
+
+  /**
+   * Returns a new vector with value added to the z component.
+   */
   public Vector3 addZ(double value) {
-    return new Vector3(this.x, y, this.z + value);
+    return new Vector3(x, y, z + value);
+  }
+
+  /**
+   * Returns a new vector with z set to the given value.
+   */
+  public Vector3 setZ(double value) {
+    return new Vector3(x, y, value);
   }
 
   public Vector3 flat() {
