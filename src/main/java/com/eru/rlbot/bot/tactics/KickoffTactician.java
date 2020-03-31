@@ -15,6 +15,7 @@ import com.eru.rlbot.bot.tactics.kickoff.KickoffLocations.KickoffLocation;
 import com.eru.rlbot.bot.tactics.kickoff.KickoffLocations.KickoffStation;
 import com.eru.rlbot.bot.tactics.kickoff.KickoffTactic;
 import com.eru.rlbot.bot.utils.Monitor;
+import com.eru.rlbot.common.Pair;
 import com.eru.rlbot.common.boost.BoostManager;
 import com.eru.rlbot.common.boost.BoostPad;
 import com.eru.rlbot.common.input.BallData;
@@ -78,15 +79,24 @@ public class KickoffTactician extends Tactician {
       kickoffTactic = KickoffTactic.defaultTactic(input);
     }
 
+    bot.botRenderer.setBranchInfo("%s %d", kickoffTactic.type, kickoffTactic.location.priority);
+
     if (kickoffTactic.type == KickoffTactic.Type.FAKE) {
       return;
     } else if (kickoffTactic.type == KickoffTactic.Type.GRAB_BOOST) {
       double steeringCorrection = Angles.flatCorrectionAngle(input.car, kickoffTactic.target);
       output
           .withThrottle(1.0)
-          .withSlide(input.car.groundSpeed > 500 && Math.abs(steeringCorrection) > .5)
+          .withSlide(input.car.groundSpeed > 500 && Math.abs(steeringCorrection) > 1)
           .withSteer(steeringCorrection)
-          .withBoost(Math.abs(steeringCorrection) < .3);
+          .withBoost(Math.abs(steeringCorrection) < 2);
+
+      if (Math.abs(steeringCorrection) < .25) {
+        delegateTo(Flip.builder()
+            .setTarget(kickoffTactic.target)
+            .flipEarly()
+            .build());
+      }
       return;
     }
 
@@ -120,9 +130,18 @@ public class KickoffTactician extends Tactician {
 
   private KickoffTactic selectTactic(DataPacket input, KickoffLocation location) {
     if (!hasPriority(input, location)) {
-      // TODO: Make sure someone else isn't already close to that boost.
+      ImmutableList<CarData> nonPriorityTeammates = getTeammates(input).stream()
+          .map(car -> Pair.of(car, KickoffLocations.getKickoffLocation(car)))
+          .filter(pair -> pair.getSecond().isPresent())
+          .sorted(Comparator.comparing(pair -> pair.getSecond().get().priority))
+          .skip(1)
+          .map(Pair::getFirst)
+          .collect(toImmutableList());
+
       Vector3 target = BoostManager.getLargeBoosts().stream()
           .map(BoostPad::getLocation)
+          .filter(boost -> nonPriorityTeammates.stream()
+              .noneMatch(teammate -> boost.distance(teammate.position) < input.car.position.distance(boost)))
           .min(Comparator.comparing(boostLocation -> boostLocation.distance(input.car.position)))
           .get();
       return KickoffTactic.create(location, target, KickoffTactic.Type.GRAB_BOOST);
@@ -130,13 +149,24 @@ public class KickoffTactician extends Tactician {
       boolean hasTeammates = hasTeammates(input);
       Random random = new Random();
       if (location.station == KickoffStation.RIGHT || location.station == KickoffStation.LEFT) {
-        if (hasTeammates || (hasScoreDiff(input, 2) && random.nextBoolean())) {
+        boolean otherSideCovered = getTeammates(input).stream()
+            .map(KickoffLocations::getKickoffLocation)
+            .filter(Optional::isPresent)
+            .map(optional -> optional.get().station)
+            .anyMatch(station -> station == KickoffStation.RIGHT || station == KickoffStation.LEFT);
+
+        if (!otherSideCovered && (hasTeammates || hasScoreDiff(input, 2)) && random.nextBoolean()) {
           // Aim for the goal.
           Vector3 goalAngle = input.ball.position.minus(Goal.opponentGoal(input.alliance).getNearPost(input.car));
           Vector3 target = input.ball.position.plus(goalAngle.toMagnitude(Constants.BALL_RADIUS * 1.3));
           return KickoffTactic.create(location, target, KickoffTactic.Type.SHOOT);
-        } else {
+        } else if (true) {
           // Hit it around the opponent.
+          Vector3 target = input.ball.position
+              .addX(.8 * Constants.BALL_RADIUS * Math.signum(input.car.position.x))
+              .addY(95 * Math.signum(input.car.position.y));
+          return KickoffTactic.create(location, target, KickoffTactic.Type.CHALLENGE);
+        } else {// Hit it around the opponent.
           Vector3 target = input.ball.position
               .addX(Constants.BALL_RADIUS * Math.signum(input.car.position.x))
               .addY(10 * -Math.signum(input.car.position.y));
@@ -145,7 +175,6 @@ public class KickoffTactician extends Tactician {
       } else if (location.station == KickoffStation.CENTER) {
         // -1 or 1
         int xInt = -1 + (random.nextInt(2) * 2);
-
         Vector3 target = input.ball.position.addX(xInt * Constants.BALL_RADIUS / 4);
         return KickoffTactic.create(location, target, xInt < 0 ? KickoffTactic.Type.HOOK : KickoffTactic.Type.PUSH);
       } else {
@@ -213,7 +242,7 @@ public class KickoffTactician extends Tactician {
     if (absY > 3250) {
       // Get Up to speed
       output
-          .withSteer(kickoffTactic.location.turnModifier * .15)
+          .withSteer(kickoffTactic.location.turnModifier * .165)
           .withBoost()
           .withThrottle(1.0f);
     } else if (absY > 2500) {
@@ -259,7 +288,7 @@ public class KickoffTactician extends Tactician {
 
     bot.botRenderer.renderTarget(Color.RED, kickoffTactic.target);
 
-    double jumpSpeed = 875;
+    double jumpSpeed = 800;
     if (input.car.groundSpeed < jumpSpeed) { // Tilt in
       double correctionAngle = 0;
       bot.botRenderer.setBranchInfo("Tilt in");
@@ -276,16 +305,15 @@ public class KickoffTactician extends Tactician {
       delegateTo(DiagonalFlipCancel.builder()
           .setTarget(kickoffTactic.target)
           .build());
-    } else if (carTarget > 470) {
+    } else if (input.car.angularVelocity.flatten().magnitude() > .2) {
       output
           .withBoost(!input.car.isSupersonic)
           .withThrottle(1.0)
           .withSteer(Angles.flatCorrectionAngle(input.car, kickoffTactic.target) * 10);
     } else {
-      output
-          .withBoost(!input.car.isSupersonic)
-          .withThrottle(1.0)
-          .withSteer(Angles.flatCorrectionAngle(input.car, kickoffTactic.target) * 10);
+      delegateTo(Flip.builder()
+          .setTarget(kickoffTactic.target)
+          .build());
     }
   }
 
