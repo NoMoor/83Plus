@@ -3,14 +3,14 @@ from dataclasses import dataclass, field
 from math import pi
 from rlbot.utils.game_state_util import GameState, BoostState, BallState, CarState, Physics, Vector3, Rotator
 from rlbottraining.common_exercises.common_base_exercises import StrikerExercise
-from rlbottraining.common_graders.goal_grader import StrikerGrader
+from rlbottraining.common_graders.goal_grader import GoalieGrader
 from rlbottraining.grading.grader import Grader
 from rlbottraining.rng import SeededRandomNumberGenerator
 from rlbottraining.training_exercise import Playlist, TrainingExercise
 
 
 def make_grader():
-    return StrikerGrader(timeout_seconds=6.0)
+    return GoalieGrader(timeout_seconds=6.0)
 
 @dataclass
 class StoneShotOnGoal(TrainingExercise):

@@ -1,12 +1,10 @@
-from stone.stone_shot_on_goal import Setup
-
 stone_exercises = [
     # Setup('Too Close for turning', ball_x=0, ball_y=100, car_x=120, car_y=-50),
 
     # Setup('Stationary centered mid-field', ball_x=0, ball_y=100, car_y=-2200),
     # Setup('Stationary left mid-field', ball_x=400, ball_y=100, car_y=-2200),
     # Setup('Stationary car very close to ball', ball_y=100, car_y=-200),
-    Setup('Rolling away left mid-field', ball_x=400, ball_y=100, ball_vy=400, car_y=-2200),
+    # Setup('Rolling away left mid-field', ball_x=400, ball_y=100, ball_vy=400, car_y=-2200),
     # Setup('Rolling r2l mid-field', ball_x=-400, ball_vx=400, ball_y=100, car_y=-2200),
     # Setup('Fast rolling r2l mid-field', ball_x=-1500, ball_vx=1500, ball_y=100, car_y=-2200),
 
@@ -14,14 +12,6 @@ stone_exercises = [
     # StoneShotOnGoal('Stone Shot On Goal'),
     # RollingTowardsGoalShot("Rolling shot"),
     # RollingAcross("Rolling across"),
-
-    # Sticking the car to the wall...
-    # BallDrop("Side Wall", ball_x=1500, ball_y=1750, ball_z=100, car_x=4079, car_y=3650, car_z=500,
-    #          car_spin=0, car_pitch=pi/2),
-    # BallDrop("Back Wall", ball_x=1500, ball_y=1750, ball_z=100, car_x=2600, car_y=5103, car_z=500,
-    #          car_spin=pi/2, car_pitch=pi/2),
-    # BallDrop("Corner", ball_x=1500, ball_y=1750, ball_z=100, car_x=3480, car_y=4560, car_z=500,
-    #          car_spin=pi/4, car_pitch=pi/2),
 
     # BallDrop("Flip testing", ball_x=0, ball_y=1750, ball_z=250, ball_sz=0, car_x=0, car_y=-500, car_spin=pi / 2),
     # BallDrop("Ceiling sticky testing", ball_x=0, ball_y=1750, ball_z=250, ball_sz=0, car_x=0, car_y=-500, car_z=2028, car_spin=-pi/2,

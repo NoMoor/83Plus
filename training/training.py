@@ -9,6 +9,7 @@ from rlbottraining.common_exercises import bronze_striker as common_bronze_strik
 from rlbottraining.common_exercises import silver_goalie as common_silver_goalie
 from rlbottraining.common_exercises import silver_striker as common_silver_striker
 from stone.stone_exercises import stone_exercises
+from stone.testing import testing_locations
 from striking.striking_exercises import power_slide_testing
 from wavedash.wavedash_exercises import wavedash_exercises
 
@@ -16,11 +17,12 @@ from wavedash.wavedash_exercises import wavedash_exercises
 def make_default_playlist():
     exercises = []
 
-    exercises += stone_exercises
+    exercises += testing_locations
 
     if False:
         exercises += bronze_exercises
         exercises += stone_exercises
+        exercises += testing_locations
         exercises += aerial_exercises
         exercises += dribble_exercises
         exercises += kickoff_exercises
