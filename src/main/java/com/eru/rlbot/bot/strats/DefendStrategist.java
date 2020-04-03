@@ -1,6 +1,7 @@
 package com.eru.rlbot.bot.strats;
 
 import com.eru.rlbot.bot.common.Angles;
+import com.eru.rlbot.bot.common.CarBall;
 import com.eru.rlbot.bot.common.Constants;
 import com.eru.rlbot.bot.common.Goal;
 import com.eru.rlbot.bot.common.Locations;
@@ -10,41 +11,18 @@ import com.eru.rlbot.bot.tactics.RotateTactician;
 import com.eru.rlbot.bot.tactics.Tactic;
 import com.eru.rlbot.common.DllHelper;
 import com.eru.rlbot.common.Moment;
-import com.eru.rlbot.common.Pair;
-import com.eru.rlbot.common.input.CarData;
 import com.eru.rlbot.common.input.DataPacket;
 import com.eru.rlbot.common.vector.Vector3;
-import java.util.Comparator;
 import java.util.Optional;
 import rlbot.flat.BallPrediction;
 import rlbot.flat.Physics;
 import rlbot.flat.PredictionSlice;
 
 /** Responsible for shadowing, blocking, shots, and clearing. */
-// TODO: Delete this class.
 public class DefendStrategist extends Strategist {
 
   DefendStrategist(ApolloGuidanceComputer bot) {
     super(bot);
-  }
-
-  static boolean shouldDefend(DataPacket input) {
-    return lastManBack(input) && (ballNearGoal(input) || canClear(input));
-  }
-
-  private static boolean lastManBack(DataPacket input) {
-    int myTeam = input.car.team;
-    Vector3 ownGoal = Goal.ownGoal(myTeam).center;
-
-    // TODO: Look at momentum as well as position.
-    CarData lastManBack = input.allCars.stream()
-        .filter(car -> car.team == myTeam)
-        .map(car -> Pair.of(car, car.position.distance(ownGoal)))
-        .min(Comparator.comparing(Pair::getSecond))
-        .orElseThrow(IllegalStateException::new)
-        .getFirst();
-
-    return lastManBack == input.car;
   }
 
   private static boolean shotOnGoal(DataPacket input) {
@@ -172,5 +150,16 @@ public class DefendStrategist extends Strategist {
   @Override
   public Strategy.Type getType() {
     return Strategy.Type.DEFEND;
+  }
+
+  @Override
+  public Strategy.Type getDelegate() {
+    return Strategy.Type.ATTACK;
+  }
+
+  @Override
+  public boolean isComplete(DataPacket input) {
+    Rotations rotations = Rotations.get(input);
+    return !rotations.isLastManBack() && CarBall.ballIsUpfield(input);
   }
 }

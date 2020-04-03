@@ -44,4 +44,15 @@ public class SupportStrategist extends Strategist {
   public Strategy.Type getType() {
     return Strategy.Type.SUPPORT;
   }
+
+  @Override
+  public Strategy.Type getDelegate() {
+    return Strategy.Type.DEFEND;
+  }
+
+  @Override
+  public boolean isComplete(DataPacket input) {
+    // Don't use this strategist at this time.
+    return true;
+  }
 }

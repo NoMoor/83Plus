@@ -2,21 +2,22 @@ package com.eru.rlbot.bot.strats;
 
 import com.eru.rlbot.bot.common.StateSetChecker;
 import com.eru.rlbot.bot.main.ApolloGuidanceComputer;
-import com.eru.rlbot.common.boost.BoostPad;
 import com.eru.rlbot.common.input.DataPacket;
 import com.eru.rlbot.common.output.Controls;
-import com.eru.rlbot.common.vector.Vector2;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * Keeps track of the strategists.
  */
 public class StrategyManager {
 
+  private static final Logger logger = LogManager.getLogger("StrategyManager");
+
   // Delay ~1 frame after a jump to allow ball propagation.
-  private static final float RESET_DELAY = .01f;
+  private static final float RESET_DELAY = .02f;
   private static final float STRATEGY_UPDATE_INTERVAL = .25F;
 
   // DO NOT MODIFY
@@ -43,7 +44,7 @@ public class StrategyManager {
     boolean timedUpdate = lastStrategyUpdateTime == 0
         || input.car.elapsedSeconds - lastStrategyUpdateTime > STRATEGY_UPDATE_INTERVAL;
 
-    if (active == null || active.isComplete() || (timedUpdate && !active.tacticManager.isTacticLocked())) {
+    if (active == null) {
       lastStrategyUpdateTime = input.car.elapsedSeconds;
 
       Strategist newStrategist = getNewStrategist();
@@ -51,6 +52,15 @@ public class StrategyManager {
         active.abort();
       }
 
+      newStrategist.assign(input);
+      active = newStrategist;
+    } else if (active.isComplete(input)
+      //|| (timedUpdate && !active.tacticManager.isTacticLocked())
+    ) {
+      Strategist newStrategist = strategists.get(active.getDelegate());
+
+      logger.info("New Strategy: {} Completed: {}", active.getType(), newStrategist.getType());
+      active.abort();
       newStrategist.assign(input);
       active = newStrategist;
     }
@@ -82,21 +92,5 @@ public class StrategyManager {
 
     resetTime = 0;
     return false;
-  }
-
-  // TODO: Move this elsewhere.
-  private static Comparator<? super BoostPad> selectBoost(DataPacket input) {
-    Vector2 noseVector = input.car.orientation.getNoseVector().flatten();
-    Vector2 flatPosition = input.car.position.flatten();
-
-    return (a, b) -> {
-      // Angle diff in radians
-      int angleValue = (int) (Math.abs(noseVector.correctionAngle(a.getLocation().flatten()))
-          - Math.abs(noseVector.correctionAngle(b.getLocation().flatten())));
-      // 750 units is worth a u-turn.
-      int distanceValue = (int) (flatPosition.distance(a.getLocation().flatten())
-          - flatPosition.distance(b.getLocation().flatten())) / 2000;
-      return angleValue + distanceValue;
-    };
   }
 }

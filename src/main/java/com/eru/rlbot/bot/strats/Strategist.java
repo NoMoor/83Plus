@@ -18,8 +18,10 @@ public abstract class Strategist {
   /** Assigns control to the given strategist. If the strategist is unable to accept control, it can return false. */
   abstract boolean assign(DataPacket input);
 
-  /** Returns true if the strategy is complete. */
-  public boolean isComplete() {
+  /**
+   * Returns true if the strategy is complete.
+   */
+  public boolean isComplete(DataPacket input) {
     return !tacticManager.hasTactic();
   }
 
@@ -43,6 +45,13 @@ public abstract class Strategist {
     return output;
   }
 
-  /** Returns the strategy tacticType. */
+  /**
+   * Returns the strategy tacticType.
+   */
   public abstract Strategy.Type getType();
+
+  /**
+   * Returns the next strategy to use.
+   */
+  public abstract Strategy.Type getDelegate();
 }

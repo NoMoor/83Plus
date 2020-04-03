@@ -6,6 +6,8 @@ import com.eru.rlbot.common.Pair;
 import com.eru.rlbot.common.boost.BoostManager;
 import com.eru.rlbot.common.boost.BoostPad;
 import com.eru.rlbot.common.input.CarData;
+import com.eru.rlbot.common.input.DataPacket;
+import com.eru.rlbot.common.vector.Vector2;
 import com.eru.rlbot.common.vector.Vector3;
 import com.eru.rlbot.common.vector.Vector3s;
 import java.util.Comparator;
@@ -124,6 +126,21 @@ public final class BoostPathHelper {
 //      double dulledAngleChange = Math.min(0, angleChange - .2);
       double angleChangeDistance = angleChange * Constants.radius(car.groundSpeed);
       return actualDistance + (angleChangeDistance * 2);
+    };
+  }
+
+  private static Comparator<? super BoostPad> selectBoost(DataPacket input) {
+    Vector2 noseVector = input.car.orientation.getNoseVector().flatten();
+    Vector2 flatPosition = input.car.position.flatten();
+
+    return (a, b) -> {
+      // Angle diff in radians
+      int angleValue = (int) (Math.abs(noseVector.correctionAngle(a.getLocation().flatten()))
+          - Math.abs(noseVector.correctionAngle(b.getLocation().flatten())));
+      // 750 units is worth a u-turn.
+      int distanceValue = (int) (flatPosition.distance(a.getLocation().flatten())
+          - flatPosition.distance(b.getLocation().flatten())) / 2000;
+      return angleValue + distanceValue;
     };
   }
 

@@ -1,6 +1,7 @@
 package com.eru.rlbot.bot.strats;
 
 import com.eru.rlbot.bot.common.Angles;
+import com.eru.rlbot.bot.common.CarBall;
 import com.eru.rlbot.bot.common.Goal;
 import com.eru.rlbot.bot.common.SupportRegions;
 import com.eru.rlbot.bot.common.Teams;
@@ -168,5 +169,15 @@ public class AttackStrategist extends Strategist {
   @Override
   public Strategy.Type getType() {
     return Strategy.Type.ATTACK;
+  }
+
+  @Override
+  public Strategy.Type getDelegate() {
+    return Strategy.Type.ROTATE;
+  }
+
+  @Override
+  public boolean isComplete(DataPacket input) {
+    return !CarBall.ballIsUpfield(input);
   }
 }

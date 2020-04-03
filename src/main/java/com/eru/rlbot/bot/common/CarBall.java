@@ -3,6 +3,7 @@ package com.eru.rlbot.bot.common;
 import com.eru.rlbot.common.Numbers;
 import com.eru.rlbot.common.input.BoundingBox;
 import com.eru.rlbot.common.input.CarData;
+import com.eru.rlbot.common.input.DataPacket;
 import com.eru.rlbot.common.vector.Vector3;
 
 /**
@@ -33,5 +34,13 @@ public final class CarBall {
     return car.orientation.getOrientationMatrix().dot(nearestPointLocal).plus(hitBox.center);
   }
 
-  private CarBall() {}
+  public static boolean ballIsUpfield(DataPacket input) {
+    float teamSide = Math.signum(Goal.ownGoal(input.car.team).center.y);
+    return teamSide > 0
+        ? input.ball.position.y < input.car.position.y
+        : input.ball.position.y > input.car.position.y;
+  }
+
+  private CarBall() {
+  }
 }

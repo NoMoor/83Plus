@@ -71,20 +71,22 @@ public class TakeTheShotTactician extends Tactician {
       OptimizationResult optimalHit =
           CarBallOptimizer.xSpeed(tactic.subject, Goal.opponentGoal(input.car.team).center, target);
 
-      path = PathPlanner.oneTurn(input.car, Moment.from(optimalHit.car));
+      Path newPath = PathPlanner.oneTurn(input.car, Moment.from(optimalHit.car));
 
-      if (path == null || !path.lockAndSegment(true)) {
-        bot.botRenderer.setBranchInfo("Dumb executor");
-
-        path = null;
-        pathExecutor.executeSimplePath(input, output, tactic);
-        return;
+      if (newPath == null) {
+        // Stay on the old path.
+      } else if (newPath.lockAndSegment(true)) {
+        // Accept the new path.
+        path = newPath;
+        path.extendThroughBall();
       }
+    }
 
-      path.extendThroughBall();
+    if (path == null) {
+      bot.botRenderer.setBranchInfo("Dumb executor");
 
-      bot.botRenderer.renderHitBox(optimalHit.car);
-      bot.botRenderer.setIntersectionTarget(target.position);
+      pathExecutor.executeSimplePath(input, output, tactic);
+      return;
     }
 
     bot.botRenderer.renderPath(input, path);

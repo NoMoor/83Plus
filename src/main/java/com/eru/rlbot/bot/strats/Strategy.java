@@ -7,10 +7,13 @@ import com.eru.rlbot.bot.main.ApolloGuidanceComputer;
  */
 class Strategy {
 
-  /** Types of strategies. */
+  /**
+   * Types of strategies.
+   */
   enum Type {
     ATTACK,
     DEFEND,
+    ROTATE,
     SUPPORT
   }
 
@@ -21,6 +24,8 @@ class Strategy {
         return new AttackStrategist(bot);
       case DEFEND:
         return new DefendStrategist(bot);
+      case ROTATE:
+        return new RotateStrategist(bot);
       case SUPPORT:
         return new SupportStrategist(bot);
     }
