@@ -96,13 +96,14 @@ public class WallHelper {
     }
   }
 
+  // TODO: These radii are different
   private static Vector2 backWallProjection(Vector3 position, boolean isFrontWall) {
     float projectionModifier = isFrontWall ? 1 : -1;
-    return position.addY(projectionModifier * position.z).flatten();
+    return position.addY(projectionModifier * Math.max(position.z - 10, 0)).flatten();
   }
 
   private static Vector2 sideWallProjection(Vector3 position, boolean isLeftWall) {
     float projectionModifier = isLeftWall ? 1 : -1;
-    return position.addX(projectionModifier * position.z).flatten();
+    return position.addX(projectionModifier * Math.max(position.z - 50, 0)).flatten();
   }
 }
