@@ -29,13 +29,22 @@ import java.util.Optional;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-/** Manages doing aerials. */
+/**
+ * Manages doing aerials.
+ */
 public class AerialTactician extends Tactician {
 
   private static final Logger logger = LogManager.getLogger("AerialTactician");
 
+  private boolean locked;
+
   AerialTactician(ApolloGuidanceComputer bot, TacticManager tacticManager) {
     super(bot, tacticManager);
+  }
+
+  @Override
+  public boolean isLocked() {
+    return locked;
   }
 
   @Override
@@ -48,6 +57,7 @@ public class AerialTactician extends Tactician {
     bot.botRenderer.renderTarget(Color.WHITE, tactic.subject.position);
     bot.botRenderer.renderTarget(Color.MAGENTA, computeInterceptLocation(target, tactic.object));
     if (input.car.hasWheelContact && input.car.position.z < 50) {
+      locked = false;
 
       // TODO: Put this into a sort of aerial planning object.
       Path oneTurn = PathPlanner.oneTurn(input.car, target);
@@ -90,15 +100,23 @@ public class AerialTactician extends Tactician {
       double correctionAngle = Angles.flatCorrectionAngle(input.car, target.position);
       output.withSteer(correctionAngle * 5);
 
+
+      // TODO: Break more?
       bot.botRenderer.setBranchInfo("Drive toward ball");
       if (boostReserves > 0 && (groundTime < Constants.STEP_SIZE) && Math.abs(correctionAngle) < .05) {
         tacticManager.preemptTactic(tactic.withType(Tactic.TacticType.FAST_AERIAL));
+        locked = true;
       }
     } else {
       bot.botRenderer.setBranchInfo("Plan / Execute aerial");
       Pair<FlightPlan, FlightLog> pair = makePlan(input, target, tactic.object);
 
       humanExecution(input, output, pair.getFirst(), pair.getSecond());
+    }
+
+    Vector3 carBall = input.ball.position.minus(input.car.position);
+    if (input.car.orientation.getNoseVector().dot(carBall) > 0) {
+      locked = false;
     }
   }
 
@@ -209,7 +227,6 @@ public class AerialTactician extends Tactician {
         Color.GREEN,
         input.car,
         input.car.position.plus(plan.terminalDeviation(trajectory)));
-//    bot.botRenderer.addDebugText(Color.GREEN, "Target / current trajectory diff");
 
     bot.botRenderer.renderProjection(
         Color.ORANGE,

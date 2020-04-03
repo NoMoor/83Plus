@@ -2,7 +2,7 @@ cycler
 matplotlib
 # Include everything the framework requires
 # You will automatically get updates for all versions starting with "1.".
-rlbot==2.*
+rlbot==1.*
 rlbottraining
 
 # Used to allow python to send commands to java, e.g. start running the bot

@@ -40,20 +40,12 @@ public final class SupportRegions {
       .build();
 
   /**
-   * Returns the average support location.
-   */
-  public static Vector3 averageLocation(Vector3 supportingLocation, int team) {
-    ImmutableList<Circle> regions = getSupportRegions(supportingLocation, team);
-    return averageLocation(regions, supportingLocation, team);
-  }
-
-  /**
    * Returns the center location of the given circles weighted slightly toward the rear post.
    */
-  public static Vector3 averageLocation(ImmutableList<Circle> supportingRegions, Vector3 supportLocation, int team) {
+  public Vector3 averageLocation() {
     Vector3 farPost = Goal.ownGoal(team).getFarPost(supportLocation);
 
-    List<Vector3> locations = supportingRegions.stream()
+    List<Vector3> locations = regions.stream()
         .map(region -> region.center)
         .collect(Collectors.toList());
     locations.add(farPost);
@@ -73,36 +65,41 @@ public final class SupportRegions {
   /**
    * Returns a list of support regions to support the given location.
    */
-  public static ImmutableList<Circle> getSupportRegions(Vector3 supportingLocation, int team) {
+  public static SupportRegions getSupportRegions(Vector3 supportingLocation, int team) {
     Vector3 defendingLocation = Goal.ownGoal(team).center;
-    ImmutableList<Circle> tooClose = getSupportRegions(supportingLocation, team, 1);
-    Optional<Circle> closest = tooClose.stream().min(closestTo(supportingLocation));
+    SupportRegions tooClose = getSupportRegions(supportingLocation, team, 1);
+    Optional<Circle> closest = tooClose.regions.stream().min(closestTo(supportingLocation));
 
     if (!closest.isPresent()) {
       // If we are very close to our own goal, use the goal arc itself as the support zone.
-      return ALL_REGIONS.stream().min(closestTo(supportingLocation)).map(ImmutableList::of).get();
+      ImmutableList<Circle> lastLine = ALL_REGIONS.stream()
+          .min(closestTo(supportingLocation)).map(ImmutableList::of).get();
+      return new SupportRegions(lastLine, team, supportingLocation);
     }
 
-    ImmutableList<Circle> secondLine = getSupportRegions(closest.get().center, team, 3);
+    SupportRegions secondLine = getSupportRegions(closest.get().center, team, 3);
 
-    Optional<Circle> closestSecondLIne = secondLine.stream().min(closestTo(supportingLocation));
+    Optional<Circle> closestSecondLIne = secondLine.regions.stream().min(closestTo(supportingLocation));
 
+    ImmutableList<Circle> localRegions;
     if (!closestSecondLIne.isPresent()) {
       // If we are very close to our own goal, use the goal arc itself as the support zone.
-      return ALL_REGIONS.stream().min(closestTo(defendingLocation)).map(ImmutableList::of).get();
+      localRegions = ALL_REGIONS.stream().min(closestTo(defendingLocation)).map(ImmutableList::of).get();
+    } else {
+      SupportRegions thirdLine = getSupportRegions(closestSecondLIne.get().center, team, 4);
+      localRegions = ImmutableList.<Circle>builder()
+          .addAll(tooClose.regions)
+          .addAll(secondLine.regions)
+//          .addAll(thirdLine.regions)
+          .build().stream()
+          .distinct()
+          .limit(4)
+          .collect(toImmutableList());
     }
-    ImmutableList<Circle> thirdLine = getSupportRegions(closestSecondLIne.get().center, team, 4);
-
-    return ImmutableList.<Circle>builder()
-        .addAll(secondLine)
-        .addAll(thirdLine)
-        .build().stream()
-        .distinct()
-        .limit(4)
-        .collect(toImmutableList());
+    return new SupportRegions(localRegions, team, supportingLocation);
   }
 
-  public static ImmutableList<Circle> getSupportRegions(Vector3 supportingLocation, int team, int count) {
+  public static SupportRegions getSupportRegions(Vector3 supportingLocation, int team, int count) {
     Vector3 defendingLocation = Goal.ownGoal(team).center;
 
     Circle supportingRegion =
@@ -112,17 +109,26 @@ public final class SupportRegions {
 
     double supportRegionToGoal = supportingRegion.center.distance(defendingLocation) - supportingRegion.radius;
 
-    return ALL_REGIONS.stream()
+    ImmutableList<Circle> regions = ALL_REGIONS.stream()
         .filter(region -> region.center.distance(defendingLocation) < supportRegionToGoal)
         .sorted(Comparator.comparing(region -> region.center.distance(supportingRegion.center)))
         .limit(count)
         .collect(toImmutableList());
+
+    return new SupportRegions(regions, team, supportingLocation);
   }
 
   private static Comparator<Circle> closestTo(Vector3 location) {
     return Comparator.comparing(circle -> circle.center.distance(location));
   }
 
-  private SupportRegions() {
+  public final ImmutableList<Circle> regions;
+  public final int team;
+  public final Vector3 supportLocation;
+
+  private SupportRegions(ImmutableList<Circle> regions, int team, Vector3 supportLocation) {
+    this.regions = regions;
+    this.team = team;
+    this.supportLocation = supportLocation;
   }
 }

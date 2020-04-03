@@ -5,6 +5,7 @@ import static com.google.common.collect.ImmutableList.toImmutableList;
 import com.eru.rlbot.bot.common.Circle;
 import com.eru.rlbot.bot.common.Constants;
 import com.eru.rlbot.bot.common.RelativeUtils;
+import com.eru.rlbot.bot.common.Teams;
 import com.eru.rlbot.bot.flags.GlobalDebugOptions;
 import com.eru.rlbot.bot.flags.PerBotDebugOptions;
 import com.eru.rlbot.bot.path.Path;
@@ -113,7 +114,7 @@ public class BotRenderer {
 
   private static double VISUAL_OFFSET = 1.2;
 
-  public void renderRotation(CarData car, int rotationNumber) {
+  public void renderRotation(CarData car, int rotationNumber, boolean hasPriority) {
     if (!PerBotDebugOptions.get(bot.getIndex()).isRenderRotationsEnabled()) {
       return;
     }
@@ -124,7 +125,7 @@ public class BotRenderer {
     Vector3 rightVision = coverage.pointOnCircle(visualCenter + VISUAL_OFFSET);
     Segment segment = Segment.arc(leftVision, rightVision, coverage, true);
 
-    Color color = car.team == 0 ? Color.CYAN : Color.PINK;
+    Color color = hasPriority ? Color.YELLOW : car.team == 0 ? Color.CYAN : Color.PINK;
     getRenderer().drawString3d(String.valueOf(rotationNumber), color, car.position.addZ(100), 2, 2);
 
     renderArc(color, segment);
@@ -134,6 +135,10 @@ public class BotRenderer {
   }
 
   public void renderRegions(ImmutableList<Circle> regions) {
+    if (!PerBotDebugOptions.get(bot.getIndex()).isRenderRotationsEnabled()) {
+      return;
+    }
+
     for (Circle region : regions) {
       renderCircle(Color.pink, region);
     }
@@ -160,9 +165,9 @@ public class BotRenderer {
     if (renderOptions.isRenderLines()) {
       renderProjections(input);
       // renderHitBox(input.car); // TODO: Add checkbox for rendering the hitbox.
-      renderTurningRadius(input);
+      // renderTurningRadius(input);
 
-      //    renderTacticLines(input.car);
+//      renderTacticLines(input.car);
       //    renderPredictionDiff(input);
       //    renderRelativeBallData(input);
       //    renderTouchIndicator(input);
@@ -193,17 +198,20 @@ public class BotRenderer {
       return;
     }
     ChallengeData challengeData = challengeDataOptional.get();
+    int controllingTeam = challengeData.controllingTeam;
+    Color color = controllingTeam == 0 ? Color.BLUE : Color.ORANGE;
+
+    renderTarget(color, challengeData.firstTouch.ball.position);
 
     float timeToTouch = challengeData.firstTouch.ball.time - input.car.elapsedSeconds;
-
     float timeToSecond = BallPredictionUtil.PREDICTION_TIME_LIMIT;
     if (challengeData.firstTouchByOtherTeam.isPresent()) {
       timeToSecond = challengeData.firstTouchByOtherTeam.get().ball.time - input.car.elapsedSeconds;
+      Color otherTouchColor = Teams.otherTeam(challengeData.controllingTeam) == 0 ? Color.BLUE : Color.ORANGE;
+      renderTarget(otherTouchColor, challengeData.firstTouchByOtherTeam.get().ball.position);
     }
 
-    int controllingTeam = challengeData.controllingTeam;
-
-    renderText(controllingTeam == 0 ? Color.BLUE : Color.ORANGE, 500, 100, "Impact: %.2fs - Pressure: %.2fs", timeToTouch, timeToSecond - timeToTouch);
+    renderText(color, 500, 100, "Impact: %.2fs - Pressure: %.2fs", timeToTouch, timeToSecond - timeToTouch);
   }
 
   private PriorityQueue<RenderRequest> renderRequests =
@@ -641,6 +649,10 @@ public class BotRenderer {
         tactician == null ? "NONE" : tactician.getClass().getSimpleName().replace("Tactician", ""));
     renderText(Color.CYAN, 0, 270, "%s", branch);
 
+    if (tactician != null && tactician.isLocked()) {
+      renderText(Color.MAGENTA, 400, 270, "LOCKED");
+    }
+
     logger.log(Level.DEBUG, "{} {} {} {}",
         strategist == null ? "NONE" : strategist.getType(),
         tactic == null ? "NONE" : tactic.tacticType,
@@ -672,6 +684,12 @@ public class BotRenderer {
 
   private String ud(float value) {
     return value > 0 ? "UP" : value == 0 ? "NONE" : "DOWN";
+  }
+
+  private String formatTime(float elapsedSeconds) {
+    int minutes = ((int) elapsedSeconds) / 60;
+    float seconds = elapsedSeconds % 60;
+    return String.format("%d:%#.2f", minutes, seconds);
   }
 
   private void renderControls(Controls output) {

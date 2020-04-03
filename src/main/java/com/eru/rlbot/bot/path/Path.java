@@ -134,6 +134,10 @@ public class Path {
     return this.isOffCourse;
   }
 
+  public CarData getSource() {
+    return start;
+  }
+
   public CarData getTarget() {
     return target;
   }
@@ -146,6 +150,10 @@ public class Path {
           .build();
     }
     return terseNodes;
+  }
+
+  public Segment getExtension() {
+    return extension;
   }
 
   public static final class Builder {
@@ -185,19 +193,20 @@ public class Path {
 
   @VisibleForTesting
   Plan makeSpeedPlan(double boostAmount, double targetTime) {
-    Plan workingPlan = minGroundTime(0, 0);
+    Plan workingPlan = minGroundTime(0, boostAmount);
 
     if (workingPlan.traverseTime < targetTime) {
-      return nonBoostingPlan(boostAmount, targetTime);
+      return nonBoostingPlan(targetTime);
     } else {
       return boostingPlan(workingPlan, boostAmount, targetTime);
     }
   }
 
   private static final double COASTING_TIME_GRANULARITY = 0.01;
-  private static final double BREAKING_SPEED_GRANULARITY = 5;
+  private static final double BREAKING_SPEED_GRANULARITY = 1;
 
-  Plan nonBoostingPlan(double boostAmount, double targetTime) {
+  Plan nonBoostingPlan(double targetTime) {
+    // Figure out what speed to break at to coast to the ball.
     double minBreakingSpeed = 0;
     double maxBreakingSpeed = start.velocity.magnitude();
     double targetBreakingSpeed = (minBreakingSpeed + maxBreakingSpeed) / 2;
@@ -205,14 +214,17 @@ public class Path {
     // Need to break
     Accels.AccelResult breaking = Accels.distanceToSlow(start.velocity.magnitude(), targetBreakingSpeed);
     double remainingDistance = length() - breaking.distance;
-    Accels.AccelResult striking = Accels.boostedTimeToDistance(boostAmount, targetBreakingSpeed, remainingDistance);
+    Accels.AccelResult striking = Accels.nonBoostedTimeToDistance(targetBreakingSpeed, remainingDistance);
     double coastingTime = targetTime - breaking.time - striking.time;
 
-    while (Math.abs(coastingTime) < COASTING_TIME_GRANULARITY
-        && (minBreakingSpeed < targetBreakingSpeed - BREAKING_SPEED_GRANULARITY
-        && maxBreakingSpeed + BREAKING_SPEED_GRANULARITY < maxBreakingSpeed)) {
+    // TODO: Account for jump time.
 
-      if (coastingTime < 0) {
+    while (
+        Math.abs(coastingTime) > COASTING_TIME_GRANULARITY &&
+            (minBreakingSpeed < targetBreakingSpeed - BREAKING_SPEED_GRANULARITY
+                && targetBreakingSpeed + BREAKING_SPEED_GRANULARITY < maxBreakingSpeed)) {
+
+      if (coastingTime > 0) {
         // Breaking too much
         minBreakingSpeed = targetBreakingSpeed;
       } else {
@@ -223,7 +235,7 @@ public class Path {
 
       breaking = Accels.distanceToSlow(start.velocity.magnitude(), targetBreakingSpeed);
       remainingDistance = length() - breaking.distance;
-      striking = Accels.boostedTimeToDistance(boostAmount, targetBreakingSpeed, remainingDistance);
+      striking = Accels.nonBoostedTimeToDistance(targetBreakingSpeed, remainingDistance);
       coastingTime = targetTime - breaking.time - striking.time;
     }
 
@@ -244,7 +256,6 @@ public class Path {
     while (accelerationTime > 0) {
       planBuilder.addThrottleInput(boostUsed > 0, 1);
       accelerationTime -= STEP_SIZE;
-      boostAmount -= Constants.BOOST_RATE / STEP_SIZE;
     }
 
     Plan plan = planBuilder
@@ -252,7 +263,7 @@ public class Path {
         .setTacticType(Tactic.TacticType.STRIKE)
         .build(targetTime);
 
-    planMap.put(Pair.of(boostAmount, targetTime), plan);
+    planMap.put(Pair.of(0d, targetTime), plan);
 
     return plan;
   }
@@ -295,6 +306,7 @@ public class Path {
     return minGroundTime(0, boost);
   }
 
+  // TODO: See if we can optimize this for one turn paths.
   @VisibleForTesting
   Plan minGroundTime(int startIndex, double boost) {
     Plan.Builder planBuilder = Plan.builder()

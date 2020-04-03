@@ -155,7 +155,7 @@ public class KickoffTactician extends Tactician {
             .map(optional -> optional.get().station)
             .anyMatch(station -> station == KickoffStation.RIGHT || station == KickoffStation.LEFT);
 
-        if (!otherSideCovered && (hasTeammates || hasScoreDiff(input, 2)) && random.nextBoolean()) {
+        if (!otherSideCovered && (hasTeammates || hasScoreDiff(input, -2)) && random.nextBoolean()) {
           // Aim for the goal.
           Vector3 goalAngle = input.ball.position.minus(Goal.opponentGoal(input.alliance).getNearPost(input.car));
           Vector3 target = input.ball.position.plus(goalAngle.toMagnitude(Constants.BALL_RADIUS * 1.3));
@@ -353,6 +353,6 @@ public class KickoffTactician extends Tactician {
         .filter(team -> ownTeam != team)
         .collect(MoreCollectors.onlyElement());
 
-    return Math.abs(ownTeam.score() - otherTeam.score()) > scoreDifference;
+    return ownTeam.score() >= otherTeam.score() + scoreDifference;
   }
 }

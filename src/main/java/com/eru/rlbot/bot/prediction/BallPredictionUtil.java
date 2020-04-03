@@ -20,6 +20,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import rlbot.flat.PredictionSlice;
 import rlbot.flat.Touch;
+import rlbot.flat.Vector3;
 
 /**
  * Keep track of which ball locations have been examined.
@@ -28,9 +29,9 @@ public class BallPredictionUtil {
 
   private static final Logger logger = LogManager.getLogger("BallPredictionUtil");
 
-  public static final int PREDICTION_TIME_LIMIT = 3;
-  private static final int PREDICTION_FPS = 60;
-  private static final long PREDICTION_LIMIT = PREDICTION_TIME_LIMIT * PREDICTION_FPS;
+  public static final int PREDICTION_TIME_LIMIT = 6;
+  public static final int PREDICTION_FPS = 60;
+  public static final long PREDICTION_LIMIT = PREDICTION_TIME_LIMIT * PREDICTION_FPS;
 
   private static ConcurrentHashMap<Integer, BallPredictionUtil> MAP = new ConcurrentHashMap<>();
   private static boolean wasTouched;
@@ -94,6 +95,7 @@ public class BallPredictionUtil {
       if (hasBeenTouched(nextSlice)) {
         balls = stream(prediction)
             .limit(PREDICTION_LIMIT)
+            .filter(BallPredictionUtil::isInBounds)
             .map(BallData::fromPredictionSlice)
             .map(BallPrediction::new)
             .collect(Collectors.toList());
@@ -116,6 +118,7 @@ public class BallPredictionUtil {
 
       stream(prediction)
           .filter(predictionSlice -> predictionSlice.gameSeconds() > lastTime)
+          .filter(BallPredictionUtil::isInBounds)
           .limit(PREDICTION_LIMIT - balls.size())
           .map(BallData::fromPredictionSlice)
           .map(BallPrediction::new)
@@ -123,6 +126,12 @@ public class BallPredictionUtil {
     }
 
     return false;
+  }
+
+  private static boolean isInBounds(PredictionSlice predictionSlice) {
+    Vector3 location = predictionSlice.physics().location();
+    return Math.abs(location.x()) < Constants.HALF_WIDTH && Math.abs(location.y()) < Constants.HALF_LENGTH &&
+        location.z() >= (Constants.BALL_RADIUS - 10) && location.z() < Constants.FIELD_HEIGHT;
   }
 
   private boolean hasBeenTouched(PredictionSlice nextSlice) {

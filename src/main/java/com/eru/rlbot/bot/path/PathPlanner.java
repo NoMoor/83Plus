@@ -33,9 +33,16 @@ public class PathPlanner {
     }
 
     Path path = planPath(car, closestHit.get());
+
+    double timeToBall = ball.time - car.elapsedSeconds;
+    double absoluteMinTime = path.length() / Constants.BOOSTED_MAX_SPEED;
+    if (absoluteMinTime > timeToBall) {
+      return Optional.empty();
+    }
+
     Plan plan = path.minGroundTime(car.boost);
 
-    if (plan.traverseTime < ball.time - car.elapsedSeconds) {
+    if (plan.traverseTime < timeToBall) {
       return Optional.of(plan);
     } else {
       return Optional.empty();
@@ -64,7 +71,9 @@ public class PathPlanner {
       Orientation orientation = Orientation.fromFlatVelocity(approachBall);
 
       Vector3 position = makeGroundCar(orientation, moment);
-      Vector3 velocity = approachBall.toMagnitude(Constants.BOOSTED_MAX_SPEED);
+      double speed = Accels.boostedTimeToDistance(
+          car.boost * .5, car.groundSpeed, Math.max(approachBall.magnitude() - 300, 0)).speed;
+      Vector3 velocity = approachBall.toMagnitude(speed);
 
       return Optional.of(CarData.builder()
           .setTime(moment.time)
@@ -175,7 +184,7 @@ public class PathPlanner {
       }
     }
 
-    CarData projectedCardData = CarDataUtils.rewindDistance(workingTarget, 300);
+    CarData projectedCardData = CarDataUtils.rewindDistance(workingTarget, 250);
     if (!addPathSegment(car, Segment.straight(projectedCardData.position, workingTarget.position), pathBuilder)) {
       // TODO: Fix this...
       return pathBuilder

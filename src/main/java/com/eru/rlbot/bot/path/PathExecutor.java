@@ -8,6 +8,7 @@ import com.eru.rlbot.bot.maneuver.Flip;
 import com.eru.rlbot.bot.renderer.BotRenderer;
 import com.eru.rlbot.bot.tactics.Tactic;
 import com.eru.rlbot.bot.tactics.Tactician;
+import com.eru.rlbot.common.input.BoundingBox;
 import com.eru.rlbot.common.input.DataPacket;
 import com.eru.rlbot.common.output.Controls;
 import com.eru.rlbot.common.vector.Vector3;
@@ -30,7 +31,6 @@ public class PathExecutor {
   }
 
   public void executePath(DataPacket input, Controls output, Path path) {
-
     // TODO: Handle what to do when you are ahead of schedule.
     if (path.getEndTime() < input.car.elapsedSeconds) {
       path.markOffCourse();
@@ -51,6 +51,19 @@ public class PathExecutor {
     }
 
     drive(input, output, target, currentSegment, distanceDiff);
+
+    if (currentSegment.type == Segment.Type.JUMP) {
+      output.withJump();
+      Segment extension = path.getExtension();
+      Vector3 noseVector;
+      if (extension != null) {
+        noseVector = extension.end.minus(extension.start);
+      } else {
+        noseVector = input.car.velocity;
+      }
+
+      Angles3.pointAnyDirection(input.car, noseVector, output);
+    }
   }
 
   private static final double P = 1;
@@ -74,8 +87,7 @@ public class PathExecutor {
     double d = (diffAngularVelocity / maxAngularVelocity) * D;
 
     output.withSteer(segmentModifier * (p + d));
-    output.withSlide(correctionCurvature > maxCurvature * 1.1);
-    BotRenderer.forCar(input.car).setBranchInfo("P %.2f D %.2f", p, d);
+    output.withSlide(correctionCurvature > maxCurvature * 1.1 && input.car.groundSpeed > 1000);
 
     double timeToTarget = distanceDiff.magnitude() / input.car.velocity.magnitude();
 
@@ -100,10 +112,6 @@ public class PathExecutor {
       output.withThrottle(-1);
     }
 
-    if (currentSegment.type == Segment.Type.JUMP) {
-      output.withJump();
-    }
-
     // TODO: Delegate if we are near the end of an arc segment.
     boolean hasSpeed = input.car.groundSpeed > MIN_FLIP_SPEED;
     boolean isStraight = currentSegment.type == Segment.Type.STRAIGHT;
@@ -121,13 +129,25 @@ public class PathExecutor {
 
   public void executeSimplePath(DataPacket input, Controls output, Tactic tactic) {
     if (!input.car.hasWheelContact) {
-      Angles3.setControlsForFlatLanding(input.car, output);
+      if (input.car.velocity.z > 0) {
+        Angles3.pointAnyDirection(input.car, input.ball.position.minus(input.car.position), output);
+      } else {
+        Angles3.setControlsForFlatLanding(input.car, output);
+      }
       output.withThrottle(1.0);
     } else {
       double correctionAngle = Angles.flatCorrectionAngle(input.car, tactic.subject.position);
+      double distanceToTarget = input.car.position.distance(tactic.subject.position) - BoundingBox.frontToRj;
+      double timeToTactic = tactic.subject.time - input.car.elapsedSeconds;
+
+      BotRenderer.forIndex(input.car.serialNumber).setBranchInfo("Dumb execute: %.2f", timeToTactic);
+
+      double timeToTarget = distanceToTarget / input.car.groundSpeed;
+
       output
-          .withThrottle(1.0)
-          .withSteer(correctionAngle)
+          .withThrottle(timeToTactic < timeToTarget ? 1 : timeToTarget * 1.1 < timeToTactic ? -1 : 0)
+          .withSteer(correctionAngle * 2)
+          .withBoost(Math.abs(correctionAngle) < .5 && input.car.boost > 12 && !input.car.isSupersonic && distanceToTarget > 1000 && timeToTactic < timeToTarget)
           .withSlide(Math.abs(correctionAngle) > 1);
     }
   }

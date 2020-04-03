@@ -2,12 +2,14 @@ package com.eru.rlbot.bot.strats;
 
 import com.eru.rlbot.bot.common.Angles;
 import com.eru.rlbot.bot.common.Goal;
+import com.eru.rlbot.bot.common.SupportRegions;
 import com.eru.rlbot.bot.common.Teams;
 import com.eru.rlbot.bot.main.ApolloGuidanceComputer;
 import com.eru.rlbot.bot.path.Path;
 import com.eru.rlbot.bot.plan.Marker;
 import com.eru.rlbot.bot.prediction.BallPrediction;
 import com.eru.rlbot.bot.prediction.BallPredictionUtil;
+import com.eru.rlbot.bot.prediction.CarLocationPredictor;
 import com.eru.rlbot.bot.tactics.KickoffTactician;
 import com.eru.rlbot.bot.tactics.Tactic;
 import com.eru.rlbot.common.Moment;
@@ -15,6 +17,8 @@ import com.eru.rlbot.common.input.BallData;
 import com.eru.rlbot.common.input.CarData;
 import com.eru.rlbot.common.input.DataPacket;
 import com.eru.rlbot.common.vector.Vector3;
+import java.awt.Color;
+import java.util.Comparator;
 import java.util.Optional;
 
 /**
@@ -65,24 +69,27 @@ public class AttackStrategist extends Strategist {
         BallPredictionUtil.get(input.car).getChallengeData();
     if (!challengeDataOptional.isPresent()) {
       // The ball cannot be hit by anyone. Grab boost and go on defense
-      return Teams.getTeamSize(input.car.team) == 1
-          ? getStrikingTactic(input, challengeDataOptional)
-          : getSupportPosition(input, input.ball);
+      return Teams.getTeamSize(input.car.team) == 1 || true
+          ? getStrikingTactic(input)
+          : getSupportTactic(input, input.ball);
     }
 
+    Rotations rotations = Rotations.get(input);
     BallPredictionUtil.ChallengeData challengeData = challengeDataOptional.get();
-    if (challengeData.firstTouch.isHittable(input.car)) {
+    if (challengeData.firstTouch.isHittable(input.car)
+        || (rotations.isLastManBack() && rotations.hasPriority())) {
       // Go hit the ball
-      return getStrikingTactic(input, challengeDataOptional);
+      return getStrikingTactic(input, challengeData);
     } else if (challengeData.firstTouch.isHittableByTeam(input.car.team)) {
+      return getStrikingTactic(input, challengeData);
       // Hittable by our team
-      return getSupportPosition(input, challengeData.firstTouch.ball);
+//      return getSupportTactic(input, challengeData.firstTouch.ball);
     }
 
-    return getSupportPosition(input, challengeData.firstTouch.ball);
+    return getSupportTactic(input, challengeData.firstTouch.ball);
   }
 
-  private Tactic getSupportPosition(DataPacket input, BallData firstTouchBall) {
+  private Tactic getSupportTactic(DataPacket input, BallData firstTouchBall) {
     return Tactic.builder()
         .setTacticType(Tactic.TacticType.ROTATE)
         .setSubject(getSupportLocation(input, firstTouchBall))
@@ -91,52 +98,50 @@ public class AttackStrategist extends Strategist {
   }
 
   private Moment getSupportLocation(DataPacket input, BallData firstTouchBall) {
-    Rotations rotations = Rotations.get(input);
     Goal ownGoal = Goal.ownGoal(input.car.team);
 
-    // TODO: Use Regions.
-    if (rotations.isFirstMan()) {
-      // Rotate to the back.
-      Vector3 goalPost = Goal.ownGoal(input.car.team).getFarPost(firstTouchBall.position);
-      goalPost = goalPost.addY(-Math.signum(goalPost.y) * 1000);
-      return Moment.from(goalPost);
-    } else if (rotations.isLastManBack()) {
-      Vector3 touchGoalCenter = firstTouchBall.position.minus(ownGoal.center);
-      Vector3 towardGoal = touchGoalCenter.multiply(.5);
-      return Moment.from(firstTouchBall.position.plus(towardGoal));
-    } else {
-      CarData car = rotations.getFirstMan();
-      Vector3 firstManToBall = input.ball.position.minus(car.position);
-      Vector3 supportPosition = car.position.plus(firstManToBall);
-      if (Math.abs(car.position.x) > 2000) {
-        supportPosition = Vector3.of(Math.signum(supportPosition.x) * 500, supportPosition.y, 0);
-      }
-      return Moment.from(supportPosition);
-    }
+    Vector3 mostDefendingAlly = CarLocationPredictor.forCar(input.car).teammates().stream()
+        .map(CarLocationPredictor.CarLocationPrediction::oneSec)
+        .min(Comparator.comparing(predictedLocation -> predictedLocation.distance(ownGoal.center)))
+        .get();
+    bot.botRenderer.renderTarget(Color.PINK, mostDefendingAlly);
+    return Moment.from(SupportRegions.getSupportRegions(mostDefendingAlly, input.car.team));
   }
 
-  private Tactic getStrikingTactic(DataPacket input, Optional<BallPredictionUtil.ChallengeData> challengeDataOptional) {
-    Rotations rotations = Rotations.get(input);
-    // TODO: Gate this on rotation priority.
-
-    BallData subject = input.ball;
+  private Tactic getStrikingTactic(DataPacket input) {
+    BallPrediction target = BallPredictionUtil.get(input.car).getTarget();
+    BallData subject = target.ball;
     Vector3 object = Goal.opponentGoal(input.car.team).center;
-    Tactic.TacticType type = Tactic.TacticType.STRIKE;
-
-    if (challengeDataOptional.isPresent()) {
-      BallPrediction firstTouch = challengeDataOptional.get().firstTouch;
-      BallPrediction.Potential potential = firstTouch.forCar(input.car.serialNumber);
-
-      subject = firstTouch.ball;
-      object = getObject(potential);
-      type = potential.getPlan().type;
-    }
+    Tactic.TacticType type = target.getTacticType();
 
     return Tactic.builder()
         .setTacticType(type)
         .setSubject(subject)
         .setObject(object)
         .build();
+  }
+
+  private Tactic getStrikingTactic(DataPacket input, BallPredictionUtil.ChallengeData challengeData) {
+    if (challengeData.controllingTeam == input.car.team) {
+      BallPrediction firstTouch = BallPredictionUtil.get(input.car).getTarget();
+      BallPrediction.Potential potential = firstTouch.forCar(input.car.serialNumber);
+
+      if (potential == null || !potential.hasPlan()) {
+        return getStrikingTactic(input);
+      }
+
+      BallData subject = firstTouch.ball;
+      Vector3 object = getObject(potential);
+      Tactic.TacticType type = potential.getPlan().type;
+
+      return Tactic.builder()
+          .setTacticType(type)
+          .setSubject(subject)
+          .setObject(object)
+          .build();
+    } else {
+      return getStrikingTactic(input);
+    }
   }
 
   private Vector3 getObject(BallPrediction.Potential potential) {
@@ -147,7 +152,8 @@ public class AttackStrategist extends Strategist {
     if (potential.hasPlan()) {
       Path path = potential.getPath();
       CarData car = path.getTarget();
-      if (path.getTarget().orientation.getNoseVector().dot(ownGoal.center) > 0) {
+      Vector3 carToGoal = ownGoal.center.minus(car.position);
+      if (path.getTarget().orientation.getNoseVector().dot(carToGoal) > 0) {
         double rightCorrectionAngle = Angles.flatCorrectionAngle(car, ownGoal.rightWide);
         double leftCorrectionAngle = Angles.flatCorrectionAngle(car, ownGoal.leftWide);
         return Math.abs(rightCorrectionAngle) < Math.abs(leftCorrectionAngle) ? ownGoal.rightWide : ownGoal.leftWide;

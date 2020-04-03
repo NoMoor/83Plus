@@ -1,5 +1,6 @@
 package com.eru.rlbot.bot.plan;
 
+import com.eru.rlbot.bot.common.Constants;
 import com.eru.rlbot.bot.path.PathPlanner;
 import com.eru.rlbot.bot.path.Plan;
 import com.eru.rlbot.bot.prediction.BallPrediction;
@@ -50,9 +51,11 @@ public class Marker {
       return;
     }
 
-    BallPredictionUtil.get(ownerBot).getPredictions().forEach(ballPrediction -> mark(ballPrediction, car));
+    BallPredictionUtil.get(ownerBot).getPredictions().stream()
+        .limit((long) (BallPredictionUtil.PREDICTION_LIMIT * (ownerBot == botIndex ? .75 : .33)))
+        .forEach(ballPrediction -> mark(ballPrediction, car));
     double timeMs = watch.stop() * 1000;
-    if (timeMs > 5) {
+    if (timeMs > 1) {
       logger.debug("Marking for car {} done: {}", botIndex, String.format("%.2fms", timeMs));
     }
   }
@@ -60,6 +63,14 @@ public class Marker {
   private void mark(BallPrediction ballPrediction, CarData car) {
     BallData ball = ballPrediction.ball;
     BallPrediction.Potential potential = ballPrediction.forCar(car.serialNumber);
+
+    if (ball.position.distance(car.position) / Constants.BOOSTED_MAX_SPEED
+        > ballPrediction.ball.time - car.elapsedSeconds) {
+
+      // The ball is too far away to hit.
+      return;
+    }
+
     Optional<Plan> result = PathPlanner.getGroundPath(car, ball);
     if (result.isPresent()) {
       potential.addPlan(result.get());

@@ -6,11 +6,13 @@ import com.eru.rlbot.bot.common.Angles3;
 import com.eru.rlbot.bot.common.BoostPathHelper;
 import com.eru.rlbot.bot.common.Constants;
 import com.eru.rlbot.bot.common.Goal;
+import com.eru.rlbot.bot.common.Teams;
 import com.eru.rlbot.bot.main.ApolloGuidanceComputer;
 import com.eru.rlbot.bot.maneuver.WallHelper;
 import com.eru.rlbot.bot.path.Path;
 import com.eru.rlbot.bot.path.PathPlanner;
 import com.eru.rlbot.bot.path.Segment;
+import com.eru.rlbot.bot.strats.Rotations;
 import com.eru.rlbot.common.Pair;
 import com.eru.rlbot.common.boost.BoostManager;
 import com.eru.rlbot.common.boost.BoostPad;
@@ -44,7 +46,19 @@ public class RotateTactician extends Tactician {
 
   @Override
   void internalExecute(DataPacket input, Controls output, Tactic tactic) {
-    usingPathPlanner(input, output, tactic);
+    locked = Rotations.get(input).getFirstMan() == input.car && Teams.getTeamSize(input.car.team) > 1;
+    if (WallHelper.isOnWall(input.car)) {
+      bot.botRenderer.setBranchInfo("Get off the wall");
+
+      WallHelper.drive(input, output, input.ball.position);
+    } else {
+      usingPathPlanner(input, output, tactic);
+      if (tactic.subject.supportingRegions != null) {
+        bot.botRenderer.renderRegions(tactic.subject.supportingRegions.regions);
+      }
+
+      bot.botRenderer.setBranchInfo("Rotate %s", locked ? "locked" : "unlocked");
+    }
   }
 
   private boolean locked;
@@ -55,15 +69,10 @@ public class RotateTactician extends Tactician {
   }
 
   private void usingPathPlanner(DataPacket input, Controls output, Tactic tactic) {
-    if (WallHelper.isOnWall(input.car)) {
-      bot.botRenderer.setBranchInfo("Get off the wall");
-
-      WallHelper.drive(input, output, input.ball.position);
-      return;
-    }
-
-
     Vector3 rotationDirection = tactic.object.minus(tactic.subject.position);
+    if (rotationDirection.isZero()) {
+      rotationDirection = tactic.subject.position.minus(input.car.position);
+    }
     CarData car = input.car.toBuilder()
         .setOrientation(Orientation.fromFlatVelocity(rotationDirection))
         .setVelocity(rotationDirection.toMagnitude(Math.min(input.car.velocity.magnitude() + 100, Constants.SUPER_SONIC)))
@@ -74,6 +83,7 @@ public class RotateTactician extends Tactician {
 
     ImmutableList<Pair<BoostPad, Vector3>> pads = boostsNearPath(path);
     Optional<Pair<BoostPad, Vector3>> closetsPad = pads.stream()
+        .filter(pair -> pair.getFirst().isActive())
         .min(Comparator.comparing(pair -> pair.getFirst().getLocation().distance(pair.getSecond())));
 
     if (closetsPad.isPresent() && input.car.boost < 50) {

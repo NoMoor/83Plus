@@ -54,7 +54,7 @@ public class Rotations {
     Goal ownGoal = Goal.ownGoal(input.car.team);
 
     ImmutableList<CarLocationPredictor.CarLocationPrediction> allies =
-        CarLocationPredictor.forCar(input.car).allies().stream()
+        CarLocationPredictor.forCar(input.car).ownTeam().stream()
             .sorted(Comparator.comparing(prediction -> -prediction.oneSec().distance(ownGoal.center)))
             .collect(toImmutableList());
 
@@ -89,7 +89,7 @@ public class Rotations {
     BotRenderer botRenderer = BotRenderer.forIndex(playerIndex);
     ImmutableList<CarData> rotation = asList();
     for (int i = 0; i < rotation.size(); i++) {
-      botRenderer.renderRotation(rotation.get(i), i + 1);
+      botRenderer.renderRotation(rotation.get(i), i + 1, rotation.get(i) == priority);
     }
   }
 

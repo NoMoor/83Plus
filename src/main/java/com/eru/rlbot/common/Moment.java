@@ -1,5 +1,6 @@
 package com.eru.rlbot.common;
 
+import com.eru.rlbot.bot.common.SupportRegions;
 import com.eru.rlbot.bot.prediction.BallPrediction;
 import com.eru.rlbot.common.boost.BoostPad;
 import com.eru.rlbot.common.input.BallData;
@@ -18,6 +19,7 @@ public class Moment {
   public final Vector3 velocity;
   public final Vector3 position;
   public final float time;
+  public final SupportRegions supportingRegions;
 
   public Moment(PredictionSlice predictionSlice) {
     this(
@@ -40,6 +42,7 @@ public class Moment {
     this.velocity = velocity;
     this.time = time;
     this.type = type;
+    this.supportingRegions = null;
   }
 
   public Moment(rlbot.flat.Vector3 location, rlbot.flat.Vector3 velocity, float time, Type type) {
@@ -47,6 +50,7 @@ public class Moment {
     this.velocity = Vector3.of(velocity);
     this.time = time;
     this.type = type;
+    this.supportingRegions = null;
   }
 
   private Moment(BallData ball) {
@@ -59,6 +63,14 @@ public class Moment {
 
   private Moment(Builder builder) {
     this(builder.position, builder.velocity, builder.time, builder.type);
+  }
+
+  private Moment(SupportRegions supportRegions) {
+    this.position = supportRegions.averageLocation();
+    this.velocity = Vector3.zero();
+    this.time = 0; // TODO: This should be 1 second from now.
+    this.type = Type.WAY_POINT;
+    this.supportingRegions = supportRegions;
   }
 
   public static Moment from(Vector3 wayPoint) {
@@ -79,6 +91,10 @@ public class Moment {
 
   public static Moment from(CarData car) {
     return new Moment(car.position, car.velocity, car.elapsedSeconds, Type.CAR);
+  }
+
+  public static Moment from(SupportRegions supportRegions) {
+    return new Moment(supportRegions);
   }
 
   @Override

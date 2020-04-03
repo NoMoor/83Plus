@@ -42,9 +42,15 @@ public class CarLocationPredictor {
     return MAP.computeIfAbsent(car.serialNumber, i -> new CarLocationPredictor(car.serialNumber, car.team));
   }
 
-  public ImmutableList<CarLocationPrediction> allies() {
+  public ImmutableList<CarLocationPrediction> ownTeam() {
     return predictions.values().stream()
         .filter(prediction -> prediction.getTeamIndex() == team)
+        .collect(toImmutableList());
+  }
+
+  public ImmutableList<CarLocationPrediction> teammates() {
+    return ownTeam().stream()
+        .filter(prediction -> prediction.getPlayerIndex() != playerIndex)
         .collect(toImmutableList());
   }
 

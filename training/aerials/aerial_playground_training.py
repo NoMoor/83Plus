@@ -11,11 +11,11 @@ from rlbottraining.training_exercise import TrainingExercise
 
 
 @dataclass
-class PlayGround(TrainingExercise):
+class Setup(TrainingExercise):
     grader: Grader = field(default_factory=lambda: GameTickPacketWrapperGrader(
         StrikerGrader(timeout_seconds=10.0, ally_team=0)))
     ball_x: float = 0
-    ball_y: float = 2000
+    ball_y: float = 0
     ball_z: float = 0
     ball_vx: float = 0
     ball_vy: float = 0
@@ -28,8 +28,14 @@ class PlayGround(TrainingExercise):
     car_y: float = -4000
     car_z: float = 20
     car_spin: float = pi / 2
+    boost: float = 50
+    minboost: float = None
+    maxboost: float = None
 
     def make_game_state(self, rng: SeededRandomNumberGenerator) -> GameState:
+        minboost = self.boost if self.minboost is None else self.minboost
+        maxboost = self.boost if self.maxboost is None else self.maxboost
+
         return GameState(
             ball=BallState(physics=Physics(
                 location=Vector3(self.ball_x, self.ball_y, self.ball_z),
@@ -44,12 +50,12 @@ class PlayGround(TrainingExercise):
                         angular_velocity=Vector3(0, 0, 0)),
                     jumped=False,
                     double_jumped=False,
-                    boost_amount=100)
+                    boost_amount=rng.uniform(minboost, maxboost))
             },
             boosts={i: BoostState(0) for i in range(34)},  # Is this needed.
         )
 
 def make_default_playlist() -> Playlist:
     return [
-        PlayGround('BallRollingToGoalie'),
+        Setup('BallRollingToGoalie'),
     ]

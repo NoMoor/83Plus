@@ -39,6 +39,15 @@ public final class Angles3 {
   // How far ahead to look.
   private static final float HORIZON_TIME = .05f;
 
+  public static void pointAnyDirection(CarData car, Vector3 desiredVector, Controls output) {
+    Vector3 nose = desiredVector.normalize();
+    Vector3 sideDoor = nose.cross(car.orientation.getRoofVector().multiply(-1));
+    Vector3 roofOrientation = nose.cross(sideDoor);
+    Orientation carOrientation = Orientation.noseRoof(nose, roofOrientation);
+
+    Angles3.setControlsFor(car, carOrientation.getOrientationMatrix(), output);
+  }
+
   public static void setControlsForFlatLanding(CarData car, Controls output) {
     setControlsFor(car, Orientation.fromFlatOrientation(car).getOrientationMatrix(), output);
   }

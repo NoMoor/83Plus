@@ -33,7 +33,7 @@ public class TakeTheShotTactician extends Tactician {
 
   @Override
   public boolean isLocked() {
-    return false;
+    return super.isLocked();
   }
 
   private Path path;
@@ -56,7 +56,8 @@ public class TakeTheShotTactician extends Tactician {
 
       WallHelper.drive(input, output, input.ball.position);
       return;
-    } else if (path == null || path.isOffCourse() || BallPredictionUtil.get(input.car).wasTouched()) {
+    } else if ((path == null || path.isOffCourse() || BallPredictionUtil.get(input.car).wasTouched()) // Do not re-plan once we have jumped.
+        && input.car.hasWheelContact) {
       Optional<CarData> targetOptional = PathPlanner.closestStrike(input.car, tactic.subject);
 
       if (!targetOptional.isPresent()) {
@@ -73,6 +74,8 @@ public class TakeTheShotTactician extends Tactician {
       path = PathPlanner.oneTurn(input.car, Moment.from(optimalHit.car));
 
       if (path == null || !path.lockAndSegment(true)) {
+        bot.botRenderer.setBranchInfo("Dumb executor");
+
         path = null;
         pathExecutor.executeSimplePath(input, output, tactic);
         return;

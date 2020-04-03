@@ -26,7 +26,7 @@ public class BallPrediction {
     this.ball = ball;
   }
 
-  public Tactic.TacticType getTactic() {
+  public Tactic.TacticType getTacticType() {
     return ball.position.z > 300 ? Tactic.TacticType.AERIAL : Tactic.TacticType.STRIKE;
   }
 
