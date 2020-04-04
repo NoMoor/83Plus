@@ -180,8 +180,8 @@ public class BotRenderer {
 
       renderControls(output);
 
-      renderBallVel(input);
-//      renderCarAccel(input);
+//      renderBallVel(input);
+      renderCarAccel(input);
 //      renderCarLocation(input);
       renderChallengeData(input);
     }
