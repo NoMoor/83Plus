@@ -2,6 +2,7 @@ package com.eru.rlbot.bot.strats;
 
 import com.eru.rlbot.bot.common.StateSetChecker;
 import com.eru.rlbot.bot.main.ApolloGuidanceComputer;
+import com.eru.rlbot.bot.tactics.KickoffTactician;
 import com.eru.rlbot.common.input.DataPacket;
 import com.eru.rlbot.common.output.Controls;
 import java.util.HashMap;
@@ -44,7 +45,12 @@ public class StrategyManager {
     boolean timedUpdate = lastStrategyUpdateTime == 0
         || input.car.elapsedSeconds - lastStrategyUpdateTime > STRATEGY_UPDATE_INTERVAL;
 
-    if (active == null) {
+    if (KickoffTactician.isKickoffStart(input)) {
+      if (active == null || active.getType() != Strategy.Type.ATTACK) {
+        active = strategists.get(Strategy.Type.ATTACK);
+        active.assign(input);
+      }
+    } else if (active == null) {
       lastStrategyUpdateTime = input.car.elapsedSeconds;
 
       Strategist newStrategist = getNewStrategist();
@@ -54,15 +60,15 @@ public class StrategyManager {
 
       newStrategist.assign(input);
       active = newStrategist;
-    } else if (active.isComplete(input)
-      //|| (timedUpdate && !active.tacticManager.isTacticLocked())
-    ) {
+    } else if (active.isComplete(input)) {
       Strategist newStrategist = strategists.get(active.getDelegate());
 
       logger.info("New Strategy: {} Completed: {}", active.getType(), newStrategist.getType());
       active.abort();
       newStrategist.assign(input);
       active = newStrategist;
+    } else if (timedUpdate && !active.tacticManager.isTacticLocked()) {
+      active.assign(input);
     }
 
     Controls output = active.execute(input);

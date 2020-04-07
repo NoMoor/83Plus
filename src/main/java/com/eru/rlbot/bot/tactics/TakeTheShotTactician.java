@@ -1,7 +1,6 @@
 package com.eru.rlbot.bot.tactics;
 
 import com.eru.rlbot.bot.common.Angles3;
-import com.eru.rlbot.bot.common.Goal;
 import com.eru.rlbot.bot.common.RelativeUtils;
 import com.eru.rlbot.bot.main.ApolloGuidanceComputer;
 import com.eru.rlbot.bot.maneuver.WallHelper;
@@ -9,7 +8,6 @@ import com.eru.rlbot.bot.optimizer.CarBallOptimizer;
 import com.eru.rlbot.bot.optimizer.OptimizationResult;
 import com.eru.rlbot.bot.path.Path;
 import com.eru.rlbot.bot.path.PathPlanner;
-import com.eru.rlbot.bot.prediction.BallPredictionUtil;
 import com.eru.rlbot.common.Moment;
 import com.eru.rlbot.common.input.BallData;
 import com.eru.rlbot.common.input.CarData;
@@ -56,8 +54,9 @@ public class TakeTheShotTactician extends Tactician {
 
       WallHelper.drive(input, output, input.ball.position);
       return;
-    } else if ((path == null || path.isOffCourse() || BallPredictionUtil.get(input.car).wasTouched()) // Do not re-plan once we have jumped.
-        && input.car.hasWheelContact) {
+    } else //if ((path == null || path.isOffCourse() || BallPredictionUtil.get(input.car).wasTouched()) && input.car.hasWheelContact)
+    // Do not re-plan once we have jumped.
+    {
       Optional<CarData> targetOptional = PathPlanner.closestStrike(input.car, tactic.subject);
 
       if (!targetOptional.isPresent()) {
@@ -68,10 +67,14 @@ public class TakeTheShotTactician extends Tactician {
       }
 
       CarData target = targetOptional.get();
-      OptimizationResult optimalHit =
-          CarBallOptimizer.xSpeed(tactic.subject, Goal.opponentGoal(input.car.team).center, target);
 
-      Path newPath = PathPlanner.oneTurn(input.car, Moment.from(optimalHit.car));
+      Path newPath;
+      if (tactic.object != null) {
+        OptimizationResult optimalHit = CarBallOptimizer.xSpeed(tactic.subject, tactic.object, target);
+        newPath = PathPlanner.oneTurn(input.car, Moment.from(optimalHit.car));
+      } else {
+        newPath = PathPlanner.oneTurn(input.car, Moment.from(target));
+      }
 
       if (newPath == null) {
         // Stay on the old path.

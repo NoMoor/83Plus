@@ -28,6 +28,7 @@ public class TacticManager {
     DEFAULT_TACTICIAN_MAP.put(Tactic.TacticType.FAST_AERIAL, FastAerial.class);
     DEFAULT_TACTICIAN_MAP.put(Tactic.TacticType.FLIP, FlipTactician.class);
     DEFAULT_TACTICIAN_MAP.put(Tactic.TacticType.FLICK, FlickTactician.class);
+    DEFAULT_TACTICIAN_MAP.put(Tactic.TacticType.GUARD, GuardianTactician.class);
     DEFAULT_TACTICIAN_MAP.put(Tactic.TacticType.JUMP_FLIP, JumpFlipTactician.class);
     DEFAULT_TACTICIAN_MAP.put(Tactic.TacticType.HIT_BALL, RollingTactician.class);
     DEFAULT_TACTICIAN_MAP.put(Tactic.TacticType.KICKOFF, KickoffTactician.class);

@@ -158,7 +158,7 @@ public class KickoffTactician extends Tactician {
         if (!otherSideCovered && (hasTeammates || hasScoreDiff(input, -2)) && random.nextBoolean()) {
           // Aim for the goal.
           Vector3 goalAngle = input.ball.position.minus(Goal.opponentGoal(input.alliance).getNearPost(input.car));
-          Vector3 target = input.ball.position.plus(goalAngle.toMagnitude(Constants.BALL_RADIUS * 1.3));
+          Vector3 target = input.ball.position.plus(goalAngle.toMagnitude(Constants.BALL_RADIUS * 1.21));
           return KickoffTactic.create(location, target, KickoffTactic.Type.SHOOT);
         } else if (true) {
           // Hit it around the opponent.
@@ -284,7 +284,6 @@ public class KickoffTactician extends Tactician {
     JumpManager jumpManager = JumpManager.forCar(input.car);
     // Fast flip.
     float carX = Math.abs(input.car.position.x);
-    double carTarget = input.car.position.distance(kickoffTactic.target);
 
     bot.botRenderer.renderTarget(Color.RED, kickoffTactic.target);
 
@@ -305,7 +304,7 @@ public class KickoffTactician extends Tactician {
       delegateTo(DiagonalFlipCancel.builder()
           .setTarget(kickoffTactic.target)
           .build());
-    } else if (input.car.angularVelocity.flatten().magnitude() > .2) {
+    } else if (input.car.angularVelocity.flatten().magnitude() > .2 || input.car.position.distance(input.ball.position) > 270) {
       output
           .withBoost(!input.car.isSupersonic)
           .withThrottle(1.0)

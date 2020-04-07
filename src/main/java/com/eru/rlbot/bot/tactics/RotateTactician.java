@@ -73,13 +73,13 @@ public class RotateTactician extends Tactician {
     if (rotationDirection.isZero()) {
       rotationDirection = tactic.subject.position.minus(input.car.position);
     }
-    CarData car = input.car.toBuilder()
+    CarData targetRotation = input.car.toBuilder()
         .setOrientation(Orientation.fromFlatVelocity(rotationDirection))
         .setVelocity(rotationDirection.toMagnitude(Math.min(input.car.velocity.magnitude() + 100, Constants.SUPER_SONIC)))
         .setPosition(tactic.subject.position)
         .build();
 
-    Path path = PathPlanner.planPath(input.car, car);
+    Path path = PathPlanner.planPath(input.car, targetRotation);
 
     ImmutableList<Pair<BoostPad, Vector3>> pads = boostsNearPath(path);
     Optional<Pair<BoostPad, Vector3>> closetsPad = pads.stream()

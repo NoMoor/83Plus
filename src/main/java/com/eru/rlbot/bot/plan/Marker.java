@@ -25,6 +25,7 @@ public class Marker {
   private static final ConcurrentHashMap<Integer, Marker> MARKERS = new ConcurrentHashMap<>();
 
   private final int ownerBot;
+  private volatile int index;
 
   private Marker(int ownerBot) {
     this.ownerBot = ownerBot;
@@ -78,5 +79,13 @@ public class Marker {
       Optional<Plan> airResult = AerialTactician.doAerialPlanning(car, ball);
       airResult.ifPresent(potential::addPlan);
     }
+  }
+
+  private int getPredictionIndex(int size) {
+    return index++ % size;
+  }
+
+  public void markNext(DataPacket input) {
+    mark(input, getPredictionIndex(input.allCars.size()));
   }
 }

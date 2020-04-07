@@ -32,7 +32,9 @@ public class Tactic {
         .build();
   }
 
-  /** Different types of tactics. */
+  /**
+   * Different types of tactics.
+   */
   public enum TacticType {
     AERIAL,
     CATCH,
@@ -41,6 +43,7 @@ public class Tactic {
     FAST_AERIAL,
     FLICK,
     FLIP,
+    GUARD,
     HIT_BALL,
     JUMP_FLIP,
     KICKOFF,
@@ -48,6 +51,7 @@ public class Tactic {
     ROTATE,
     SHADOW,
     STRIKE,
+    ;
   }
 
   public Vector3 getTargetPosition() {

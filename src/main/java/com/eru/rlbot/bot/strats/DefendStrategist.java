@@ -6,11 +6,15 @@ import com.eru.rlbot.bot.common.Constants;
 import com.eru.rlbot.bot.common.Goal;
 import com.eru.rlbot.bot.common.Locations;
 import com.eru.rlbot.bot.common.PredictionUtils;
+import com.eru.rlbot.bot.common.SupportRegions;
 import com.eru.rlbot.bot.main.ApolloGuidanceComputer;
-import com.eru.rlbot.bot.tactics.RotateTactician;
+import com.eru.rlbot.bot.plan.Marker;
+import com.eru.rlbot.bot.prediction.BallPredictionUtil;
+import com.eru.rlbot.bot.tactics.KickoffTactician;
 import com.eru.rlbot.bot.tactics.Tactic;
 import com.eru.rlbot.common.DllHelper;
 import com.eru.rlbot.common.Moment;
+import com.eru.rlbot.common.input.BallData;
 import com.eru.rlbot.common.input.DataPacket;
 import com.eru.rlbot.common.vector.Vector3;
 import java.util.Optional;
@@ -63,50 +67,55 @@ public class DefendStrategist extends Strategist {
 
   @Override
   public boolean assign(DataPacket input) {
+    Marker.get(input.serialNumber).markNext(input);
+
     if (tacticManager.isTacticLocked()) {
       // Let the tactic finish it's motion.
       bot.botRenderer.addAlertText("Keep tactic");
       return true;
     }
 
+    if (KickoffTactician.isKickoffStart(input)) {
+      tacticManager.setTactic(
+          Tactic.builder()
+              .setSubject(Moment.from(input.ball))
+              .setTacticType(Tactic.TacticType.KICKOFF)
+              .build());
+      return true;
+    }
+
+    com.eru.rlbot.bot.prediction.BallPrediction firstHittableTarget = BallPredictionUtil.get(input.car).getTarget();
+    BallData firstHittableBall = BallPredictionUtil.get(input.car).getTarget().ball;
+
+    Vector3 object = firstHittableBall.position.plus(firstHittableBall.position.minus(input.car.position).toMagnitude(2000));
+
     // TODO: Update to include the opponent hitting the ball
     if (shotOnGoal(input)) {
-      if (shadow(input)) {
-        tacticManager.setTactic(Tactic.builder()
-            .setSubject(PredictionUtils.getFirstHittableBall(input))
-            .setTacticType(Tactic.TacticType.SHADOW)
-            .build());
-      } else {
-        tacticManager.setTactic(Tactic.builder()
-            .setSubject(input.ball.position)
-            .setTacticType(Tactic.TacticType.STRIKE)
-            .build());
-      }
-    } else if (canClear(input)) {
-      if (Locations.carToBall(input).magnitude() > 2000) {
-        bot.botRenderer.addAlertText("Rotate clear");
-        tacticManager.setTactic(Tactic.builder()
-            .setSubject(PredictionUtils.getFirstHittableBall(input))
-            .setTacticType(Tactic.TacticType.ROTATE)
-            .build());
-      } else {
-        tacticManager.setTactic(Tactic.builder()
-            .setSubject(input.ball.position)
-            .setTacticType(Tactic.TacticType.STRIKE)
-            .build());
-      }
-    } else if (RotateTactician.shouldRotateBack(input)) {
-      // Rotate far post
-      Vector3 farPost = Locations.farPost(input);
-      farPost = farPost.addY(-Math.signum(farPost.y) * 500);
       tacticManager.setTactic(Tactic.builder()
-          .setSubject(farPost)
+          .setSubject(firstHittableBall)
+          .setObject(object)
+          .setTacticType(firstHittableTarget.getTacticType())
+          .build());
+    } else if (canClear(input) && Locations.carToBall(input).magnitude() > 2000) {
+      tacticManager.setTactic(Tactic.builder()
+          .setSubject(firstHittableBall)
+          .setObject(object)
           .setTacticType(Tactic.TacticType.ROTATE)
           .build());
-    } else {
+    } else if (canClear(input)) {
       tacticManager.setTactic(Tactic.builder()
-          .setSubject(input.ball.position)
-          .setTacticType(Tactic.TacticType.STRIKE)
+          .setSubject(firstHittableBall)
+          .setObject(object)
+          .setTacticType(firstHittableTarget.getTacticType())
+          .build());
+    } else {
+      Vector3 ownGoal = Goal.ownGoal(input.car.team).center;
+      ownGoal = ownGoal.addY(1500 * -Math.signum(ownGoal.y));
+
+      SupportRegions regions = SupportRegions.getSupportRegions(ownGoal, input.car.team);
+      tacticManager.setTactic(Tactic.builder()
+          .setSubject(Moment.from(regions))
+          .setTacticType(Tactic.TacticType.GUARD)
           .build());
     }
 

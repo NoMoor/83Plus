@@ -83,11 +83,9 @@ public class AttackStrategist extends Strategist {
       return getStrikingTactic(input, challengeData);
     } else if (challengeData.firstTouch.isHittableByTeam(input.car.team)) {
       return getStrikingTactic(input, challengeData);
-      // Hittable by our team
-//      return getSupportTactic(input, challengeData.firstTouch.ball);
     }
 
-    return getSupportTactic(input, challengeData.firstTouch.ball);
+    return getStrikingTactic(input, challengeData);
   }
 
   private Tactic getSupportTactic(DataPacket input, BallData firstTouchBall) {
@@ -178,6 +176,8 @@ public class AttackStrategist extends Strategist {
 
   @Override
   public boolean isComplete(DataPacket input) {
-    return !CarBall.ballIsUpfield(input);
+    Rotations rotations = Rotations.get(input);
+
+    return !CarBall.ballIsUpfield(input) || rotations.isLastManBack();
   }
 }

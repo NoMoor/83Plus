@@ -76,7 +76,8 @@ public class Path {
 
       traversePlan = makeSpeedPlan(start.boost, targetTime);
     } else {
-      traversePlan = minGroundTime(start.boost > 20 ? start.boost * .4 : 0);
+      double excessBoost = Math.max(start.boost - 50, 0);
+      traversePlan = minGroundTime(excessBoost * .4);
     }
 
     segmentByPlan(traversePlan);

@@ -15,14 +15,14 @@ public class RotateStrategist extends Strategist {
 
   @Override
   boolean assign(DataPacket input) {
-    Vector3 ownGoal = Goal.ownGoal(input.car.team).center;
-    Vector3 otherGoal = Goal.opponentGoal(input.car.team).center;
+    Vector3 ownGoal = Goal.ownGoal(input.car.team).getFarPost(input.ball.position);
+    ownGoal = ownGoal.setY(Math.signum(ownGoal.y) * 4000);
 
     tacticManager.setTactic(
         Tactic.builder()
             .setTacticType(Tactic.TacticType.ROTATE)
             .setSubject(Moment.from(ownGoal))
-            .setObject(otherGoal)
+            .setObject(input.ball.position)
             .build());
 
     return true;
@@ -30,7 +30,7 @@ public class RotateStrategist extends Strategist {
 
   @Override
   public boolean isComplete(DataPacket input) {
-    return input.car.position.distance(Goal.ownGoal(input.car.team).center) < 2000;
+    return input.car.position.distance(Goal.ownGoal(input.car.team).center) < 3000;
   }
 
   @Override

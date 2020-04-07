@@ -32,7 +32,9 @@ public class FastAerial extends Tactician {
       reset(input);
     }
 
+    JumpManager jumpManager = JumpManager.forCar(input.car);
     if (input.car.hasWheelContact) {
+      bot.botRenderer.setBranchInfo("Do jump");
       output
           .withJump()
           .withPitch(1.0)
@@ -42,16 +44,19 @@ public class FastAerial extends Tactician {
       if (hasJumpedTicks++ > 8) {
         isFinished = true;
       }
-    } else if (!JumpManager.forCar(input.car).hasMaxJumpHeight()) {
+    } else if (!jumpManager.hasMaxJumpHeight()) {
+      bot.botRenderer.setBranchInfo("Wait for height");
       output
           .withJump()
           .withBoost()
           .withPitch(1.0);
-    } else if (!JumpManager.forCar(input.car).hasReleasedJumpInAir()) {
+    } else if (!jumpManager.hasReleasedJumpInAir()) {
+      bot.botRenderer.setBranchInfo("Release Button");
       output
           .withBoost()
           .withPitch(1.0);
-    } else if (JumpManager.forCar(input.car).canFlip()) {
+    } else if (jumpManager.canFlip()) {
+      bot.botRenderer.setBranchInfo("Second Jump");
       // Release Pitch for this frame.
       output
           .withJump()

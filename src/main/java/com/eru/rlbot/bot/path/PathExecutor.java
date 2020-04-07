@@ -98,7 +98,7 @@ public class PathExecutor {
 
       if (boostTime.time > Path.LEAD_TIME) {
         output
-            .withBoost()
+            .withBoost(input.car.isSupersonic)
             .withThrottle(1.0);
       } else {
         Accels.AccelResult accelTime = Accels.nonBoostedTimeToDistance(input.car.velocity.magnitude(), distanceDiff.magnitude());

@@ -13,7 +13,7 @@ from rlbottraining.training_exercise import TrainingExercise
 @dataclass
 class KickOff(TrainingExercise):
     grader: Grader = field(default_factory=lambda: GameTickPacketWrapperGrader(
-        StrikerGrader(timeout_seconds=8, ally_team=0)))
+        StrikerGrader(timeout_seconds=6, ally_team=0)))
     car_start_x: float = 0
     car_start_y: float = 0
     car_yaw: float = 0
