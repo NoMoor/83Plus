@@ -15,6 +15,11 @@ public class RotateStrategist extends Strategist {
 
   @Override
   boolean assign(DataPacket input) {
+    if (tacticManager.isTacticLocked()) {
+      // Let the tactic finish it's motion.
+      return true;
+    }
+
     Vector3 ownGoal = Goal.ownGoal(input.car.team).getFarPost(input.ball.position);
     ownGoal = ownGoal.setY(Math.signum(ownGoal.y) * 4000);
 

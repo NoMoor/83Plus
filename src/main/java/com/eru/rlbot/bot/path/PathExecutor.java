@@ -119,6 +119,8 @@ public class PathExecutor {
     boolean straightSteer = Math.abs(output.getSteer()) < 1;
     boolean travelingForward = Math.abs(input.car.orientation.getNoseVector().angle(input.car.velocity)) < .5;
     if (hasSpeed && isStraight && hasTime && straightSteer && travelingForward) {
+      BotRenderer.forCar(input.car).addAlertText("Flip!", input.car.elapsedSeconds);
+
       this.tactician.requestDelegate(
           Flip.builder()
               .setTarget(currentSegment.end)
@@ -148,7 +150,7 @@ public class PathExecutor {
           .withThrottle(timeToTactic < timeToTarget ? 1 : timeToTarget * 1.1 < timeToTactic ? -1 : 0)
           .withSteer(correctionAngle * 2)
           .withBoost(Math.abs(correctionAngle) < .5 && input.car.boost > 12 && !input.car.isSupersonic && distanceToTarget > 1000 && timeToTactic < timeToTarget)
-          .withSlide(Math.abs(correctionAngle) > 1);
+          .withSlide(Math.abs(correctionAngle) > 1 && input.car.angularVelocity.z < 3 && input.car.groundSpeed > 1000);
     }
   }
 }

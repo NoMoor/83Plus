@@ -46,13 +46,14 @@ public class Flip extends Maneuver {
 
   @Override
   public void execute(DataPacket input, Controls output, Tactic tactic) {
+    BotRenderer botRenderer = BotRenderer.forCar(input.car);
+    JumpManager jumpManager = JumpManager.forCar(input.car);
+
     if (done) {
+      botRenderer.addAlertText("Flip complete");
       // Do nothing.
       return;
     }
-
-    BotRenderer botRenderer = BotRenderer.forCar(input.car);
-    JumpManager jumpManager = JumpManager.forCar(input.car);
 
     double framesToTarget = (input.car.position.distance(target) / input.car.groundSpeed) * Constants.STEP_SIZE_COUNT;
     boolean flipIntoTarget = flipAtTarget && framesToTarget < 13;
@@ -63,7 +64,7 @@ public class Flip extends Maneuver {
 
     if (flipComplete) {
       if (input.car.hasWheelContact) {
-        botRenderer.setBranchInfo("Flip complete");
+        botRenderer.addAlertText("Flip complete");
         done = true;
       } else {
         botRenderer.setBranchInfo("Waiting to land");
@@ -72,7 +73,7 @@ public class Flip extends Maneuver {
             .withBoost(-.1 < noseZ && noseZ < .2)
             .withThrottle(1.0f);
 
-        if (!JumpManager.forCar(input.car).isFlipping()) {
+        if (!jumpManager.isFlipping()) {
           // TODO: Replace this with generic landing helper.
           Angles3.setControlsFor(input.car, Orientation.fromFlatVelocity(input.car).getOrientationMatrix(), output);
         }

@@ -243,12 +243,12 @@ public class Path {
     Plan.Builder planBuilder = Plan.builder().setPath(this);
     double breakingTime = breaking.time;
     while (breakingTime > 0) {
-      planBuilder.addThrottleInput(false, -1);
+      planBuilder.addThrottleInput(false, Plan.ControlInput.REVERSE);
       breakingTime -= STEP_SIZE;
     }
 
     while (coastingTime > 0) {
-      planBuilder.addThrottleInput(false, .02);
+      planBuilder.addThrottleInput(false, Plan.ControlInput.COASTING);
       coastingTime -= STEP_SIZE;
     }
 

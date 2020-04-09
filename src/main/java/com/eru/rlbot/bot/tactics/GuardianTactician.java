@@ -35,7 +35,7 @@ public class GuardianTactician extends Tactician {
       if (guardingRegions.averageLocation().distance(input.ball.position) > 4000) {
         // TODO: if it's farther away, pick up a larger pad.
         Optional<BoostPad> nearestPad = BoostPathHelper.nearestBoostPad(input.car);
-        if (distanceToGuardedLocation < 2500 && nearestPad.isPresent() && input.car.boost < 80) {
+        if (distanceToGuardedLocation < 2500 && nearestPad.isPresent() && input.car.boost < 70) {
           bot.botRenderer.setBranchInfo("Pick up boost");
           bot.botRenderer.renderTarget(nearestPad.get().getLocation());
           double correctionAngle = Angles.flatCorrectionAngle(input.car, nearestPad.get().getLocation());
@@ -55,27 +55,44 @@ public class GuardianTactician extends Tactician {
     }
   }
 
+  // TODO: Keep the car in between the ball and the guarded location.
+  private static final double roamingDistance = 2000;
+
   private void faceBall(DataPacket input, Controls output, SupportRegions guardingRegions) {
     double distanceToGuardedLocation = input.car.position.distance(guardingRegions.averageLocation());
     double distanceToBall = input.car.position.distance(input.ball.position);
+    double distanceGuardedLocationToBall = input.ball.position.distance(guardingRegions.averageLocation());
 
-    Vector3 target = distanceToGuardedLocation > 2000 && distanceToBall > 2000
-        ? guardingRegions.averageLocation()
-        : input.ball.position;
+    boolean focusOnBall = distanceToBall < 2000 || distanceToGuardedLocation < roamingDistance;
+    Vector3 target = focusOnBall
+        ? input.ball.position
+        : guardingRegions.averageLocation(); // Go Back to the guarded location.
 
     bot.botRenderer.setBranchInfo("Face the ball");
     bot.botRenderer.renderTarget(target);
 
     double correctionAngle = Angles.flatCorrectionAngle(input.car, target);
-    double throttle = distanceToGuardedLocation > 1000 || Math.abs(correctionAngle) > .5
-        ? 1
-        : distanceToGuardedLocation < 600 && input.car.groundSpeed > 400
-        ? -1
-        : 0;
+    double throttle = 0;
+    if (focusOnBall) {
+      if (Math.abs(correctionAngle) > .3) {
+        throttle = 1;
+      } else if (distanceToBall + 500 > distanceGuardedLocationToBall) {
+        throttle = 1;
+      } else if (input.car.groundSpeed > 400) {
+        throttle = -1;
+      }
+    } else {
+      if (distanceToGuardedLocation > roamingDistance) {
+        throttle = 1;
+      } else if (distanceToGuardedLocation < 600 && input.car.groundSpeed > 400) {
+        throttle = -1;
+      }
+    }
 
     output
         .withThrottle(throttle)
         .withSteer(correctionAngle * 5)
-        .withSlide(Math.abs(correctionAngle) > 1 && Math.abs(input.car.angularVelocity.z) < 3);
+        .withSlide(Math.abs(correctionAngle) > 1 && Math.abs(input.car.angularVelocity.z) < 3)
+        .withBoost(throttle == 1 && input.car.boost > 80);
   }
 }

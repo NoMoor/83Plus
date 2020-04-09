@@ -29,7 +29,18 @@ public class Plan {
 
   public static class ControlInput {
 
-    public static final ControlInput NO_INPUTS = create(false, 0, false);
+    public static final double COASTING = .02d;
+    public static final double REVERSE = -1d;
+
+    // Common control inputs.
+    private static final ControlInput REVERSE_CONTROL = new ControlInput(false, REVERSE, false);
+    private static final ControlInput COAST = new ControlInput(false, COASTING, false);
+    private static final ControlInput JUMP = new ControlInput(false, 1, true);
+    private static final ControlInput FULL_THROTTLE = new ControlInput(false, 1, false);
+    private static final ControlInput BOOST = new ControlInput(true, 1, false);
+    private static final ControlInput BOOST_JUMP = new ControlInput(true, 1, true);
+
+    public static final ControlInput NO_INPUTS = new ControlInput(false, 0, false);
 
     public final boolean boost;
     public final double throttle;
@@ -42,7 +53,21 @@ public class Plan {
     }
 
     public static ControlInput create(boolean boost, double throttle, boolean jump) {
-      return new ControlInput(boost, boost ? 1.0 : throttle, jump);
+      if (boost) {
+        return jump ? BOOST_JUMP : BOOST;
+      } else if (jump) {
+        return JUMP;
+      } else if (throttle == 0) {
+        return NO_INPUTS;
+      } else if (throttle == COAST.throttle) {
+        return COAST;
+      } else if (throttle == REVERSE) {
+        return REVERSE_CONTROL;
+      } else if (throttle == 1) {
+        return FULL_THROTTLE;
+      } else {
+        return new ControlInput(false, throttle, false);
+      }
     }
 
     @Override

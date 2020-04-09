@@ -5,7 +5,6 @@ import static com.google.common.collect.ImmutableList.toImmutableList;
 import com.eru.rlbot.bot.common.Angles3;
 import com.eru.rlbot.bot.common.BoostPathHelper;
 import com.eru.rlbot.bot.common.Constants;
-import com.eru.rlbot.bot.common.Goal;
 import com.eru.rlbot.bot.common.Teams;
 import com.eru.rlbot.bot.main.ApolloGuidanceComputer;
 import com.eru.rlbot.bot.maneuver.WallHelper;
@@ -37,13 +36,6 @@ public class RotateTactician extends Tactician {
     super(bot, tacticManager);
   }
 
-  public static boolean shouldRotateBack(DataPacket input) {
-    double carToGoal = input.car.position.distance(Goal.ownGoal(input.car.team).center);
-    double ballToGoal = input.ball.position.distance(Goal.ownGoal(input.car.team).center);
-
-    return ballToGoal < carToGoal;
-  }
-
   @Override
   void internalExecute(DataPacket input, Controls output, Tactic tactic) {
     locked = Rotations.get(input).getFirstMan() == input.car && Teams.getTeamSize(input.car.team) > 1;
@@ -65,7 +57,7 @@ public class RotateTactician extends Tactician {
 
   @Override
   public boolean isLocked() {
-    return locked;
+    return locked || super.isLocked();
   }
 
   private void usingPathPlanner(DataPacket input, Controls output, Tactic tactic) {

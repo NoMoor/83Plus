@@ -57,7 +57,7 @@ public class Marker {
         .forEach(ballPrediction -> mark(ballPrediction, car));
     double timeMs = watch.stop() * 1000;
     if (timeMs > 1) {
-      logger.debug("Marking for car {} done: {}", botIndex, String.format("%.2fms", timeMs));
+      logger.info("Marking for car {} done: {}", botIndex, String.format("%.2fms", timeMs));
     }
   }
 

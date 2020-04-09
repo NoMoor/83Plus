@@ -5,7 +5,6 @@ import com.eru.rlbot.bot.common.CarBall;
 import com.eru.rlbot.bot.common.Constants;
 import com.eru.rlbot.bot.common.Goal;
 import com.eru.rlbot.bot.common.Locations;
-import com.eru.rlbot.bot.common.PredictionUtils;
 import com.eru.rlbot.bot.common.SupportRegions;
 import com.eru.rlbot.bot.main.ApolloGuidanceComputer;
 import com.eru.rlbot.bot.plan.Marker;
@@ -20,7 +19,6 @@ import com.eru.rlbot.common.vector.Vector3;
 import java.util.Optional;
 import rlbot.flat.BallPrediction;
 import rlbot.flat.Physics;
-import rlbot.flat.PredictionSlice;
 
 /** Responsible for shadowing, blocking, shots, and clearing. */
 public class DefendStrategist extends Strategist {
@@ -54,17 +52,6 @@ public class DefendStrategist extends Strategist {
     return false;
   }
 
-  private boolean shadow(DataPacket input) {
-    Optional<PredictionSlice> ballInGoalOptional = PredictionUtils.getBallInGoalSlice();
-    if (!ballInGoalOptional.isPresent()) {
-      // TODO: Return true if the ball is being dribbled at the goal.
-      return false;
-    }
-
-    Vector3 scoreLocation = Vector3.of(ballInGoalOptional.get().physics().location());
-    return scoreLocation.distance(input.ball.position) < scoreLocation.distance(input.car.position);
-  }
-
   @Override
   public boolean assign(DataPacket input) {
     Marker.get(input.serialNumber).markNext(input);
@@ -85,28 +72,26 @@ public class DefendStrategist extends Strategist {
     }
 
     com.eru.rlbot.bot.prediction.BallPrediction firstHittableTarget = BallPredictionUtil.get(input.car).getTarget();
-    BallData firstHittableBall = BallPredictionUtil.get(input.car).getTarget().ball;
-
-    Vector3 object = firstHittableBall.position.plus(firstHittableBall.position.minus(input.car.position).toMagnitude(2000));
+    BallData subject = firstHittableTarget != null ? firstHittableTarget.ball : input.ball;
 
     // TODO: Update to include the opponent hitting the ball
     if (shotOnGoal(input)) {
       tacticManager.setTactic(Tactic.builder()
-          .setSubject(firstHittableBall)
-          .setObject(object)
-          .setTacticType(firstHittableTarget.getTacticType())
+          .setSubject(subject)
+          .setObject(getObject(input, firstHittableTarget))
+          .setTacticType(getTacticType(firstHittableTarget))
           .build());
     } else if (canClear(input) && Locations.carToBall(input).magnitude() > 2000) {
       tacticManager.setTactic(Tactic.builder()
-          .setSubject(firstHittableBall)
-          .setObject(object)
+          .setSubject(subject)
+          .setObject(getObject(input, firstHittableTarget))
           .setTacticType(Tactic.TacticType.ROTATE)
           .build());
     } else if (canClear(input)) {
       tacticManager.setTactic(Tactic.builder()
-          .setSubject(firstHittableBall)
-          .setObject(object)
-          .setTacticType(firstHittableTarget.getTacticType())
+          .setSubject(subject)
+          .setObject(getObject(input, firstHittableTarget))
+          .setTacticType(getTacticType(firstHittableTarget))
           .build());
     } else {
       Vector3 ownGoal = Goal.ownGoal(input.car.team).center;
@@ -120,6 +105,19 @@ public class DefendStrategist extends Strategist {
     }
 
     return true;
+  }
+
+  private Tactic.TacticType getTacticType(com.eru.rlbot.bot.prediction.BallPrediction firstHittableTarget) {
+    return firstHittableTarget != null ? firstHittableTarget.getTacticType() : Tactic.TacticType.AERIAL;
+  }
+
+  private Vector3 getObject(DataPacket input, com.eru.rlbot.bot.prediction.BallPrediction firstHittableTarget) {
+    if (firstHittableTarget == null) {
+      return input.ball.position;
+    }
+
+    BallData firstHittableBall = firstHittableTarget.ball;
+    return firstHittableBall.position.plus(firstHittableBall.position.minus(input.car.position).toMagnitude(2000));
   }
 
   private static boolean canClear(DataPacket input) {
