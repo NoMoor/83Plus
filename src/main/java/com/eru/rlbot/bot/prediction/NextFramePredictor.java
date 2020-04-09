@@ -26,8 +26,9 @@ public class NextFramePredictor {
   private static Controls lastFrameControls;
 
   public static void getPrediction(DataPacket input, Controls output) {
-    if (!PerBotDebugOptions.get(input.car.serialNumber).isPrerenderNextFrame())
+    if (!PerBotDebugOptions.get(input.car.serialNumber).isPrerenderNextFrame()) {
       return;
+    }
 
     // TODO: Update to support multiple cars
     if (lastFramePrediction != null && lastFramePrediction.serialNumber != input.car.serialNumber) {

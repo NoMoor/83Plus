@@ -30,8 +30,8 @@ public class ComputeTracker {
     get(serialNumber).track();
   }
 
-  public static void stop(int serialNumber) {
-    get(serialNumber).stop();
+  public static double stop(int serialNumber) {
+    return get(serialNumber).stop();
   }
 
   public static double averageSeconds(int serialNumber) {
@@ -41,13 +41,15 @@ public class ComputeTracker {
         .orElse(0);
   }
 
-  private void stop() {
+  private double stop() {
     Preconditions.checkState(tickWatch != null);
-    times.add(tickWatch.stop());
+    double time = tickWatch.stop();
+    times.add(time);
     if (times.size() > Constants.STEP_SIZE_COUNT) {
       times.remove();
     }
     tickWatch = null;
+    return time;
   }
 
   private void track() {

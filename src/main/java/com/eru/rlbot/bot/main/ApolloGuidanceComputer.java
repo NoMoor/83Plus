@@ -12,10 +12,8 @@ import com.eru.rlbot.bot.common.Teams;
 import com.eru.rlbot.bot.flags.PerBotDebugOptions;
 import com.eru.rlbot.bot.prediction.BallPredictionUtil;
 import com.eru.rlbot.bot.prediction.CarLocationPredictor;
-import com.eru.rlbot.bot.prediction.NextFramePredictor;
 import com.eru.rlbot.bot.renderer.BallPredictionRenderer;
 import com.eru.rlbot.bot.renderer.BotRenderer;
-import com.eru.rlbot.bot.renderer.TrailRenderer;
 import com.eru.rlbot.bot.strats.Rotations;
 import com.eru.rlbot.bot.strats.StrategyManager;
 import com.eru.rlbot.bot.utils.ComputeTracker;
@@ -26,7 +24,6 @@ import com.eru.rlbot.common.input.DataPacket;
 import com.eru.rlbot.common.jump.JumpManager;
 import com.eru.rlbot.common.output.Controls;
 import com.eru.rlbot.testing.KickoffGame;
-import com.eru.rlbot.testing.PowerSlideTestRig;
 import com.eru.rlbot.testing.SlowGameNearBall;
 import com.eru.rlbot.testing.TrainingId;
 import org.apache.logging.log4j.LogManager;
@@ -76,7 +73,7 @@ public final class ApolloGuidanceComputer implements Bot {
    */
   @Override
   public ControllerState processInput(GameTickPacket packet) {
-    long startTime = System.nanoTime();
+    ComputeTracker.init(serialNumber);
 
     if (packet.playersLength() <= serialNumber || packet.ball() == null || !packet.gameInfo().isRoundActive()) {
       // Just return immediately if something looks wrong with the data. This helps us avoid stack traces.
@@ -104,17 +101,8 @@ public final class ApolloGuidanceComputer implements Bot {
     KickoffGame.track(input);
     SlowGameNearBall.track(input);
 
-    ComputeTracker.init(input.serialNumber);
     Rotations rotations = Rotations.get(input);
     rotations.track(input);
-
-    // TODO: Remove this.
-    if (false) {
-      Controls controls = Controls.create();
-      PowerSlideTestRig.execute(input, controls);
-      botRenderer.renderInfo(input, controls);
-      return controls;
-    }
 
     radioModule.sendMessages(input);
 
@@ -127,22 +115,19 @@ public final class ApolloGuidanceComputer implements Bot {
           .withBoost(false);
     }
 
-    ComputeTracker.stop(input.serialNumber);
-
-    // Must do ball before updating the jump manager
-    NextFramePredictor.getPrediction(input, output);
+//  Must do ball before updating the jump manager
+//  NextFramePredictor.getPrediction(input, output);
+//  TrailRenderer.render(input, output);
     JumpManager.trackOutput(input, output);
 
     // Do Rendering.
     Rotations.render(input);
-    TrailRenderer.render(input, output);
     botRenderer.renderInfo(input, output);
     ballPredictionRenderer.renderBallPrediction();
 
-    long endTime = System.nanoTime();
-    double frameTime = (endTime - startTime) / Constants.NANOS;
+    double frameTime = ComputeTracker.stop(input.serialNumber) / 1000;
     if (frameTime > Constants.STEP_SIZE) {
-      logger.error("Dropped frames: {}", (int) (frameTime / Constants.STEP_SIZE));
+      logger.error("AGC" + serialNumber + " dropped frames: {}", (int) (frameTime / Constants.STEP_SIZE));
     }
 
     return output;

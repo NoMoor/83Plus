@@ -8,7 +8,7 @@ import com.eru.rlbot.common.input.BallData;
 import com.eru.rlbot.common.input.CarData;
 import com.eru.rlbot.common.input.DataPacket;
 import com.eru.rlbot.common.vector.Vector3;
-import java.util.HashMap;
+import java.util.concurrent.ConcurrentHashMap;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -20,7 +20,7 @@ public final class CarBallContactManager {
 
   private static final Logger logger = LogManager.getLogger("Prediction");
 
-  private static final HashMap<Integer, CarBallContactManager> MAP = new HashMap<>();
+  private static final ConcurrentHashMap<Integer, CarBallContactManager> MAP = new ConcurrentHashMap<>();
 
   private boolean headersLogged = false;
   private float touchTime = -1;

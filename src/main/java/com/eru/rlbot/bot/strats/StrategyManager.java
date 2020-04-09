@@ -63,7 +63,7 @@ public class StrategyManager {
     } else if (active.isComplete(input)) {
       Strategist newStrategist = strategists.get(active.getDelegate());
 
-      logger.info("New Strategy: {} Completed: {}", active.getType(), newStrategist.getType());
+      logger.debug("New Strategy: {} Completed: {}", active.getType(), newStrategist.getType());
       active.abort();
       newStrategist.assign(input);
       active = newStrategist;

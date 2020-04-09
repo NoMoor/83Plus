@@ -15,33 +15,33 @@ public class Teams {
 
   private static final Logger logger = LogManager.getLogger("Teams");
 
-  private static volatile GameTickPacket packet;
+  private static ThreadLocal<GameTickPacket> packet = new ThreadLocal<>();
 
   public static void track(GameTickPacket packet) {
-    Teams.packet = packet;
+    Teams.packet.set(packet);
   }
 
   public static Touch getBallTouchTime() {
-    return packet.ball().latestTouch();
+    return packet.get().ball().latestTouch();
   }
 
   public static int getTeamForBot(int index) {
-    Preconditions.checkState(packet.playersLength() > index, "No player for index " + index);
-    return packet.players(index).team();
+    Preconditions.checkState(packet.get().playersLength() > index, "No player for index " + index);
+    return packet.get().players(index).team();
   }
 
   public static int getTeamSize(int team) {
-    return (int) IntStream.range(0, packet.playersLength())
-        .mapToObj(packet::players)
+    return (int) IntStream.range(0, packet.get().playersLength())
+        .mapToObj(index -> packet.get().players(index))
         .filter(playerInfo -> playerInfo.team() == team)
         .count();
   }
 
   public static Pair<Integer, Integer> getScore() {
-    if (packet.teams(0).teamIndex() != 0 || packet.teams(1).teamIndex() != 1) {
+    if (packet.get().teams(0).teamIndex() != 0 || packet.get().teams(1).teamIndex() != 1) {
       logger.warn("Warning: Expectation violated.");
     }
-    return Pair.of(packet.teams(0).score(), packet.teams(1).score());
+    return Pair.of(packet.get().teams(0).score(), packet.get().teams(1).score());
   }
 
   public static int otherTeam(int team) {

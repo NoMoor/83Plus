@@ -4,6 +4,7 @@ import static com.google.common.collect.ImmutableList.toImmutableList;
 
 import com.eru.rlbot.bot.common.Goal;
 import com.eru.rlbot.bot.common.Teams;
+import com.eru.rlbot.bot.flags.PerBotDebugOptions;
 import com.eru.rlbot.bot.prediction.CarLocationPredictor;
 import com.eru.rlbot.bot.renderer.BotRenderer;
 import com.eru.rlbot.common.input.CarData;
@@ -47,6 +48,10 @@ public class Rotations {
   }
 
   public static void render(DataPacket input) {
+    if (!PerBotDebugOptions.get(input.car.serialNumber).isRenderRotationsEnabled()) {
+      return;
+    }
+
     get(input).renderRotation();
   }
 

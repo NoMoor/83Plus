@@ -24,7 +24,7 @@ public class CarLocationPredictor {
 
   private static final ConcurrentHashMap<Integer, CarLocationPredictor> MAP = new ConcurrentHashMap<>();
 
-  private static final LinkedHashMap<Integer, CarLocationPrediction> predictions = new LinkedHashMap<>();
+  private final LinkedHashMap<Integer, CarLocationPrediction> predictions = new LinkedHashMap<>();
 
   private final int playerIndex;
   private final int team;

@@ -37,12 +37,11 @@ import com.google.common.collect.Iterables;
 import java.awt.Color;
 import java.awt.Point;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.LinkedList;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.PriorityQueue;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.IntStream;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
@@ -60,7 +59,9 @@ public class BotRenderer {
 
   private static final int SMOOTHING_INTERVAL = 5;
   private static final double FULL_CIRCLE = Math.PI * 2;
-  private static Map<Integer, BotRenderer> MAP = new HashMap<>();
+
+  private static ConcurrentHashMap<Integer, BotRenderer> INSTANCES = new ConcurrentHashMap<>();
+  private static ThreadLocal<BotRenderer> INSTANCE = new ThreadLocal<>();
 
   private float initialIngameTime = 0;
   private long ingameTicks = 0;
@@ -82,12 +83,18 @@ public class BotRenderer {
   }
 
   public static BotRenderer forBot(Bot bot) {
-    MAP.putIfAbsent(bot.getIndex(), new BotRenderer(bot));
-    return MAP.get(bot.getIndex());
+    return INSTANCES.computeIfAbsent(bot.getIndex(), index -> new BotRenderer(bot));
   }
 
   public static BotRenderer forIndex(int botIndex) {
-    return MAP.get(botIndex);
+    BotRenderer botRenderer = INSTANCE.get();
+    if (botRenderer == null) {
+      botRenderer = INSTANCES.get(botIndex);
+      INSTANCE.set(botRenderer);
+    }
+    Preconditions.checkState(botRenderer.bot.getIndex() == botIndex,
+        "Illegal renderer access: Trying to access " + botRenderer.bot.getIndex() + " by bot " + botIndex);
+    return botRenderer;
   }
 
   public static BotRenderer forCar(CarData car) {
@@ -115,10 +122,6 @@ public class BotRenderer {
   private static double VISUAL_OFFSET = 1.2;
 
   public void renderRotation(CarData car, int rotationNumber, boolean hasPriority) {
-    if (!PerBotDebugOptions.get(bot.getIndex()).isRenderRotationsEnabled()) {
-      return;
-    }
-
     Circle coverage = Circle.forPath(car.position, car.groundSpeed);
     double visualCenter = Orientation.fromFlatVelocity(car).toEuclidianVector().yaw;
     Vector3 leftVision = coverage.pointOnCircle(visualCenter - VISUAL_OFFSET);

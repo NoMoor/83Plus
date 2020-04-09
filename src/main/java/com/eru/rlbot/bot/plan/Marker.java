@@ -56,8 +56,8 @@ public class Marker {
         .limit((long) (BallPredictionUtil.PREDICTION_LIMIT * (ownerBot == botIndex ? .75 : .33)))
         .forEach(ballPrediction -> mark(ballPrediction, car));
     double timeMs = watch.stop() * 1000;
-    if (timeMs > 1) {
-      logger.info("Marking for car {} done: {}", botIndex, String.format("%.2fms", timeMs));
+    if (timeMs > 4) {
+      logger.debug("Marking for car {} done: {}", botIndex, String.format("%.2fms", timeMs));
     }
   }
 

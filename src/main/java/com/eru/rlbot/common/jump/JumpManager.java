@@ -4,7 +4,6 @@ import com.eru.rlbot.bot.common.Constants;
 import com.eru.rlbot.common.input.CarData;
 import com.eru.rlbot.common.input.DataPacket;
 import com.eru.rlbot.common.output.Controls;
-import java.util.HashMap;
 
 /**
  * Keeps track of the various aspects of the jump state of a car.
@@ -25,7 +24,7 @@ public class JumpManager {
   public static final float FLIP_Z_FALL = -15; // uu/s
   public static final float GROUND_CONTACT_TIME = 3f / Constants.STEP_SIZE_COUNT;
 
-  private static HashMap<Integer, JumpManager> MANAGER_MAP = new HashMap<>();
+  private static ThreadLocal<JumpManager> INSTANCE = ThreadLocal.withInitial(JumpManager::new);
 
   private boolean jumpPressed;
   private float firstJumpTime;
@@ -50,7 +49,8 @@ public class JumpManager {
   }
 
   private static JumpManager get(CarData car) {
-    return MANAGER_MAP.computeIfAbsent(car.serialNumber, index -> new JumpManager());
+    // TODO: Does this work?
+    return INSTANCE.get();
   }
 
   public static JumpManager copyForCar(CarData car) {
