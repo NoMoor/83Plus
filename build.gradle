@@ -121,7 +121,7 @@ distZip {
 }
 
 // A version number that is included in the dist release. The minor version is incremented each time distZip is run.
-def archiveVersion = '1.0.760'
+def archiveVersion = '1.0.789'
 task incrementVersionNumber {
     def v = archiveVersion
     String minor = v.substring(v.lastIndexOf('.') + 1).toInteger() + 1

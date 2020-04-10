@@ -78,6 +78,7 @@ public class RotateTactician extends Tactician {
         .filter(pair -> pair.getFirst().isActive())
         .min(Comparator.comparing(pair -> pair.getFirst().getLocation().distance(pair.getSecond())));
 
+    boolean isGoingForBoost = false;
     if (closetsPad.isPresent() && input.car.boost < 50) {
       Pair<BoostPad, Vector3> pad = closetsPad.get();
       bot.botRenderer.renderTarget(Color.MAGENTA, pad.getFirst().getLocation());
@@ -91,6 +92,7 @@ public class RotateTactician extends Tactician {
           .build();
       bot.botRenderer.renderPath(Color.CYAN, path);
       path = PathPlanner.planPath(input.car, boostPadCar);
+      isGoingForBoost = true;
     }
 
     path.lockAndSegment(false);
@@ -98,6 +100,11 @@ public class RotateTactician extends Tactician {
 
     if (input.car.hasWheelContact) {
       pathExecutor.executePath(input, output, path);
+
+      // If we are going for another boost pad, ensure we accelerate a bit during the rotation.
+      if (isGoingForBoost && input.car.boost > 40 && !input.car.isSupersonic && Math.abs(output.getSteer()) < 1) {
+        output.withBoost(true);
+      }
     } else {
       Angles3.setControlsForFlatLanding(input.car, output);
       output.withThrottle(1.0);
@@ -113,7 +120,7 @@ public class RotateTactician extends Tactician {
         .map(pairWithClosestPickup(path))
         .filter(filterInsideTurns(arcs))
         .filter(pair -> pair.getFirst().getLocation().distance(path.getTarget().position) > 500)
-        .filter(pair -> pair.getFirst().getLocation().distance(pair.getSecond()) < 500) // Don't go too far out of our way.
+        .filter(pair -> pair.getFirst().getLocation().distance(pair.getSecond()) < 300) // Don't go too far out of our way.
         .collect(toImmutableList());
   }
 

@@ -60,7 +60,7 @@ public class Flip extends Maneuver {
     boolean maxHeightJump = jumpManager.hasMaxJumpHeight();
     boolean flipImmediately = !flipAtTarget && input.car.position.z > 50;
 
-    boolean holdJump = !(flipIntoTarget || maxHeightJump || flipImmediately);
+    boolean holdJump = !(flipIntoTarget || maxHeightJump || flipImmediately) && !jumpManager.canFlip();
 
     if (flipComplete) {
       if (input.car.hasWheelContact) {

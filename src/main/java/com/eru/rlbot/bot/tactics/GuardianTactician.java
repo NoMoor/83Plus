@@ -32,17 +32,21 @@ public class GuardianTactician extends Tactician {
       WallHelper.drive(input, output, guardingRegions.supportLocation);
     } else if (input.car.hasWheelContact) {
       double distanceToGuardedLocation = input.car.position.distance(guardingRegions.averageLocation());
-      if (guardingRegions.averageLocation().distance(input.ball.position) > 4000) {
-        // TODO: if it's farther away, pick up a larger pad.
-        Optional<BoostPad> nearestPad = BoostPathHelper.nearestBoostPad(input.car);
-        if (distanceToGuardedLocation < 2500 && nearestPad.isPresent() && input.car.boost < 70) {
+      double ballDistanceToGuardedLocation = guardingRegions.averageLocation().distance(input.ball.position);
+      if (ballDistanceToGuardedLocation > 4000) {
+        Optional<BoostPad> nearestPad =
+            input.car.boost < 50 ? BoostPathHelper.backfieldLargePad(input) : BoostPathHelper.backfieldAnyPad(input);
+        if (distanceToGuardedLocation < ballDistanceToGuardedLocation
+            && nearestPad.isPresent() && input.car.boost < 70) {
+
           bot.botRenderer.setBranchInfo("Pick up boost");
           bot.botRenderer.renderTarget(nearestPad.get().getLocation());
           double correctionAngle = Angles.flatCorrectionAngle(input.car, nearestPad.get().getLocation());
           output
               .withThrottle(1.0)
               .withSteer(correctionAngle)
-              .withSlide(Math.abs(correctionAngle) > 1 && Math.abs(input.car.angularVelocity.z) < 3);
+              .withSlide(Math.abs(correctionAngle) > 1.25 && Math.abs(input.car.angularVelocity.z) < 2)
+              .withBoost(nearestPad.get().isLargeBoost() && Math.abs(correctionAngle) < .3);
         } else {
           faceBall(input, output, guardingRegions);
         }
@@ -92,7 +96,7 @@ public class GuardianTactician extends Tactician {
     output
         .withThrottle(throttle)
         .withSteer(correctionAngle * 5)
-        .withSlide(Math.abs(correctionAngle) > 1 && Math.abs(input.car.angularVelocity.z) < 3)
-        .withBoost(throttle == 1 && input.car.boost > 80);
+        .withSlide(Math.abs(correctionAngle) > 1.25 && Math.abs(input.car.angularVelocity.z) < 2)
+        .withBoost(throttle == 1 && input.car.boost > 90);
   }
 }

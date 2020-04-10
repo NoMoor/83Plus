@@ -583,7 +583,7 @@ public class BotRenderer {
     renderText(0, 640, "%% %.2f", (prediction.velocity.minus(actual.velocity).magnitude() * 100
         / prediction.velocity.magnitude()));
 
-    renderPrediction(predictionTrace);
+    renderBallPrediction(predictionTrace);
 
     if (prediction.time + BALL_PREDICTION_TIME < input.car.elapsedSeconds) {
       prediction = null;
@@ -592,11 +592,11 @@ public class BotRenderer {
     }
   }
 
-  public void renderPrediction(BallData projectedBallData) {
-    renderPrediction(BallPredictor.makePrediction(projectedBallData));
+  public void renderBallPrediction(BallData projectedBallData) {
+    renderBallPrediction(BallPredictor.makePrediction(projectedBallData));
   }
 
-  private void renderPrediction(ImmutableList<BallData> trace) {
+  public void renderBallPrediction(ImmutableList<BallData> trace) {
     BallData previousPrediction = null;
     for (BallData nextPrediction : trace) {
       if (previousPrediction == null) {

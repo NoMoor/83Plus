@@ -91,6 +91,39 @@ public final class BoostPathHelper {
         isLargeBoost ? Moment.Type.LARGE_BOOST : Moment.Type.SMALL_BOOST);
   }
 
+  public static Optional<BoostPad> backfieldLargePad(DataPacket input) {
+    return BoostManager.getLargeBoosts().stream()
+        .filter(BoostPad::isActive)
+        .filter(pad -> isBackField(pad, input))
+        .map(pad -> Pair.of(effectiveDistance(input.car).apply(pad), pad))
+        .sorted(Comparator.comparing(Pair::getFirst))
+        .filter(pair -> pair.getFirst() > 1000
+            || Math.abs(Angles.flatCorrectionAngle(input.car, pair.getSecond().getLocation())) < .5)
+        .findFirst()
+        .map(Pair::getSecond);
+  }
+
+  private static boolean isBackField(BoostPad pad, DataPacket input) {
+    Vector3 ownGoal = Goal.ownGoal(input.car.team).center;
+    double ballToGoal = input.ball.position.distance(ownGoal);
+    double carToPad = input.car.position.distance(pad.getLocation());
+    double padToGoal = input.car.position.distance(pad.getLocation());
+
+    return ballToGoal > carToPad + padToGoal;
+  }
+
+  public static Optional<BoostPad> backfieldAnyPad(DataPacket input) {
+    return BoostManager.allBoosts().stream()
+        .filter(BoostPad::isActive)
+        .filter(pad -> isBackField(pad, input))
+        .map(pad -> Pair.of(effectiveDistance(input.car).apply(pad), pad))
+        .sorted(Comparator.comparing(Pair::getFirst))
+        .filter(pair -> pair.getFirst() > 1000
+            || Math.abs(Angles.flatCorrectionAngle(input.car, pair.getSecond().getLocation())) < .5)
+        .findFirst()
+        .map(Pair::getSecond);
+  }
+
   public static Optional<BoostPad> nearestBoostPad(CarData car) {
     return BoostManager.allBoosts().stream()
         .filter(BoostPad::isActive)

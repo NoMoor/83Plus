@@ -52,6 +52,15 @@ public class PathExecutor {
 
     drive(input, output, target, currentSegment, distanceDiff);
 
+    if (path.getExtension() != null) {
+      if (input.car.position.distance(path.getExtension().start) < 400) {
+        BotRenderer.forIndex(input.car.serialNumber).addAlertText("Flipping into ball!");
+        tactician.requestDelegate(Flip.builder()
+            .setTarget(path.getExtension().getProgress(.5))
+            .build());
+      }
+    }
+
     if (currentSegment.type == Segment.Type.JUMP) {
       output.withJump();
       Segment extension = path.getExtension();
@@ -115,7 +124,7 @@ public class PathExecutor {
     // TODO: Delegate if we are near the end of an arc segment.
     boolean hasSpeed = input.car.groundSpeed > MIN_FLIP_SPEED;
     boolean isStraight = currentSegment.type == Segment.Type.STRAIGHT;
-    boolean hasTime = (currentSegment.flatDistance() / (input.car.groundSpeed + 400)) > 1; // Account for added flip speed.
+    boolean hasTime = (currentSegment.flatDistance() / (input.car.groundSpeed + 500)) > 1; // Account for added flip speed.
     boolean straightSteer = Math.abs(output.getSteer()) < 1;
     boolean travelingForward = Math.abs(input.car.orientation.getNoseVector().angle(input.car.velocity)) < .5;
     if (hasSpeed && isStraight && hasTime && straightSteer && travelingForward) {

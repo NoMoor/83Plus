@@ -9,13 +9,17 @@ import com.eru.rlbot.bot.common.SupportRegions;
 import com.eru.rlbot.bot.main.ApolloGuidanceComputer;
 import com.eru.rlbot.bot.plan.Marker;
 import com.eru.rlbot.bot.prediction.BallPredictionUtil;
+import com.eru.rlbot.bot.prediction.BallPredictor;
+import com.eru.rlbot.bot.prediction.CarBallCollision;
 import com.eru.rlbot.bot.tactics.KickoffTactician;
 import com.eru.rlbot.bot.tactics.Tactic;
 import com.eru.rlbot.common.DllHelper;
 import com.eru.rlbot.common.Moment;
 import com.eru.rlbot.common.input.BallData;
+import com.eru.rlbot.common.input.CarData;
 import com.eru.rlbot.common.input.DataPacket;
 import com.eru.rlbot.common.vector.Vector3;
+import com.google.common.collect.ImmutableList;
 import java.util.Optional;
 import rlbot.flat.BallPrediction;
 import rlbot.flat.Physics;
@@ -71,8 +75,40 @@ public class DefendStrategist extends Strategist {
       return true;
     }
 
+    BallPredictionUtil ballPredictionUtil = BallPredictionUtil.get(input.car);
+    Optional<BallPredictionUtil.ChallengeData> challengeDataOptional = ballPredictionUtil.getChallengeData();
+
     com.eru.rlbot.bot.prediction.BallPrediction firstHittableTarget = BallPredictionUtil.get(input.car).getTarget();
     BallData subject = firstHittableTarget != null ? firstHittableTarget.ball : input.ball;
+    if (challengeDataOptional.isPresent()) {
+      BallPredictionUtil.ChallengeData challengeData = challengeDataOptional.get();
+      if (challengeData.controllingTeam != input.car.team) {
+        // Simulate the possiblity of a hit.
+        BallData firstTouchBall = challengeData.firstTouch.ball;
+        CarData strikingCar = challengeData.firstTouch.forCar(challengeData.firstTouch.ableToReach().get(0))
+            .getPath().getTarget();
+        BallData resultingBall = CarBallCollision.calculateCollision(firstTouchBall, strikingCar);
+        ImmutableList<BallData> predictions = BallPredictor.makePrediction(resultingBall);
+        bot.botRenderer.renderBallPrediction(predictions);
+
+        double correctionTime;
+        if (firstHittableTarget != null) {
+          double timeOffset = firstHittableTarget.ball.time - challengeData.firstTouch.ball.time;
+          correctionTime = challengeData.firstTouch.ball.time + (timeOffset * .1);
+        } else {
+          double timeToContact = challengeData.firstTouch.ball.time - input.car.elapsedSeconds;
+          correctionTime = challengeData.firstTouch.ball.time + (timeToContact * .1);
+        }
+
+        Optional<BallData> projectedBallPositionAtCollisionTime = predictions.stream()
+            .filter(ball -> ball.time > correctionTime)
+            .findFirst();
+
+        if (projectedBallPositionAtCollisionTime.isPresent()) {
+          subject = projectedBallPositionAtCollisionTime.get();
+        }
+      }
+    }
 
     // TODO: Update to include the opponent hitting the ball
     if (shotOnGoal(input)) {
@@ -94,10 +130,10 @@ public class DefendStrategist extends Strategist {
           .setTacticType(getTacticType(firstHittableTarget))
           .build());
     } else {
-      Vector3 ownGoal = Goal.ownGoal(input.car.team).center;
-      ownGoal = ownGoal.addY(1500 * -Math.signum(ownGoal.y));
+      Rotations rotations = Rotations.get(input);
+      CarData secondManbBack = rotations.getNextToLastManBack();
 
-      SupportRegions regions = SupportRegions.getSupportRegions(ownGoal, input.car.team);
+      SupportRegions regions = SupportRegions.getSupportRegions(secondManbBack.position, input.car.team);
       tacticManager.setTactic(Tactic.builder()
           .setSubject(Moment.from(regions))
           .setTacticType(Tactic.TacticType.GUARD)

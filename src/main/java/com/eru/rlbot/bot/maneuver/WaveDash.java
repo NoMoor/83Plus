@@ -46,6 +46,8 @@ public class WaveDash extends Maneuver {
     JumpManager jumpManager = JumpManager.forCar(input.car);
     BotRenderer botRenderer = BotRenderer.forCar(input.car);
 
+    output.withThrottle(1.0); // Don't get stuck not moving.
+
     if (wasInAir && input.car.hasWheelContact) {
       output.withSlide();
       if (input.car.angularVelocity.flatten().magnitude() < .5) {

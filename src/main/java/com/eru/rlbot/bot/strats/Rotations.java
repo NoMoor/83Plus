@@ -142,4 +142,13 @@ public class Rotations {
   public CarData getFirstMan() {
     return one;
   }
+
+  public CarData getNextToLastManBack() {
+    ImmutableList<CarData> list = asList();
+    if (list.size() == 1) {
+      return list.get(0);
+    } else {
+      return list.get(list.size() - 2); // Return the 2nd man to the back.
+    }
+  }
 }

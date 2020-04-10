@@ -8,11 +8,14 @@ import com.eru.rlbot.bot.optimizer.CarBallOptimizer;
 import com.eru.rlbot.bot.optimizer.OptimizationResult;
 import com.eru.rlbot.bot.path.Path;
 import com.eru.rlbot.bot.path.PathPlanner;
+import com.eru.rlbot.bot.prediction.BallPredictionUtil;
 import com.eru.rlbot.common.Moment;
 import com.eru.rlbot.common.input.BallData;
 import com.eru.rlbot.common.input.CarData;
 import com.eru.rlbot.common.input.DataPacket;
 import com.eru.rlbot.common.output.Controls;
+import com.eru.rlbot.common.vector.Vector3;
+import com.google.common.collect.Iterables;
 import java.util.Optional;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -54,7 +57,8 @@ public class TakeTheShotTactician extends Tactician {
 
       WallHelper.drive(input, output, input.ball.position);
       return;
-    } else //if ((path == null || path.isOffCourse() || BallPredictionUtil.get(input.car).wasTouched()) && input.car.hasWheelContact)
+    } else if ((path == null || path.isOffCourse() || BallPredictionUtil.get(input.car).wasTouched() || pathEndWithoutBall(path))
+        && input.car.hasWheelContact)
     // Do not re-plan once we have jumped.
     {
       Optional<CarData> targetOptional = PathPlanner.closestStrike(input.car, tactic.subject);
@@ -101,6 +105,16 @@ public class TakeTheShotTactician extends Tactician {
     } else if (!input.car.hasWheelContact) {
       Angles3.setControlsForFlatLanding(input.car, output);
     }
+  }
+
+  private boolean pathEndWithoutBall(Path path) {
+    double time = path.getEndTime();
+    Vector3 endLocation = Iterables.getLast(path.allTerseNodes()).end;
+    return BallPredictionUtil.get(path.getSource().serialNumber).getPredictions().stream()
+        .filter(ballPrediction -> ballPrediction.ball.time > time)
+        .findFirst()
+        .map(ballPrediction -> ballPrediction.ball.position.distance(endLocation) > 200) // Ball is more than 200 units from end point.
+        .orElse(false);
   }
 
   @Override

@@ -42,6 +42,10 @@ public class DemoTactician extends Tactician {
     Optional<Vector3> optionalTarget = getDashTarget(input);
 
     if (!optionalTarget.isPresent()) {
+      output
+          .withThrottle(1.0)
+          .withBoost(true);
+      completed = true;
       return;
     }
 
@@ -65,8 +69,8 @@ public class DemoTactician extends Tactician {
         output
             .withSteer(targetCorrectionAngle * 10)
             .withThrottle(1.0)
-            .withSlide(!pointingAtTarget && Math.abs(targetCorrectionAngle) > Math.PI / 3);
-      } else if (input.car.isSupersonic || input.car.groundSpeed > 1900 || timeToTarget < WaveDash.MIN_DASH_TIME) {
+            .withSlide(!pointingAtTarget && Math.abs(targetCorrectionAngle) > Math.PI / 2.5);
+      } else if (input.car.isSupersonic || input.car.groundSpeed > 1700 || timeToTarget < WaveDash.MIN_DASH_TIME) {
         bot.botRenderer.setBranchInfo("Aim at target");
 
         output
@@ -79,7 +83,7 @@ public class DemoTactician extends Tactician {
             .withThrottle(1.0f)
             .withBoost(input.car.boost > 30)
             .withSteer(Angles.flatCorrectionAngle(input.car, target) * 10);
-      } else if (Math.abs(targetCorrectionAngle) > .3 && Math.abs(quarterVelocityTargetCorrection) > .8) {
+      } else if (Math.abs(targetCorrectionAngle) > .3 && Math.abs(quarterVelocityTargetCorrection) > .3) {
         bot.botRenderer.setBranchInfo("Correct before jump");
         double velocityCorrection = Angles.flatCorrectionAngle(input.car, input.car.velocity);
         output
@@ -130,7 +134,7 @@ public class DemoTactician extends Tactician {
       target = Goal.ownGoal(input.car.team).getNearPost(input.car);
     }
 
-    if (input.car.boost < 5 && !input.car.isSupersonic) {
+    if (input.car.boost < 30 && !input.car.isSupersonic) {
       // Bail out and go for boost.
       pickupBoost(input, target);
       return Optional.empty();
