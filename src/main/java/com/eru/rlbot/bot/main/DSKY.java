@@ -5,6 +5,7 @@ import static java.awt.Component.CENTER_ALIGNMENT;
 import com.eru.rlbot.bot.flags.GlobalDebugOptions;
 import com.eru.rlbot.bot.flags.PerBotDebugOptions;
 import com.eru.rlbot.common.Pair;
+import com.eru.rlbot.common.StateLogger;
 import com.eru.rlbot.common.util.BuildInfo;
 import com.google.common.base.Preconditions;
 import java.awt.Color;
@@ -26,6 +27,7 @@ import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.DefaultListSelectionModel;
+import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
@@ -148,8 +150,15 @@ public class DSKY {
     globalPanel.setOpaque(false);
     globalPanel.setLayout(new GridBagLayout());
 
-    JPanel p1 = new JPanel();
-    p1.setLayout(new BoxLayout(p1, BoxLayout.Y_AXIS));
+    JPanel leftColumn = new JPanel();
+    leftColumn.setLayout(new BoxLayout(leftColumn, BoxLayout.Y_AXIS));
+
+    JCheckBox renderStatsCheckbox = new JCheckBox("Render stats", GlobalDebugOptions.isRenderStats());
+    renderStatsCheckbox.addActionListener((e) ->
+        GlobalDebugOptions.setRenderStats(renderStatsCheckbox.getModel().isSelected()));
+    renderStatsCheckbox.setOpaque(false);
+    leftColumn.add(renderStatsCheckbox);
+
     JCheckBox kickoffGameEnabled = new JCheckBox("Kickoff game", GlobalDebugOptions.isKickoffGameEnabled());
     kickoffGameEnabled.addActionListener((e) -> {
       boolean value = kickoffGameEnabled.getModel().isSelected();
@@ -168,26 +177,27 @@ public class DSKY {
       }
     });
     kickoffGameEnabled.setOpaque(false);
-    p1.add(kickoffGameEnabled);
+    leftColumn.add(kickoffGameEnabled);
 
     JCheckBox stateLoggerEnabled = new JCheckBox("State logger", GlobalDebugOptions.isStateLoggerEnabled());
     stateLoggerEnabled.addActionListener((e) ->
         GlobalDebugOptions.setStateLoggerEnabled(stateLoggerEnabled.getModel().isSelected()));
     stateLoggerEnabled.setOpaque(false);
-    p1.setOpaque(false);
-    p1.add(stateLoggerEnabled);
+    leftColumn.setOpaque(false);
+    leftColumn.add(stateLoggerEnabled);
 
-    JCheckBox renderStatsCheckbox = new JCheckBox("Render stats", GlobalDebugOptions.isRenderStats());
-    renderStatsCheckbox.addActionListener((e) ->
-        GlobalDebugOptions.setRenderStats(renderStatsCheckbox.getModel().isSelected()));
-    renderStatsCheckbox.setOpaque(false);
-    p1.add(renderStatsCheckbox);
+    JButton stateCaptureButton = new JButton("Capture History");
+    stateCaptureButton.addActionListener((e) -> StateLogger.capture());
+    stateCaptureButton.setOpaque(false);
+    leftColumn.setOpaque(false);
+    leftColumn.add(stateCaptureButton);
 
-    JPanel p2 = new JPanel();
-    p2.setLayout(new BoxLayout(p2, BoxLayout.Y_AXIS));
+    JPanel rightColumn = new JPanel();
+    rightColumn.setLayout(new BoxLayout(rightColumn, BoxLayout.Y_AXIS));
+
     JCheckBox slowTimeNearBallEnabled = new JCheckBox("Slow game near ball", GlobalDebugOptions.isSlowTimeNearBallEnabled());
     slowTimeNearBallEnabled.setOpaque(false);
-    p2.add(slowTimeNearBallEnabled);
+    rightColumn.add(slowTimeNearBallEnabled);
 
     JSlider gameSpeed = new JSlider(SwingConstants.HORIZONTAL, 1, 10, GlobalDebugOptions.getSlowedGameSpeed());
     gameSpeed.setEnabled(false);
@@ -210,13 +220,13 @@ public class DSKY {
     gameSpeed.setPaintLabels(true);
     gameSpeed.setPaintTicks(true);
     gameSpeed.setOpaque(false);
-    p2.add(gameSpeed);
-    p2.setOpaque(false);
+    rightColumn.add(gameSpeed);
+    rightColumn.setOpaque(false);
 
     GridBagConstraints c = new GridBagConstraints();
     c.weightx = .5;
-    globalPanel.add(p1, c);
-    globalPanel.add(p2, c);
+    globalPanel.add(leftColumn, c);
+    globalPanel.add(rightColumn, c);
     return globalPanel;
   }
 

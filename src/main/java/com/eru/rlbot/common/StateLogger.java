@@ -13,11 +13,11 @@ import com.eru.rlbot.testing.TrainingId;
 import com.google.common.collect.ImmutableList;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.util.JsonFormat;
+import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.util.LinkedList;
-import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import rlbot.gamestate.DesiredRotation;
@@ -28,6 +28,7 @@ import rlbot.gamestate.DesiredRotation;
 public class StateLogger {
 
   private static final Logger logger = LogManager.getLogger("StateLogger");
+  private static final Logger log2Console = LogManager.getLogger("StateLoggerConsole");
 
   private static final String FILE_NAME = "captured_event";
 
@@ -37,42 +38,56 @@ public class StateLogger {
       .omittingInsignificantWhitespace();
 
   private static final long BUFFER_LENGTH = 4 * Constants.STEP_SIZE_COUNT;
-  private static final Queue<DataPacket> dataPacketBuffer = new LinkedList<>();
+  private static final ConcurrentLinkedDeque<DataPacket> dataPacketBuffer = new ConcurrentLinkedDeque<>();
 
   private static volatile int controllingPlayer = -1;
 
   /** Tracks the input in the buffer. */
   public static void track(DataPacket input) {
-    if (!GlobalDebugOptions.isStateLoggerEnabled()) {
-      return;
-    }
-
     if (controllingPlayer == -1) {
       controllingPlayer = input.car.serialNumber;
     } else if (controllingPlayer != input.car.serialNumber) {
       return;
     }
 
-    dataPacketBuffer.add(input);
-    while (dataPacketBuffer.size() > BUFFER_LENGTH) {
-      dataPacketBuffer.poll();
+    synchronized (dataPacketBuffer) {
+      dataPacketBuffer.add(input);
+      while (dataPacketBuffer.size() > BUFFER_LENGTH) {
+        dataPacketBuffer.poll();
+      }
     }
   }
 
-  /** Captures the data buffer into a file. */
-  public static void capture(DataPacket input) {
-    if (controllingPlayer != input.car.serialNumber || dataPacketBuffer.isEmpty()) {
+  /**
+   * Captures the data buffer into a file.
+   */
+  public static void capture() {
+    ImmutableList<DataPacket> eventCapture;
+    synchronized (dataPacketBuffer) {
+      eventCapture = ImmutableList.copyOf(dataPacketBuffer);
+      dataPacketBuffer.clear();
+    }
+
+    if (eventCapture.isEmpty()) {
       return;
     }
 
-    String fileName = FILE_NAME + System.currentTimeMillis() + ".dat";
+    String folderName = "logs/captures/";
+    ensureFolderExists(folderName);
+    String fileName = folderName + FILE_NAME + System.currentTimeMillis() + ".dat";
+
     try (PrintWriter printWriter = new PrintWriter(new FileWriter(fileName))) {
-      dataPacketBuffer.stream()
+      eventCapture.stream()
           .map(StateLogger::format)
           .forEach(printWriter::println);
     } catch (IOException e) {
-      // Swallow it.
+      log2Console.error("Cannot write state", e);
     }
+  }
+
+  @SuppressWarnings("ResultOfMethodCallIgnored")
+  private static void ensureFolderExists(String folderName) {
+    new File(folderName).mkdirs();
   }
 
   private static String format(DataPacket input) {
