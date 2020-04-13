@@ -258,7 +258,7 @@ public class Accels {
     if (yaw != 0 || roll != 0) {
       double vForward = orientation.getNoseVector().dot(velocity);
       double sideImpulseMagnitude = Constants.FORWARD_DODGE_IMPULSE * (1 + .9 * (vForward / Constants.BOOSTED_MAX_SPEED));
-      sideImpulse = orientation.getNoseVector().flat().clockwisePerpendicular()
+      sideImpulse = orientation.getNoseVector().flat().counterClockwisePerpendicular()
           .toMagnitude(sideImpulseMagnitude * Numbers.clamp(yaw + roll, -1, 1));
     }
 

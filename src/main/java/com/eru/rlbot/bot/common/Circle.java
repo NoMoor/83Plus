@@ -27,6 +27,10 @@ public final class Circle {
     return new Circle(center, radius);
   }
 
+  public static double radiusFromStraight(double speed) {
+    return radius(speed);
+  }
+
   public static double radiusForPath(double speed) {
     return radius(speed);
   }
@@ -102,7 +106,7 @@ public final class Circle {
 
     double verticalOffset = Math.sqrt((radius * radius) - (centerToMidoverlap * centerToMidoverlap));
 
-    Vector3 perpendicular = circleToCircle.clockwisePerpendicular().normalize();
+    Vector3 perpendicular = circleToCircle.counterClockwisePerpendicular().normalize();
     Vector3 p1 = midPoint.plus(perpendicular.toMagnitude(verticalOffset));
     Vector3 p2 = midPoint.plus(perpendicular.toMagnitude(-verticalOffset));
 

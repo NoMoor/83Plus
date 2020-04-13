@@ -166,7 +166,6 @@ public class DemoTactician extends Tactician {
 
   private void pickupBoost(DataPacket input, Vector3 secondaryTarget) {
     bot.botRenderer.setBranchInfo("Need boost");
-    completed = true;
 
     Optional<BoostPad> nearestPad = BoostPathHelper.nearestBoostPad(input.car);
     Moment subject = nearestPad.map(Moment::from)
@@ -184,7 +183,7 @@ public class DemoTactician extends Tactician {
     double timeToSuperSonic = increasedSpeed < 0 ? 0 : increasedSpeed / Constants.BOOSTED_MAX_SPEED;
     double distanceToSuperSonic = timeToSuperSonic * ((self.groundSpeed + Constants.SUPER_SONIC) / 2);
     return car -> {
-      ImmutableList<CarPrediction.PredictionNode> predictions = locationPredictor.forOpponent(car).getPredictions();
+      ImmutableList<CarPrediction.PredictionNode> predictions = locationPredictor.predictionForCar(car).getPredictions();
       return predictions.stream()
           .filter(slice -> {
             // Subtract the length of the front of the car so we don't accidentally t-bone ourself on an opponent going
@@ -198,10 +197,5 @@ public class DemoTactician extends Tactician {
           .findFirst()
           .orElse(Iterables.getLast(predictions));
     };
-  }
-
-  @Override
-  public boolean isLocked() {
-    return !completed;
   }
 }

@@ -270,7 +270,7 @@ public class Vector3 extends rlbot.vector.Vector3 {
     return new Vector3(this.x, this.y, newZ);
   }
 
-  public Vector3 clockwisePerpendicular() {
+  public Vector3 counterClockwisePerpendicular() {
     // TODO: Verify that this is correct. ... This seems wrong.
     return this.cross(Vector3.of(0, 0, 1));
   }

@@ -107,6 +107,12 @@ public class BotRenderer {
     }
   }
 
+  public void render2dText(Color color, int x, int y, String text) {
+    if (PerBotDebugOptions.get(bot.getIndex()).isRenderDebugText() || true) {
+      getRenderer().drawString2d(text, color, new Point(x, y), 2, 2);
+    }
+  }
+
   private boolean skipLineRendering() {
     return !PerBotDebugOptions.get(bot.getIndex()).isRenderLines();
   }
@@ -786,7 +792,7 @@ public class BotRenderer {
     }
   }
 
-  private static final int POINT_COUNT = 10;
+  private static final int POINT_COUNT = 20;
   private ImmutableList<Vector3> toCirclePoints(Vector3 center, Vector3 initialPoint, double radius, double radians) {
     Vector2 ray = initialPoint.minus(center).flatten();
     double radianOffset = Vector2.WEST.correctionAngle(ray);

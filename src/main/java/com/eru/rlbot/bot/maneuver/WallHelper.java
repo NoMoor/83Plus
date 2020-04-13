@@ -1,6 +1,7 @@
 package com.eru.rlbot.bot.maneuver;
 
 import com.eru.rlbot.bot.common.Angles;
+import com.eru.rlbot.bot.common.Constants;
 import com.eru.rlbot.common.Matrix3;
 import com.eru.rlbot.common.input.CarData;
 import com.eru.rlbot.common.input.DataPacket;
@@ -40,7 +41,21 @@ public class WallHelper {
     output
         .withSteer(correctionAngle)
         .withThrottle(1.0f)
-        .withBoost(Math.abs(correctionAngle) < .4 && input.car.boost > 30);
+        .withBoost(Math.abs(correctionAngle) < .3 && input.car.velocity.magnitude() < 1600 && input.car.boost > 50);
+
+    if (isNearGoal(input)) {
+      // Jump off the wall near the goal.
+      output.withJump();
+    }
+  }
+
+  private static boolean isNearGoal(DataPacket input) {
+    boolean nearGoalEdge = Math.abs(input.car.position.x) < ((Constants.GOAL_WIDTH / 2f) + 100);
+    boolean nearGoalHeight = input.car.position.y < Constants.GOAL_HEIGH + 50;
+    boolean isMovingTowardGoal = Math.signum(input.car.velocity.x) != Math.signum(input.car.position.x) ||
+        input.car.velocity.y < 0;
+
+    return nearGoalEdge && nearGoalHeight && isMovingTowardGoal;
   }
 
   public static Vector2 getProjectedOrientation(CarData car) {

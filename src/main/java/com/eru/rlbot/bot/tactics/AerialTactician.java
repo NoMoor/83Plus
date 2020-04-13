@@ -8,6 +8,7 @@ import com.eru.rlbot.bot.common.Angles3;
 import com.eru.rlbot.bot.common.Constants;
 import com.eru.rlbot.bot.lookup.AerialLookUp;
 import com.eru.rlbot.bot.main.ApolloGuidanceComputer;
+import com.eru.rlbot.bot.maneuver.WallHelper;
 import com.eru.rlbot.bot.path.Path;
 import com.eru.rlbot.bot.path.PathPlanner;
 import com.eru.rlbot.bot.path.Plan;
@@ -49,6 +50,11 @@ public class AerialTactician extends Tactician {
 
   @Override
   public void internalExecute(DataPacket input, Controls output, Tactic tactic) {
+    if (WallHelper.isOnWall(input.car)) {
+      WallHelper.drive(input, output, tactic.subject.position);
+      return;
+    }
+
     Moment target = tactic.subject;
 
     float timeToImpact = target.time - input.car.elapsedSeconds;

@@ -20,7 +20,7 @@ public final class CarPrediction {
 
     float time = 0;
 
-    Vector3 velocity = car.velocity;
+    Vector3 velocity = car.velocity.isZero() ? car.orientation.getNoseVector().toMagnitude(500) : car.velocity;
     Vector3 position = car.position;
     while (time + Constants.STEP_SIZE < timeToSimulate) {
 

@@ -36,7 +36,7 @@ public class Paths {
     Vector3 up = front.cross(Vector3.of(0, 0, 1).cross(front)).normalize();
     Vector3 left = up.cross(front).normalize();
 
-    double turnRadius = Circle.radiusForPath(target.groundSpeed);
+    double turnRadius = Circle.radiusFromStraight(target.groundSpeed);
 
     Vector3 centerOffset = left.toMagnitude(turnRadius);
 
@@ -207,7 +207,7 @@ public class Paths {
   }
 
   public static Circles turningRadiusCircles(Vector3 position, double speed, Vector3 noseVector) {
-    double radius = Circle.radiusForPath(speed);
+    double radius = Circle.radiusFromStraight(speed);
 
     Vector2 perpVelocity = noseVector.flatten().clockwisePerpendicular();
     Circle cw = Circle.forPath(position.plus(perpVelocity.asVector3().toMagnitude(radius)), radius);

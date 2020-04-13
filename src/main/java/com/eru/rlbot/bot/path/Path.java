@@ -157,6 +157,25 @@ public class Path {
     return extension;
   }
 
+  public Segment getNextTerseSegment(Segment currentSegment) {
+    int index = terseNodes.indexOf(currentSegment);
+    if (index == -1) {
+      if (extension != currentSegment) {
+        throw new IllegalArgumentException("Not a current segment");
+      } else {
+        return extension;
+      }
+    }
+    if (index == terseNodes.size() - 1) {
+      if (extension != null) {
+        return extension;
+      } else {
+        return currentSegment;
+      }
+    }
+    return terseNodes.get(index + 1);
+  }
+
   public static final class Builder {
 
     private LinkedList<Segment> segments = new LinkedList<>();

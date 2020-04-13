@@ -125,9 +125,9 @@ public final class ApolloGuidanceComputer implements Bot {
     botRenderer.renderInfo(input, output);
     ballPredictionRenderer.renderBallPrediction();
 
-    double frameTime = ComputeTracker.stop(input.serialNumber) / 1000;
+    double frameTime = ComputeTracker.stop(input.serialNumber);
     if (frameTime > Constants.STEP_SIZE) {
-      logger.error("AGC" + serialNumber + " dropped frames: {}", (int) (frameTime / Constants.STEP_SIZE));
+      logger.error("AGC" + serialNumber + " dropped frames: {}", frameTime / Constants.STEP_SIZE);
     }
 
     return output;

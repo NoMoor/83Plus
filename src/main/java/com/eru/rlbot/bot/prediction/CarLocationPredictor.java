@@ -2,6 +2,7 @@ package com.eru.rlbot.bot.prediction;
 
 import static com.google.common.collect.ImmutableList.toImmutableList;
 
+import com.eru.rlbot.bot.common.Constants;
 import com.eru.rlbot.bot.flags.PerBotDebugOptions;
 import com.eru.rlbot.bot.renderer.BotRenderer;
 import com.eru.rlbot.common.Lists;
@@ -9,6 +10,7 @@ import com.eru.rlbot.common.Pair;
 import com.eru.rlbot.common.input.CarData;
 import com.eru.rlbot.common.input.DataPacket;
 import com.eru.rlbot.common.vector.Vector3;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.MoreCollectors;
@@ -60,7 +62,7 @@ public class CarLocationPredictor {
         .collect(toImmutableList());
   }
 
-  public CarLocationPrediction forOpponent(CarData car) {
+  public CarLocationPrediction predictionForCar(CarData car) {
     return predictions.values().stream()
         .filter(predictions -> predictions.getPlayerIndex() == car.serialNumber)
         .collect(MoreCollectors.onlyElement());
@@ -152,6 +154,12 @@ public class CarLocationPredictor {
 
     public Vector3 oneSec() {
       return Iterables.getLast(predictions).position;
+    }
+
+    public Vector3 in(double futureTime) {
+      Preconditions.checkArgument(futureTime <= 1);
+      int sliceIndex = (int) futureTime * Constants.STEP_SIZE_COUNT;
+      return predictions.get(sliceIndex).getPosition();
     }
   }
 }

@@ -22,18 +22,23 @@ public class BallPrediction {
 
   public final BallData ball;
 
-  public BallPrediction(BallData ball) {
+  BallPrediction(BallData ball) {
     this.ball = ball;
   }
 
+  /**
+   * Returns the type of tactic needed to hit this ball.
+   */
   public Tactic.TacticType getTacticType() {
     return ball.position.z > 300 ? Tactic.TacticType.AERIAL : Tactic.TacticType.STRIKE;
   }
 
+  /** Returns true if anyone can hit the ball. */
   public boolean isHittableBySomeone() {
     return botPotential.values().stream().anyMatch(Potential::isHittable);
   }
 
+  /** Returns true if the given car can hit this prediction slice. */
   public boolean isHittable(CarData car) {
     return getPotential(car.serialNumber).isHittable();
   }
@@ -42,10 +47,12 @@ public class BallPrediction {
     return botPotential.computeIfAbsent(serialNumber, Potential::new);
   }
 
+  /** Returns the potential hits for the given car number. */
   public Potential forCar(int serialNumber) {
     return getPotential(serialNumber);
   }
 
+  /** Returns a list of the player indexes that are able to reach the ball. */
   public ImmutableList<Integer> ableToReach() {
     return botPotential.values().stream()
         .filter(Potential::isHittable)
@@ -53,6 +60,7 @@ public class BallPrediction {
         .collect(toImmutableList());
   }
 
+  /** Returns a list of the teams which can reach this ball. */
   public ImmutableList<Integer> ableToReachTeams() {
     return botPotential.values().stream()
         .filter(Potential::isHittable)
@@ -60,12 +68,25 @@ public class BallPrediction {
         .collect(toImmutableList());
   }
 
+  /**
+   * Returns true if hittable by the given team. False otherwise.
+   */
   public boolean isHittableByTeam(int team) {
     return botPotential.values().stream()
         .filter(Potential::isHittable)
         .anyMatch(potential -> Teams.getTeamForBot(potential.index) == team);
   }
 
+  /**
+   * Returns the ball data for this prediction.
+   */
+  public BallData getBall() {
+    return ball;
+  }
+
+  /**
+   * A container for the potential of a given car to hit a specified ball.
+   */
   public static class Potential {
 
     public final int index;

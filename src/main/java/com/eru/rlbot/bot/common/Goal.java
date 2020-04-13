@@ -4,6 +4,7 @@ import static com.eru.rlbot.bot.common.Constants.BALL_RADIUS;
 import static com.eru.rlbot.bot.common.Constants.HALF_LENGTH;
 
 import com.eru.rlbot.common.input.CarData;
+import com.eru.rlbot.common.input.DataPacket;
 import com.eru.rlbot.common.vector.Vector3;
 
 /**
@@ -27,11 +28,19 @@ public final class Goal {
     return team == 1 ? ORANGE_GOAL : BLUE_GOAL;
   }
 
+  public static Goal ownGoal(DataPacket input) {
+    return ownGoal(input.car.team);
+  }
+
   /**
    * Returns the opponent's goal.
    */
   public static Goal opponentGoal(int team) {
     return team == 0 ? ORANGE_GOAL : BLUE_GOAL;
+  }
+
+  public static Goal opponentGoal(DataPacket input) {
+    return opponentGoal(input.car.team);
   }
 
   public final Vector3 center;
@@ -62,7 +71,11 @@ public final class Goal {
    * Returns the post on the same side as the given car.
    */
   public Vector3 getNearPost(CarData car) {
-    return Math.signum(car.position.x) == Math.signum(right.x) ? right : left;
+    return getNearPost(car.position);
+  }
+
+  public Vector3 getNearPost(Vector3 location) {
+    return Math.signum(location.x) == Math.signum(right.x) ? right : left;
   }
 
   public Vector3 getFarPost(Vector3 supportLocation) {

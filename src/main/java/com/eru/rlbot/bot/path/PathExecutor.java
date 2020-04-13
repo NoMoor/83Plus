@@ -38,6 +38,7 @@ public class PathExecutor {
 
     Vector3 target = path.pidTarget(input);
     Segment currentSegment = path.getSegment(input).getRoot();
+    Segment nextSegment = path.getNextTerseSegment(currentSegment);
 
     Vector3 distanceDiff = target.minus(input.car.position);
     if (distanceDiff.magnitude() > Constants.BOOSTED_MAX_SPEED * 2 * Path.LEAD_TIME) {
@@ -52,8 +53,21 @@ public class PathExecutor {
 
     drive(input, output, target, currentSegment, distanceDiff);
 
+    if (currentSegment.type == Segment.Type.STRAIGHT && nextSegment != null && nextSegment.type == Segment.Type.ARC) {
+      double timeToStraightEnd = input.car.position.distance(currentSegment.end) / input.car.groundSpeed;
+      double timeOnArcSegment = nextSegment.flatDistance() / input.car.groundSpeed;
+      double steer = nextSegment.clockWise ? 1 : -1;
+      if (timeOnArcSegment > .4
+          && timeToStraightEnd < .08
+          && Math.signum(input.car.angularVelocity.z) == Math.signum(steer)) {
+        output
+            .withSteer(steer)
+            .withSlide();
+      }
+    }
+
     if (path.getExtension() != null) {
-      if (input.car.position.distance(path.getExtension().start) < 400) {
+      if (input.car.position.distance(path.getExtension().start) < 200) {
         BotRenderer.forIndex(input.car.serialNumber).addAlertText("Flipping into ball!");
         tactician.requestDelegate(Flip.builder()
             .setTarget(path.getExtension().getProgress(.5))
@@ -75,7 +89,7 @@ public class PathExecutor {
     }
   }
 
-  private static final double P = 1;
+  private static final double P = 3;
   private static final double D = .1 * Path.LEAD_FRAMES;
 
   private void drive(DataPacket input, Controls output, Vector3 target, Segment currentSegment, Vector3 distanceDiff) {
@@ -96,7 +110,6 @@ public class PathExecutor {
     double d = (diffAngularVelocity / maxAngularVelocity) * D;
 
     output.withSteer(segmentModifier * (p + d));
-    output.withSlide(correctionCurvature > maxCurvature * 1.1 && input.car.groundSpeed > 1000);
 
     double timeToTarget = distanceDiff.magnitude() / input.car.velocity.magnitude();
 
@@ -122,14 +135,12 @@ public class PathExecutor {
     }
 
     // TODO: Delegate if we are near the end of an arc segment.
-    boolean hasSpeed = input.car.groundSpeed > MIN_FLIP_SPEED;
+    boolean hasSpeed = input.car.groundSpeed > MIN_FLIP_SPEED && !input.car.isSupersonic;
     boolean isStraight = currentSegment.type == Segment.Type.STRAIGHT;
-    boolean hasTime = (currentSegment.flatDistance() / (input.car.groundSpeed + 500)) > 1; // Account for added flip speed.
+    boolean hasTime = (currentSegment.flatDistance() / (input.car.groundSpeed + 500)) > 1.2; // Account for added flip speed.
     boolean straightSteer = Math.abs(output.getSteer()) < 1;
     boolean travelingForward = Math.abs(input.car.orientation.getNoseVector().angle(input.car.velocity)) < .5;
     if (hasSpeed && isStraight && hasTime && straightSteer && travelingForward) {
-      BotRenderer.forCar(input.car).addAlertText("Flip!", input.car.elapsedSeconds);
-
       this.tactician.requestDelegate(
           Flip.builder()
               .setTarget(currentSegment.end)

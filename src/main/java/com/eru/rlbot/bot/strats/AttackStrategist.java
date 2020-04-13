@@ -35,9 +35,6 @@ public class AttackStrategist extends Strategist {
 
   @Override
   public boolean assign(DataPacket input) {
-    // TODO: Use ball prediction util to plan shots/passes/aerials. Then pick the first one that is reachable and
-    // create the tactic.
-
     if (tacticManager.isTacticLocked()) {
       // Let the tactic finish it's motion.
       return true;
@@ -52,8 +49,7 @@ public class AttackStrategist extends Strategist {
       return true;
     }
 
-    int carPredictionIndex = getPredictionIndex(input.allCars.size());
-    Marker.get(input.serialNumber).mark(input, carPredictionIndex);
+    Marker.get(input.serialNumber).markNext(input);
 
     tacticManager.setTactic(getTactic(input));
 
@@ -69,8 +65,9 @@ public class AttackStrategist extends Strategist {
     Optional<BallPredictionUtil.ChallengeData> challengeDataOptional =
         BallPredictionUtil.get(input.car).getChallengeData();
     if (!challengeDataOptional.isPresent()) {
+      bot.botRenderer.addAlertText("Cannot get challenge data.");
       // The ball cannot be hit by anyone. Grab boost and go on defense
-      return Teams.getTeamSize(input.car.team) == 1 || true
+      return Teams.getTeamSize(input.car.team) > 1
           ? getStrikingTactic(input)
           : getSupportTactic(input, input.ball);
     }
@@ -102,7 +99,8 @@ public class AttackStrategist extends Strategist {
     Vector3 mostDefendingAlly = CarLocationPredictor.forCar(input.car).teammates().stream()
         .map(CarLocationPredictor.CarLocationPrediction::oneSec)
         .min(Comparator.comparing(predictedLocation -> predictedLocation.distance(ownGoal.center)))
-        .get();
+        .orElse(input.ball.position);
+
     bot.botRenderer.renderTarget(Color.PINK, mostDefendingAlly);
     return Moment.from(SupportRegions.getSupportRegions(mostDefendingAlly, input.car.team));
   }

@@ -125,14 +125,14 @@ public class PathPlanner {
   private static Vector3 getFrontToBackAngle(Vector3 intersection, Circle circle, boolean isClockwise) {
     return intersection.minus(circle.center)
         .dot(isClockwise ? cwRotation : ccwRotation)
-        .clockwisePerpendicular()
+        .counterClockwisePerpendicular()
         .toMagnitude(isClockwise ? 1 : -1);
   }
 
   private static Vector3 positionFromIntersectionCorner(Vector3 intersection, Circle circle, boolean isClockwise) {
     Vector3 frontToBack = getFrontToBackAngle(intersection, circle, isClockwise);
 
-    Vector3 lrOffset = frontToBack.clockwisePerpendicular()
+    Vector3 lrOffset = frontToBack.counterClockwisePerpendicular()
         .toMagnitude((isClockwise ? -1 : 1) * BoundingBox.halfWidth);
     Vector3 fbOffset = frontToBack.toMagnitude(BoundingBox.frontToRj);
 

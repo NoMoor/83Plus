@@ -1,6 +1,5 @@
 package com.eru.rlbot.bot.strats;
 
-import com.eru.rlbot.bot.common.Angles;
 import com.eru.rlbot.bot.common.CarBall;
 import com.eru.rlbot.bot.common.Constants;
 import com.eru.rlbot.bot.common.Goal;
@@ -94,10 +93,10 @@ public class DefendStrategist extends Strategist {
         double correctionTime;
         if (firstHittableTarget != null) {
           double timeOffset = firstHittableTarget.ball.time - challengeData.firstTouch.ball.time;
-          correctionTime = challengeData.firstTouch.ball.time + (timeOffset * .1);
+          correctionTime = challengeData.firstTouch.ball.time + (timeOffset * .08);
         } else {
           double timeToContact = challengeData.firstTouch.ball.time - input.car.elapsedSeconds;
-          correctionTime = challengeData.firstTouch.ball.time + (timeToContact * .1);
+          correctionTime = challengeData.firstTouch.ball.time + (timeToContact * .08);
         }
 
         Optional<BallData> projectedBallPositionAtCollisionTime = predictions.stream()
@@ -157,12 +156,16 @@ public class DefendStrategist extends Strategist {
   }
 
   private static boolean canClear(DataPacket input) {
-    boolean ballIsInFrontOfCar = Math.abs(Angles.flatCorrectionAngle(input.car, input.ball.position)) < .75;
-    boolean ballNearGoal = ballNearGoal(input);
-    boolean isPointedAwayFromGoal =
-        Math.abs(Locations.minCarTargetNotGoalCorrection(input, Moment.from(input.ball))) < .2;
+    Rotations rotations = Rotations.get(input);
+    CarData secondManBack = rotations.getNextToLastManBack();
 
-    return ballIsInFrontOfCar && ballNearGoal && isPointedAwayFromGoal;
+    Vector3 nearPost = Goal.ownGoal(input.car.team).getNearPost(input.ball.position);
+    double secondManDistance = secondManBack.position.distance(nearPost);
+    double ballDistance = input.ball.position.distance(nearPost);
+    if (rotations.isLastManBack() && (secondManDistance < ballDistance)) {
+      return true;
+    }
+    return ballDistance < 1000;
   }
 
   private static double GOAL_NEARNESS_THRESHOLD = Constants.GOAL_WIDTH * 2;

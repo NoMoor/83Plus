@@ -50,7 +50,6 @@ public class Flip extends Maneuver {
     JumpManager jumpManager = JumpManager.forCar(input.car);
 
     if (done) {
-      botRenderer.addAlertText("Flip complete");
       // Do nothing.
       return;
     }
@@ -64,7 +63,6 @@ public class Flip extends Maneuver {
 
     if (flipComplete) {
       if (input.car.hasWheelContact) {
-        botRenderer.addAlertText("Flip complete");
         done = true;
       } else {
         botRenderer.setBranchInfo("Waiting to land");

@@ -12,11 +12,11 @@ import rlbot.flat.GameTickPacket;
  */
 public class BoostManager {
 
-    private static final String lock = "boost-sync-lock";
+  private static final String lock = "boost-sync-lock";
 
-    private static ImmutableList<BoostPad> orderedBoosts = ImmutableList.of();
-    private static ImmutableList<BoostPad> largeBoosts = ImmutableList.of();
-    private static ImmutableList<BoostPad> smallBoosts = ImmutableList.of();
+  private static ImmutableList<BoostPad> orderedBoosts = ImmutableList.of();
+  private static ImmutableList<BoostPad> largeBoosts = ImmutableList.of();
+  private static ImmutableList<BoostPad> smallBoosts = ImmutableList.of();
 
   public static ImmutableList<BoostPad> getLargeBoosts() {
     return largeBoosts;
