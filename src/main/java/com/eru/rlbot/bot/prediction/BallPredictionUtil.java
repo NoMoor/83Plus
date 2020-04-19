@@ -50,6 +50,7 @@ public class BallPredictionUtil {
 
   public Optional<ChallengeData> getChallengeData() {
     if (balls.isEmpty()) {
+      logger.debug("Cannot find prediction slices");
       return Optional.empty();
     }
 
@@ -58,6 +59,7 @@ public class BallPredictionUtil {
         .findFirst();
 
     if (!hittableByAnyone.isPresent()) {
+      logger.debug("Not hittable");
       return Optional.empty();
     }
 

@@ -101,9 +101,9 @@ public class BotRenderer {
     return forIndex(car.serialNumber);
   }
 
-  public void renderText(Color color, Vector3 location, String text) {
+  public void renderText(Color color, Vector3 location, String format, Object... args) {
     if (PerBotDebugOptions.get(bot.getIndex()).isRenderDebugText()) {
-      getRenderer().drawString3d(text, color, location, 2, 2);
+      getRenderer().drawString3d(String.format(format, args), color, location, 2, 2);
     }
   }
 
@@ -151,6 +151,10 @@ public class BotRenderer {
     for (Circle region : regions) {
       renderCircle(Color.pink, region);
     }
+  }
+
+  public void renderAboveCar(CarData car, String format, Object... args) {
+    renderText(Color.GREEN, car.position.addZ(100), String.format(format, args));
   }
 
   private static class RenderRequest {

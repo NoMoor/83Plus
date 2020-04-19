@@ -40,7 +40,6 @@ public class Tactic {
     CATCH,
     DEMO,
     DRIBBLE,
-    FAST_AERIAL,
     FLICK,
     FLIP,
     GUARD,

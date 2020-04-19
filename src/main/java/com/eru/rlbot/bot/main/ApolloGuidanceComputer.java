@@ -127,7 +127,7 @@ public final class ApolloGuidanceComputer implements Bot {
 
     double frameTime = ComputeTracker.stop(input.serialNumber);
     if (frameTime > Constants.STEP_SIZE) {
-      logger.error("AGC" + serialNumber + " dropped frames: {}", frameTime / Constants.STEP_SIZE);
+      logger.info("AGC" + serialNumber + " dropped frames: {}", Math.round(frameTime / Constants.STEP_SIZE));
     }
 
     return output;

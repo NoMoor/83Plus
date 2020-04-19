@@ -45,6 +45,44 @@ public class Orientation {
     return convert(0, Vector2.WEST.correctionAngle(velocity.flatten()), 0);
   }
 
+  public static Orientation roofNoseDown(Vector3 roofVector) {
+    roofVector = roofVector.normalize();
+
+    Vector3 noseVector;
+    if (Math.abs(roofVector.z) < 1) {
+      // Point the nose down.
+      Vector3 sideDoor = roofVector.cross(Vector3.of(0, 0, -1)).toMagnitude(-1);
+      noseVector = roofVector.cross(sideDoor);
+    } else {
+      // Point the nose down.
+      Vector3 sideDoor = roofVector.cross(Vector3.of(0, 1, 0)).toMagnitude(-1);
+      noseVector = roofVector.cross(sideDoor);
+    }
+
+    return noseRoof(noseVector, roofVector);
+  }
+
+  public static Orientation noseWithRoofBias(Vector3 noseVector, Vector3 roofBias) {
+    noseVector = noseVector.normalize();
+
+    Vector3 sideVector = noseVector.cross(roofBias);
+    if (sideVector.isZero()) {
+      sideVector = noseVector.cross(roofBias.addX(.1).normalize());
+    }
+    sideVector = sideVector.toMagnitude(-1);
+
+    Vector3 roofVector = noseVector.cross(sideVector);
+    return Orientation.noseRoof(noseVector, roofVector);
+  }
+
+  public static Orientation roofWithNoseBias(Vector3 roofVector, Vector3 noseBias) {
+    roofVector = roofVector.normalize();
+
+    Vector3 sideVector = roofVector.cross(noseBias).toMagnitude(-1);
+    Vector3 noseVector = roofVector.cross(sideVector);
+    return Orientation.noseRoof(noseVector, roofVector);
+  }
+
   /**
    * The direction that the front of the car is facing
    */
@@ -132,5 +170,9 @@ public class Orientation {
 
   public Vector3 localCoordinates(Vector3 global) {
     return getOrientationMatrix().transpose().dot(global);
+  }
+
+  public Vector3 global(Vector3 global) {
+    return getOrientationMatrix().dot(global);
   }
 }

@@ -18,7 +18,8 @@ from wavedash.wavedash_exercises import wavedash_exercises
 def make_default_playlist():
     exercises = []
 
-    exercises += stone_defense_exercises
+    exercises += testing_locations
+    #    exercises += stone_defense_exercises
 
     if False:
         exercises += bronze_exercises

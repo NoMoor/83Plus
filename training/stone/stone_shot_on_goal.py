@@ -17,6 +17,10 @@ def make_striker_grader():
     return StrikerGrader(timeout_seconds=8)
 
 
+def make_recovery_grader():
+    return StrikerGrader(timeout_seconds=4)
+
+
 @dataclass
 class StoneShotOnGoal(TrainingExercise):
     grader: Grader = field(default_factory=make_grader)
@@ -133,7 +137,6 @@ class Defense(TrainingExercise):
                         angular_velocity=Vector3(0, 0, 0)),
                     boost_amount=100)
             },
-            boosts={i: BoostState(0) for i in range(34)},  # Is this needed.
         )
 
 
@@ -159,6 +162,7 @@ class Setup(TrainingExercise):
     car_spin: float = pi / 2
     car_pitch: float = 0
     car_roll: float = 0
+    boost: float = 100
 
     def make_game_state(self, rng: SeededRandomNumberGenerator) -> GameState:
         return GameState(
@@ -172,10 +176,42 @@ class Setup(TrainingExercise):
                         location=Vector3(self.car_x, self.car_y, self.car_z),
                         rotation=Rotator(self.car_pitch, self.car_spin, self.car_roll),
                         velocity=Vector3(self.car_vx, self.car_vy, self.car_vz),
-                        angular_velocity=Vector3(0, 0, 0)),
-                    boost_amount=100)
+                        angular_velocity=Vector3(0.01, 0, 0)),
+                    boost_amount=self.boost)
             },
-            boosts={i: BoostState(0) for i in range(34)},  # Is this needed.
+        )
+
+
+@dataclass()
+class Recover(TrainingExercise):
+    grader: Grader = field(default_factory=make_recovery_grader)
+
+    car_x: float = 0
+    car_y: float = 10
+    car_z: float = 17
+    car_vx: float = 0
+    car_vy: float = 0
+    car_vz: float = 0
+    car_spin: float = pi / 2
+    car_pitch: float = 0
+    car_roll: float = 0
+    boost: float = 100
+
+    def make_game_state(self, rng: SeededRandomNumberGenerator) -> GameState:
+        return GameState(
+            ball=BallState(physics=Physics(
+                location=Vector3(4000, 4000, 1500),
+                velocity=Vector3(0, 0, 0)
+            )),
+            cars={
+                0: CarState(
+                    physics=Physics(
+                        location=Vector3(self.car_x, self.car_y, self.car_z),
+                        rotation=Rotator(self.car_pitch, self.car_spin, self.car_roll),
+                        velocity=Vector3(self.car_vx, self.car_vy, self.car_vz),
+                        angular_velocity=Vector3(0, 0, 0)),
+                    boost_amount=self.boost)
+            },
         )
 
 

@@ -37,9 +37,9 @@ public final class BoostLanes {
   private static final ImmutableList<Segment> orangeToBlueRightMidLargeBoost =
       boostNumsToSegments(15, 8);
   private static final ImmutableList<Segment> blueLeftLargeBoost =
-      boostNumsToSegments(9, 4, 2);
+      toSegments(boost(9).addX(140), boost(4), boost(2).addY(-140));
   private static final ImmutableList<Segment> blueRightLargeBoost =
-      boostNumsToSegments(8, 3, 1);
+      toSegments(boost(8).addX(-140), boost(3), boost(1).addY(-140));
   private static final ImmutableList<Segment> blueHalfCircleLtR =
       boostNumsToSegments(6, 7, 5, 1);
   private static final ImmutableList<Segment> blueHalfCircleRtL =
@@ -56,9 +56,9 @@ public final class BoostLanes {
   private static final ImmutableList<Segment> blueToOrangeLeftMidLargeBoost =
       boostNumsToSegments(18, 25);
   private static final ImmutableList<Segment> orangeLeftLargeBoost =
-      boostNumsToSegments(25, 30, 32);
+      toSegments(boost(25).addX(140), boost(30), boost(32).addY(140));
   private static final ImmutableList<Segment> orangeRightLargeBoost =
-      boostNumsToSegments(24, 29, 31);
+      toSegments(boost(24).addX(-140), boost(29), boost(31).addY(140));
   private static final ImmutableList<Segment> orangeHalfCircleLtR =
       boostNumsToSegments(32, 28, 26, 27, 31);
   private static final ImmutableList<Segment> orangeHalfCircleRtL =
@@ -83,6 +83,10 @@ public final class BoostLanes {
         .collect(toImmutableList());
 
     return toSegments(boostPads);
+  }
+
+  private static ImmutableList<Segment> toSegments(Vector3... wayPoints) {
+    return toSegments(ImmutableList.copyOf(wayPoints));
   }
 
   private static ImmutableList<Segment> toSegments(ImmutableList<Vector3> wayPoints) {

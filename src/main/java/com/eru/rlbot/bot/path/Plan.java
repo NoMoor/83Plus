@@ -1,6 +1,8 @@
 package com.eru.rlbot.bot.path;
 
+import com.eru.rlbot.bot.tactics.AerialTactician;
 import com.eru.rlbot.bot.tactics.Tactic;
+import com.eru.rlbot.common.Pair;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import java.util.LinkedList;
@@ -13,11 +15,13 @@ public class Plan {
   public final double boostUsed;
   public final ImmutableList<ControlInput> throttleInputList;
   public final Tactic.TacticType type;
+  public final Pair<AerialTactician.FlightPlan, AerialTactician.FlightLog> aerialPlan;
 
   public Plan(Builder builder) {
     Preconditions.checkArgument(builder.type != null, "All plans must have a type.");
     traverseTime = builder.time;
     path = builder.path;
+    aerialPlan = builder.aerialPlan;
     boostUsed = builder.boostUsed;
     throttleInputList = ImmutableList.copyOf(builder.inputList);
     type = builder.type;
@@ -82,6 +86,7 @@ public class Plan {
     private double time;
     private double boostUsed;
     private Tactic.TacticType type;
+    private Pair<AerialTactician.FlightPlan, AerialTactician.FlightLog> aerialPlan;
 
     public Builder setPath(Path path) {
       this.path = path;
@@ -105,6 +110,11 @@ public class Plan {
 
     public Plan.Builder setTacticType(Tactic.TacticType type) {
       this.type = type;
+      return this;
+    }
+
+    public Plan.Builder setAerialPlan(Pair<AerialTactician.FlightPlan, AerialTactician.FlightLog> plan) {
+      this.aerialPlan = plan;
       return this;
     }
 

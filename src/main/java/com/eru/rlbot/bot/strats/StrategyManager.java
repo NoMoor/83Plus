@@ -2,6 +2,7 @@ package com.eru.rlbot.bot.strats;
 
 import com.eru.rlbot.bot.common.StateSetChecker;
 import com.eru.rlbot.bot.main.ApolloGuidanceComputer;
+import com.eru.rlbot.bot.plan.Marker;
 import com.eru.rlbot.bot.tactics.KickoffTactician;
 import com.eru.rlbot.common.input.DataPacket;
 import com.eru.rlbot.common.output.Controls;
@@ -40,10 +41,14 @@ public class StrategyManager {
   }
 
   public Controls executeStrategy(DataPacket input) {
-    checkReset(input);
+    if (checkReset(input)) {
+      return Controls.create();
+    }
 
     boolean timedUpdate = lastStrategyUpdateTime == 0
         || input.car.elapsedSeconds - lastStrategyUpdateTime > STRATEGY_UPDATE_INTERVAL;
+
+    Marker.get(input.serialNumber).markNext(input);
 
     if (KickoffTactician.isKickoffStart(input)) {
       if (active == null || active.getType() != Strategy.Type.ATTACK) {

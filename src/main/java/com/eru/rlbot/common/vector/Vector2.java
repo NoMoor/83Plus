@@ -113,10 +113,17 @@ public class Vector2 {
   }
 
   /**
-   * Returns this vector as a flat 3D vecotyr.
+   * Returns this vector as a flat 3D vector.
    */
   public Vector3 asVector3() {
-    return Vector3.of(x, y, 0);
+    return asVector3(0);
+  }
+
+  /**
+   * Returns this vector as a 3D vector with the given z value.
+   */
+  public Vector3 asVector3(float z) {
+    return Vector3.of(x, y, z);
   }
 
   /**

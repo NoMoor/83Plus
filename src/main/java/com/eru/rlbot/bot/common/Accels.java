@@ -1,5 +1,6 @@
 package com.eru.rlbot.bot.common;
 
+import static com.eru.rlbot.bot.common.Constants.NEG_GRAVITY;
 import static com.eru.rlbot.bot.common.Constants.STEP_SIZE;
 
 import com.eru.rlbot.common.Numbers;
@@ -8,6 +9,7 @@ import com.eru.rlbot.common.input.CarData;
 import com.eru.rlbot.common.input.Orientation;
 import com.eru.rlbot.common.jump.JumpManager;
 import com.eru.rlbot.common.vector.Vector3;
+import com.google.common.base.Preconditions;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -220,6 +222,21 @@ public class Accels {
       time -= STEP_SIZE;
     }
     return distance;
+  }
+
+  public static double floatingTimeToHeight(float initialVz, double initialHeight, double targetHeight) {
+    Preconditions.checkArgument(initialHeight > targetHeight);
+
+    double time = 0;
+    double height = initialHeight;
+    double vz = initialVz;
+
+    while (height > targetHeight) {
+      height += vz * STEP_SIZE;
+      vz += (NEG_GRAVITY * STEP_SIZE);
+      time += STEP_SIZE;
+    }
+    return time;
   }
 
   /**

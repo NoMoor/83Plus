@@ -20,7 +20,7 @@ public final class Angles3 {
   private static final Logger logger = LogManager.getLogger("Angles3");
 
   // The allowed deviation of Phi
-  private static final double EPSILON_PHI = .1f;
+  private static final double EPSILON_PHI = .02f;
   // The allowed deviation of Omega
   private static final double EPSILON_OMEGA = .15f;
 
@@ -36,12 +36,17 @@ public final class Angles3 {
   public static final float PITCH_DAMPEN = ANGULAR_DAMPING.y;
   public static final float YAW_DAMPEN = ANGULAR_DAMPING.z;
 
+  private static final Matrix3 MINUTE_ROTATION = Orientation.convert(.01, .01, 0).getOrientationMatrix();
+
   // How far ahead to look.
-  private static final float HORIZON_TIME = .05f;
+  private static final float HORIZON_TIME = .1f;
 
   public static void pointAnyDirection(CarData car, Vector3 desiredVector, Controls output) {
     Vector3 nose = desiredVector.normalize();
-    Vector3 sideDoor = nose.cross(car.orientation.getRoofVector().multiply(-1));
+    Vector3 sideDoor = nose.cross(car.orientation.getRoofVector().toMagnitude(-1));
+    if (sideDoor.isZero()) {
+      sideDoor = nose.cross(car.orientation.getRoofVector().addX(.1).toMagnitude(-1));
+    }
     Vector3 roofOrientation = nose.cross(sideDoor);
     Orientation carOrientation = Orientation.noseRoof(nose, roofOrientation);
 
@@ -56,14 +61,24 @@ public final class Angles3 {
     return setControlsFor(car, target.getOrientationMatrix(), controls);
   }
 
+  private static boolean setControlsFor(CarData car, Matrix3 target, Controls controls) {
+    return setControlsFor(car, target, controls, 2);
+  }
+
   /**
    * Returns controls to optimally rotate toward the subject orientation.
    */
-  public static boolean setControlsFor(CarData car, Matrix3 target, Controls controls) {
+  private static boolean setControlsFor(CarData car, Matrix3 target, Controls controls, int tries) {
     try {
       return setControlsForInternal(car, target, controls);
     } catch (Exception e) {
-      logger.warn(e);
+      if (tries == 1) {
+        logger.warn(e);
+      } else {
+        logger.info("Try again");
+        // Rotate the target a little and try again.
+        return setControlsFor(car, MINUTE_ROTATION.rotateOrientation(target), controls, tries - 1);
+      }
     }
 
     return false;
@@ -265,7 +280,7 @@ public final class Angles3 {
   }
 
   private static Vector3 rotation_to_axis(Matrix3 R) {
-    double theta = Math.cos(Numbers.clamp(0.5f * (R.trace() - 1.0f), -1.0f, 1.0f));
+    double theta = Math.acos(Numbers.clamp(0.5f * (R.trace() - 1.0f), -1.0f, 1.0f));
 
     double scale;
 

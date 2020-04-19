@@ -4,11 +4,15 @@ import com.eru.rlbot.bot.common.Constants;
 import com.eru.rlbot.common.input.CarData;
 import com.eru.rlbot.common.input.DataPacket;
 import com.eru.rlbot.common.output.Controls;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 /**
  * Keeps track of the various aspects of the jump state of a car.
  */
 public class JumpManager {
+
+  private static final Logger logger = LogManager.getLogger("JumpManager");
 
   public static final float MAX_JUMP_TIME = .2f;
 
@@ -26,7 +30,7 @@ public class JumpManager {
 
   private static ThreadLocal<JumpManager> INSTANCE = ThreadLocal.withInitial(JumpManager::new);
 
-  private boolean jumpPressed;
+  private int jumpPressed;
   private float firstJumpTime;
   private float secondJumpTime;
   private boolean canFlip;
@@ -38,7 +42,7 @@ public class JumpManager {
   private float flipRoll;
 
   // Updated each cycle
-  private CarData inputCar;
+  private volatile CarData inputCar;
 
   public static JumpManager forCar(CarData car) {
     if (!car.isLiveData) {
@@ -79,15 +83,14 @@ public class JumpManager {
 
   public void trackInput(CarData car) {
     // TODO: Update to use single / double jump bits...
-    inputCar = car;
 
-    if (!car.hasWheelContact && !jumpPressed) {
+    if (!car.hasWheelContact && jumpPressed == 0) {
       jumpInAirReleased++;
       // We've been bumped and we can flip whenever.
       if (hasReleasedJumpInAir() && secondJumpTime == 0) {
         canFlip = car.position.z > 30;
       }
-    } else if (car.hasWheelContact && !car.jumped && !jumpPressedLastFrame()) {
+    } else if (car.hasWheelContact && !jumpHeld()) {
       firstJumpTime = 0;
       secondJumpTime = 0;
       jumpInAirReleased = 0;
@@ -97,6 +100,8 @@ public class JumpManager {
       flipPitch = 0;
       canFlip = false;
     }
+
+    inputCar = car;
   }
 
   public static void trackOutput(DataPacket input, Controls output) {
@@ -104,17 +109,22 @@ public class JumpManager {
   }
 
   public void trackOutput(CarData car, Controls output) {
-    jumpPressed = output.holdJump();
+    boolean jumpPressedThisFrame = output.holdJump();
+    if (output.holdJump()) {
+      jumpPressed++;
+    } else {
+      jumpPressed = 0;
+    }
 
-    if (car.hasWheelContact && jumpPressed && firstJumpTime == 0) {
+    if (car.hasWheelContact && jumpPressedThisFrame && firstJumpTime == 0) {
       // We will jump on this frame.
       firstJumpTime = car.elapsedSeconds;
       canFlip = false;
-    } else if (!car.hasWheelContact && !jumpPressed && firstJumpTime != 0) {
+    } else if (!car.hasWheelContact && !jumpPressedThisFrame && firstJumpTime != 0) {
       jumpInAirReleased++;
     }
 
-    if (firstJumpTime > 0 && jumpPressed && canFlip) {
+    if (firstJumpTime > 0 && jumpPressedThisFrame && canFlip) {
       // Dodging now.
       canFlip = false;
       secondJumpTime = car.elapsedSeconds;
@@ -135,7 +145,12 @@ public class JumpManager {
   }
 
   public float getElapsedJumpTime() {
-    return firstJumpTime == 0 ? 0 : inputCar.elapsedSeconds - firstJumpTime;
+    if (firstJumpTime == 0) {
+      return 0;
+    }
+
+    float time = inputCar.elapsedSeconds - firstJumpTime;
+    return time;
   }
 
   public boolean canFlip() {
@@ -146,8 +161,8 @@ public class JumpManager {
     return jumpInAirReleased >= JUMP_RELEASE_COUNT;
   }
 
-  public boolean jumpPressedLastFrame() {
-    return jumpPressed;
+  public boolean jumpHeld() {
+    return jumpPressed > 3;
   }
 
   public boolean canJump() {
@@ -175,6 +190,6 @@ public class JumpManager {
   }
 
   public boolean canJumpAccelerate() {
-    return jumpPressedLastFrame() && !hasMaxJumpHeight();
+    return jumpHeld() && !hasMaxJumpHeight();
   }
 }

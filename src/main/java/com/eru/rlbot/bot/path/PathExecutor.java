@@ -5,6 +5,7 @@ import com.eru.rlbot.bot.common.Angles;
 import com.eru.rlbot.bot.common.Angles3;
 import com.eru.rlbot.bot.common.Constants;
 import com.eru.rlbot.bot.maneuver.Flip;
+import com.eru.rlbot.bot.maneuver.Recover;
 import com.eru.rlbot.bot.renderer.BotRenderer;
 import com.eru.rlbot.bot.tactics.Tactic;
 import com.eru.rlbot.bot.tactics.Tactician;
@@ -51,7 +52,7 @@ public class PathExecutor {
       }
     }
 
-    drive(input, output, target, currentSegment, distanceDiff);
+    drive(input, output, target, currentSegment, nextSegment, distanceDiff);
 
     if (currentSegment.type == Segment.Type.STRAIGHT && nextSegment != null && nextSegment.type == Segment.Type.ARC) {
       double timeToStraightEnd = input.car.position.distance(currentSegment.end) / input.car.groundSpeed;
@@ -85,14 +86,17 @@ public class PathExecutor {
         noseVector = input.car.velocity;
       }
 
-      Angles3.pointAnyDirection(input.car, noseVector, output);
+      // TODO: Figure out why this happens.
+      if (!noseVector.isZero()) {
+        Angles3.pointAnyDirection(input.car, noseVector, output);
+      }
     }
   }
 
   private static final double P = 3;
   private static final double D = .1 * Path.LEAD_FRAMES;
 
-  private void drive(DataPacket input, Controls output, Vector3 target, Segment currentSegment, Vector3 distanceDiff) {
+  private void drive(DataPacket input, Controls output, Vector3 target, Segment currentSegment, Segment nextSegment, Vector3 distanceDiff) {
     // Determine the angular velocity to hit the point
     double correctionAngle = Angles.flatCorrectionAngle(input.car, target);
     double correctionCurvature = 1 / (input.car.position.distance(target) / (2 * Math.sin(correctionAngle)));
@@ -120,7 +124,7 @@ public class PathExecutor {
 
       if (boostTime.time > Path.LEAD_TIME) {
         output
-            .withBoost(input.car.isSupersonic)
+            .withBoost(!input.car.isSupersonic)
             .withThrottle(1.0);
       } else {
         Accels.AccelResult accelTime = Accels.nonBoostedTimeToDistance(input.car.velocity.magnitude(), distanceDiff.magnitude());
@@ -137,10 +141,12 @@ public class PathExecutor {
     // TODO: Delegate if we are near the end of an arc segment.
     boolean hasSpeed = input.car.groundSpeed > MIN_FLIP_SPEED && !input.car.isSupersonic;
     boolean isStraight = currentSegment.type == Segment.Type.STRAIGHT;
-    boolean hasTime = (currentSegment.flatDistance() / (input.car.groundSpeed + 500)) > 1.2; // Account for added flip speed.
+    boolean hasTime = (currentSegment.flatDistance() / (input.car.groundSpeed + 500)) > 1.3;
     boolean straightSteer = Math.abs(output.getSteer()) < 1;
     boolean travelingForward = Math.abs(input.car.orientation.getNoseVector().angle(input.car.velocity)) < .5;
     if (hasSpeed && isStraight && hasTime && straightSteer && travelingForward) {
+
+
       this.tactician.requestDelegate(
           Flip.builder()
               .setTarget(currentSegment.end)
@@ -151,12 +157,7 @@ public class PathExecutor {
 
   public void executeSimplePath(DataPacket input, Controls output, Tactic tactic) {
     if (!input.car.hasWheelContact) {
-      if (input.car.velocity.z > 0) {
-        Angles3.pointAnyDirection(input.car, input.ball.position.minus(input.car.position), output);
-      } else {
-        Angles3.setControlsForFlatLanding(input.car, output);
-      }
-      output.withThrottle(1.0);
+      tactician.requestDelegate(new Recover(tactic.subject.position));
     } else {
       double correctionAngle = Angles.flatCorrectionAngle(input.car, tactic.subject.position);
       double distanceToTarget = input.car.position.distance(tactic.subject.position) - BoundingBox.frontToRj;

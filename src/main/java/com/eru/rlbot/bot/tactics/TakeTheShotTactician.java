@@ -1,8 +1,8 @@
 package com.eru.rlbot.bot.tactics;
 
-import com.eru.rlbot.bot.common.Angles3;
 import com.eru.rlbot.bot.common.RelativeUtils;
 import com.eru.rlbot.bot.main.ApolloGuidanceComputer;
+import com.eru.rlbot.bot.maneuver.Recover;
 import com.eru.rlbot.bot.maneuver.WallHelper;
 import com.eru.rlbot.bot.optimizer.CarBallOptimizer;
 import com.eru.rlbot.bot.optimizer.OptimizationResult;
@@ -57,6 +57,9 @@ public class TakeTheShotTactician extends Tactician {
 
       WallHelper.drive(input, output, input.ball.position);
       return;
+    } else if (!input.car.hasWheelContact) {
+      delegateTo(new Recover(input.ball.position));
+      return;
     } else if ((path == null || path.isOffCourse() || BallPredictionUtil.get(input.car).wasTouched() || pathEndWithoutBall(path))
         && input.car.hasWheelContact)
     // Do not re-plan once we have jumped.
@@ -102,8 +105,6 @@ public class TakeTheShotTactician extends Tactician {
     if (output.getThrottle() < 0 && !output.holdBoost() && input.ball.velocity.magnitude() < .1) {
       BallData relativeBall = RelativeUtils.noseRelativeBall(input);
       logger.info("Slowing down! throttle: {} ballSpeed: {} ballDistance: {}", output.getThrottle(), input.ball.velocity.magnitude(), relativeBall.position);
-    } else if (!input.car.hasWheelContact) {
-      Angles3.setControlsForFlatLanding(input.car, output);
     }
   }
 

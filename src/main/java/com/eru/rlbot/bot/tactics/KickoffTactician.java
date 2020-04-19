@@ -51,7 +51,7 @@ public class KickoffTactician extends Tactician {
   }
 
   public static boolean isKickoffStart(DataPacket input) {
-    return isBallInKickoff(input.ball) /*&& input.car.groundSpeed < 10*/;
+    return isBallInKickoff(input.ball) && input.car.groundSpeed < 10;
   }
 
   private static boolean isBallInKickoff(BallData ball) {

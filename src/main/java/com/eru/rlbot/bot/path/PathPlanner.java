@@ -23,30 +23,53 @@ public class PathPlanner {
   private static final Logger logger = LogManager.getLogger("PathPlanner");
 
   public static Optional<Plan> getGroundPath(CarData car, BallData ball) {
-    if (ball.position.z > 200) {
+    if (ball.position.z > 300) {
       return Optional.empty();
     }
 
-    Optional<CarData> closestHit = closestStrike(car, Moment.from(ball));
+    CarData groundCar;
+    if (car.position.z < 25) {
+      groundCar = car;
+    } else {
+      groundCar = projectCarToGround(car);
+    }
+
+    Optional<CarData> closestHit = closestStrike(groundCar, Moment.from(ball));
     if (!closestHit.isPresent()) {
       return Optional.empty();
     }
 
-    Path path = planPath(car, closestHit.get());
+    Path path = planPath(groundCar, closestHit.get());
 
-    double timeToBall = ball.time - car.elapsedSeconds;
+    double timeToBall = ball.time - groundCar.elapsedSeconds;
     double absoluteMinTime = path.length() / Constants.BOOSTED_MAX_SPEED;
     if (absoluteMinTime > timeToBall) {
       return Optional.empty();
     }
 
-    Plan plan = path.minGroundTime(car.boost);
+    Plan plan = path.minGroundTime(groundCar.boost);
 
     if (plan.traverseTime < timeToBall) {
       return Optional.of(plan);
     } else {
       return Optional.empty();
     }
+  }
+
+  // Assumes car is flying in air. Doesn't really handle wall play.
+  private static CarData projectCarToGround(CarData car) {
+    Vector3 velocity = car.velocity;
+    double height = car.position.z;
+    double timeToGround = Accels.floatingTimeToHeight(velocity.z, height, Constants.CAR_AT_REST);
+
+    Vector3 newPosition = velocity.flat().multiply(timeToGround).plus(car.position.flat()).setZ(Constants.CAR_AT_REST);
+
+    return car.toBuilder()
+        .setTime(car.elapsedSeconds + timeToGround)
+        .setPosition(newPosition)
+        .setVelocity(velocity.flat())
+        .setOrientation(Orientation.fromFlatVelocity(velocity))
+        .build();
   }
 
   public static Path oneTurn(CarData car, Moment moment) {

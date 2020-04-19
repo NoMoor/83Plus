@@ -33,6 +33,13 @@ public final class Numbers {
     return a + ((b - a) * lerpAmount);
   }
 
+  /**
+   * Returns the value if it is positive (including zero). Otherwise returns the max positive value.
+   */
+  public static double positiveOrMax(float value) {
+    return value >= 0 ? value : Double.MAX_VALUE;
+  }
+
   private Numbers() {
   }
 }

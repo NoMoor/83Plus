@@ -3,10 +3,8 @@ package com.eru.rlbot.bot.strats;
 import com.eru.rlbot.bot.common.CarBall;
 import com.eru.rlbot.bot.common.Constants;
 import com.eru.rlbot.bot.common.Goal;
-import com.eru.rlbot.bot.common.Locations;
 import com.eru.rlbot.bot.common.SupportRegions;
 import com.eru.rlbot.bot.main.ApolloGuidanceComputer;
-import com.eru.rlbot.bot.plan.Marker;
 import com.eru.rlbot.bot.prediction.BallPredictionUtil;
 import com.eru.rlbot.bot.prediction.BallPredictor;
 import com.eru.rlbot.bot.prediction.CarBallCollision;
@@ -57,8 +55,6 @@ public class DefendStrategist extends Strategist {
 
   @Override
   public boolean assign(DataPacket input) {
-    Marker.get(input.serialNumber).markNext(input);
-
     if (tacticManager.isTacticLocked()) {
       // Let the tactic finish it's motion.
       bot.botRenderer.addAlertText("Keep tactic");
@@ -109,18 +105,11 @@ public class DefendStrategist extends Strategist {
       }
     }
 
-    // TODO: Update to include the opponent hitting the ball
     if (shotOnGoal(input)) {
       tacticManager.setTactic(Tactic.builder()
           .setSubject(subject)
           .setObject(getObject(input, firstHittableTarget))
           .setTacticType(getTacticType(firstHittableTarget))
-          .build());
-    } else if (canClear(input) && Locations.carToBall(input).magnitude() > 2000) {
-      tacticManager.setTactic(Tactic.builder()
-          .setSubject(subject)
-          .setObject(getObject(input, firstHittableTarget))
-          .setTacticType(Tactic.TacticType.ROTATE)
           .build());
     } else if (canClear(input)) {
       tacticManager.setTactic(Tactic.builder()
@@ -129,10 +118,7 @@ public class DefendStrategist extends Strategist {
           .setTacticType(getTacticType(firstHittableTarget))
           .build());
     } else {
-      Rotations rotations = Rotations.get(input);
-      CarData secondManbBack = rotations.getNextToLastManBack();
-
-      SupportRegions regions = SupportRegions.getSupportRegions(secondManbBack.position, input.car.team);
+      SupportRegions regions = SupportRegions.getSupportRegions(input.ball.position, input.car.team);
       tacticManager.setTactic(Tactic.builder()
           .setSubject(Moment.from(regions))
           .setTacticType(Tactic.TacticType.GUARD)
@@ -161,36 +147,13 @@ public class DefendStrategist extends Strategist {
 
     Vector3 nearPost = Goal.ownGoal(input.car.team).getNearPost(input.ball.position);
     double secondManDistance = secondManBack.position.distance(nearPost);
-    double ballDistance = input.ball.position.distance(nearPost);
-    if (rotations.isLastManBack() && (secondManDistance < ballDistance)) {
+    double ballToGoal = input.ball.position.distance(nearPost);
+
+    // TODO: Improve this.
+    if (rotations.isLastManBack() && (secondManDistance < ballToGoal)) {
       return true;
     }
-    return ballDistance < 1000;
-  }
-
-  private static double GOAL_NEARNESS_THRESHOLD = Constants.GOAL_WIDTH * 2;
-  private static boolean ballNearGoal(DataPacket input) {
-    Vector3 ownGoal = Goal.ownGoal(input.car.team).center;
-    Optional<BallPrediction> ballPredictionOptional = DllHelper.getBallPrediction();
-    if (!ballPredictionOptional.isPresent()) {
-      return input.ball.position.distance(ownGoal) < GOAL_NEARNESS_THRESHOLD;
-    }
-
-    final BallPrediction ballPrediction = ballPredictionOptional.get();
-
-    int i = 0;
-    while (i < ballPrediction.slicesLength()) {
-      Physics ballPhysics = ballPrediction.slices(i).physics();
-      double toGoalDistance = Vector3.of(ballPhysics.location()).distance(ownGoal);
-
-      if (toGoalDistance < GOAL_NEARNESS_THRESHOLD) {
-        return true;
-      }
-
-      i += 5;
-    }
-
-    return false;
+    return ballToGoal < 5000 || input.ball.position.distance(input.car.position) < 3000;
   }
 
   @Override

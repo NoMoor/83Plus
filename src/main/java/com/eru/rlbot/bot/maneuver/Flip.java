@@ -25,12 +25,10 @@ public class Flip extends Maneuver {
   private final Double yaw;
   private final Double pitch;
 
-  private boolean initialJump;
+  private int initialJump;
   private boolean flipComplete;
   private boolean done;
   private boolean flipAtTarget;
-
-  private boolean isFirstFrame = true;
 
   public Flip(Builder builder) {
     this.aggressiveness = builder.aggressiveness;
@@ -48,6 +46,8 @@ public class Flip extends Maneuver {
   public void execute(DataPacket input, Controls output, Tactic tactic) {
     BotRenderer botRenderer = BotRenderer.forCar(input.car);
     JumpManager jumpManager = JumpManager.forCar(input.car);
+
+    output.withThrottle(1.0);
 
     if (done) {
       // Do nothing.
@@ -67,40 +67,38 @@ public class Flip extends Maneuver {
       } else {
         botRenderer.setBranchInfo("Waiting to land");
         float noseZ = input.car.orientation.getNoseVector().z;
+        boolean facingForward = input.car.orientation.getNoseVector().dot(input.car.velocity) > 0;
         output
-            .withBoost(-.1 < noseZ && noseZ < .2)
+            .withBoost(-.1 < noseZ && noseZ < .2 && facingForward && !input.car.isSupersonic && input.car.boost > 50)
             .withThrottle(1.0f);
 
         if (!jumpManager.isFlipping()) {
           // TODO: Replace this with generic landing helper.
-          Angles3.setControlsFor(input.car, Orientation.fromFlatVelocity(input.car).getOrientationMatrix(), output);
+          Angles3.setControlsFor(input.car, Orientation.fromFlatVelocity(input.car), output);
         }
       }
     } else {
       if (!input.car.jumped) {
+        initialJump++;
         botRenderer.setBranchInfo("Initial Jump");
-        boolean isRotating = input.car.angularVelocity.flat().magnitude() > .1;
-        boolean jumpThisFrame = (!JumpManager.forCar(input.car).jumpPressedLastFrame() || !isFirstFrame) && !isRotating;
-        isFirstFrame = false;
-
-        if (!initialJump) {
-          initialJump = jumpThisFrame;
-        }
 
         // Jump now
         output
-            .withJump(initialJump)
-            .withThrottle(1.0)
-            .withBoost();
+            .withJump(true);
+
+        if (initialJump > 5) {
+          output.withJump(false);
+          done = true;
+          return;
+        }
       } else if (holdJump) {
         botRenderer.setBranchInfo("Hold Jump");
         output
             .withThrottle(1.0)
-            .withJump()
-            .withBoost();
+            .withJump();
       } else if (!jumpManager.hasReleasedJumpInAir()) {
         botRenderer.setBranchInfo("Quick release");
-        output.withBoost();
+        output.withThrottle(1.0);
         // Release Jump
       } else if (jumpManager.canFlip()) {
         if (this.flipAtTarget && !flipIntoTarget) {
@@ -118,7 +116,7 @@ public class Flip extends Maneuver {
           double velocityCorrectionAngle =
               Angles.flatCorrectionAngle(input.car.position, input.car.velocity, getTarget(tactic));
           // TODO: Adjust this correction based on how fast we are going and angle flipping.
-          velocityCorrectionAngle *= 2;
+          // velocityCorrectionAngle *= 2;
 
           double noseVelocityAngle = input.car.orientation.getNoseVector().flatten()
               .correctionAngle(input.car.velocity.flatten());
@@ -131,7 +129,7 @@ public class Flip extends Maneuver {
             flipYaw = totalCorrection / EIGHTH;
           } else {
             flipYaw = Math.signum(totalCorrection);
-            flipPitch = -(QUARTER - Math.abs(totalCorrection)) / EIGHTH;
+            flipPitch = -Math.abs(QUARTER - Math.abs(totalCorrection)) / EIGHTH;
           }
 
           output

@@ -25,7 +25,6 @@ public class TacticManager {
     DEFAULT_TACTICIAN_MAP.put(Tactic.TacticType.CATCH, CatchTactician.class);
     DEFAULT_TACTICIAN_MAP.put(Tactic.TacticType.DEMO, DemoTactician.class);
     DEFAULT_TACTICIAN_MAP.put(Tactic.TacticType.DRIBBLE, DribbleTactician.class);
-    DEFAULT_TACTICIAN_MAP.put(Tactic.TacticType.FAST_AERIAL, FastAerial.class);
     DEFAULT_TACTICIAN_MAP.put(Tactic.TacticType.FLIP, FlipTactician.class);
     DEFAULT_TACTICIAN_MAP.put(Tactic.TacticType.FLICK, FlickTactician.class);
     DEFAULT_TACTICIAN_MAP.put(Tactic.TacticType.GUARD, GuardianTactician.class);
@@ -93,7 +92,7 @@ public class TacticManager {
 
   public void setTacticComplete(Tactic tactic) {
     this.completedTactics.add(tactic);
-    this.controllingTactician = null;
+    clearTactician();
   }
 
   public void changeTactic(Tactic tactic, Tactic.TacticType tacticType) {
@@ -125,6 +124,7 @@ public class TacticManager {
     if (controllingTactician != null && controllingTactician.getFirst() == tactic.tacticType) {
       return controllingTactician.getSecond();
     } else {
+      clearTactician();
       controllingTactician = null;
     }
 
@@ -149,7 +149,14 @@ public class TacticManager {
 
   public void clearTactics() {
     tacticList.clear();
-    controllingTactician = null;
+    clearTactician();
+  }
+
+  private void clearTactician() {
+    if (controllingTactician != null) {
+      controllingTactician.getSecond().clearDelegate();
+      controllingTactician = null;
+    }
   }
 
   public boolean isTacticLocked() {

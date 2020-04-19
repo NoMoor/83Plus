@@ -2,13 +2,13 @@ package com.eru.rlbot.bot.tactics;
 
 import static com.google.common.collect.ImmutableList.toImmutableList;
 
-import com.eru.rlbot.bot.common.Angles3;
 import com.eru.rlbot.bot.common.BoostLanes;
 import com.eru.rlbot.bot.common.BoostPathHelper;
 import com.eru.rlbot.bot.common.Constants;
 import com.eru.rlbot.bot.common.Goal;
 import com.eru.rlbot.bot.common.Teams;
 import com.eru.rlbot.bot.main.ApolloGuidanceComputer;
+import com.eru.rlbot.bot.maneuver.Recover;
 import com.eru.rlbot.bot.maneuver.WallHelper;
 import com.eru.rlbot.bot.path.Path;
 import com.eru.rlbot.bot.path.PathPlanner;
@@ -45,14 +45,15 @@ public class RotateTactician extends Tactician {
 
   @Override
   void internalExecute(DataPacket input, Controls output, Tactic tactic) {
-    locked = Rotations.get(input).getFirstMan() == input.car && Teams.getTeamSize(input.car.team) > 1;
+    Rotations rotations = Rotations.get(input);
+    locked = input.car.boost < 20 && Teams.getTeamSize(input.car.team) > 1 && !rotations.isLastManBack();
+
     if (WallHelper.isOnWall(input.car)) {
       bot.botRenderer.setBranchInfo("Get off the wall");
 
       WallHelper.drive(input, output, input.ball.position);
     } else if (!input.car.hasWheelContact) {
-      Angles3.setControlsForFlatLanding(input.car, output);
-      output.withThrottle(1.0);
+      delegateTo(new Recover(tactic.subject.position));
     } else {
       if (useBoostLanes) {
         bot.botRenderer.setBranchInfo("Boost lanes");
@@ -88,10 +89,11 @@ public class RotateTactician extends Tactician {
     bot.botRenderer.renderPath(input, path);
     pathExecutor.executePath(input, output, path);
 
-
     output
         .withThrottle(1.0)
         .withBoost(isPressured(input) && !input.car.isSupersonic);
+
+    // TODO: Add in flipping if we are out of boost.
   }
 
   private static boolean isPressured(DataPacket input) {

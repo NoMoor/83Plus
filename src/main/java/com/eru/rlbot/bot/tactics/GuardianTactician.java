@@ -3,10 +3,10 @@ package com.eru.rlbot.bot.tactics;
 import static com.google.common.base.Preconditions.checkArgument;
 
 import com.eru.rlbot.bot.common.Angles;
-import com.eru.rlbot.bot.common.Angles3;
 import com.eru.rlbot.bot.common.BoostPathHelper;
 import com.eru.rlbot.bot.common.SupportRegions;
 import com.eru.rlbot.bot.main.ApolloGuidanceComputer;
+import com.eru.rlbot.bot.maneuver.Recover;
 import com.eru.rlbot.bot.maneuver.WallHelper;
 import com.eru.rlbot.common.boost.BoostPad;
 import com.eru.rlbot.common.input.DataPacket;
@@ -54,8 +54,7 @@ public class GuardianTactician extends Tactician {
         faceBall(input, output, guardingRegions);
       }
     } else {
-      output.withThrottle(1.0);
-      Angles3.setControlsForFlatLanding(input.car, output);
+      delegateTo(new Recover(guardingRegions.averageLocation()));
     }
   }
 

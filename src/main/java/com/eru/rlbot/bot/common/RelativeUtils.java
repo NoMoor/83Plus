@@ -50,7 +50,13 @@ public class RelativeUtils {
     return from(index).noseNormalInternal(input);
   }
 
-  /** Returns the ball position / velocity relative to the car position. */
+  public static Vector3 translateRelative(Vector3 target, Vector3 reference) {
+    return translateRelative(Vector3.zero(), target, reference);
+  }
+
+  /**
+   * Returns the ball position / velocity relative to the car position.
+   */
   // Context: https://stackoverflow.com/questions/14607640/rotating-a-vector-in-3d-space
   private BallData noseNormalInternal(DataPacket input) {
     if (input == cacheKey) {

@@ -37,8 +37,8 @@ public final class CarBall {
   public static boolean ballIsUpfield(DataPacket input) {
     float teamSide = Math.signum(Goal.ownGoal(input.car.team).center.y);
     return teamSide > 0
-        ? input.ball.position.y < input.car.position.y
-        : input.ball.position.y > input.car.position.y;
+        ? input.ball.position.y < input.car.position.y - 1000 // Orange
+        : input.ball.position.y > input.car.position.y + 1000; // Blue
   }
 
   private CarBall() {

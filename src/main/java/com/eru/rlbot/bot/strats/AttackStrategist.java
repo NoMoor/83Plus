@@ -7,7 +7,6 @@ import com.eru.rlbot.bot.common.SupportRegions;
 import com.eru.rlbot.bot.common.Teams;
 import com.eru.rlbot.bot.main.ApolloGuidanceComputer;
 import com.eru.rlbot.bot.path.Path;
-import com.eru.rlbot.bot.plan.Marker;
 import com.eru.rlbot.bot.prediction.BallPrediction;
 import com.eru.rlbot.bot.prediction.BallPredictionUtil;
 import com.eru.rlbot.bot.prediction.CarLocationPredictor;
@@ -31,8 +30,6 @@ public class AttackStrategist extends Strategist {
     super(bot);
   }
 
-  private long index;
-
   @Override
   public boolean assign(DataPacket input) {
     if (tacticManager.isTacticLocked()) {
@@ -49,18 +46,13 @@ public class AttackStrategist extends Strategist {
       return true;
     }
 
-    Marker.get(input.serialNumber).markNext(input);
-
     tacticManager.setTactic(getTactic(input));
 
     return true;
   }
 
-  private int getPredictionIndex(int size) {
-    return (int) (index++ % size);
-  }
-
   private Tactic getTactic(DataPacket input) {
+
     // First hittable ball.
     Optional<BallPredictionUtil.ChallengeData> challengeDataOptional =
         BallPredictionUtil.get(input.car).getChallengeData();
@@ -148,12 +140,15 @@ public class AttackStrategist extends Strategist {
 
     if (potential.hasPlan()) {
       Path path = potential.getPath();
-      CarData car = path.getTarget();
-      Vector3 carToGoal = ownGoal.center.minus(car.position);
-      if (path.getTarget().orientation.getNoseVector().dot(carToGoal) > 0) {
-        double rightCorrectionAngle = Angles.flatCorrectionAngle(car, ownGoal.rightWide);
-        double leftCorrectionAngle = Angles.flatCorrectionAngle(car, ownGoal.leftWide);
-        return Math.abs(rightCorrectionAngle) < Math.abs(leftCorrectionAngle) ? ownGoal.rightWide : ownGoal.leftWide;
+
+      if (path != null) {
+        CarData car = path.getTarget();
+        Vector3 carToGoal = ownGoal.center.minus(car.position);
+        if (path.getTarget().orientation.getNoseVector().dot(carToGoal) > 0) {
+          double rightCorrectionAngle = Angles.flatCorrectionAngle(car, ownGoal.rightWide);
+          double leftCorrectionAngle = Angles.flatCorrectionAngle(car, ownGoal.leftWide);
+          return Math.abs(rightCorrectionAngle) < Math.abs(leftCorrectionAngle) ? ownGoal.rightWide : ownGoal.leftWide;
+        }
       }
 
       return opponentGoal.centerTop;

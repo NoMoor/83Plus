@@ -77,7 +77,10 @@ public class RotateStrategist extends Strategist {
 
   @Override
   public boolean isComplete(DataPacket input) {
-    return input.car.position.distance(Goal.ownGoal(input.car.team).center) < 3000;
+    Rotations rotations = Rotations.get(input);
+
+    return (input.car.position.distance(Goal.ownGoal(input.car.team).center) < 2000 || rotations.isLastManBack())
+        && !tacticManager.isTacticLocked();
   }
 
   @Override

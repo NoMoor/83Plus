@@ -1,6 +1,6 @@
 package com.eru.rlbot.bot.plan;
 
-import com.eru.rlbot.bot.common.Constants;
+import com.eru.rlbot.bot.common.Accels;
 import com.eru.rlbot.bot.path.PathPlanner;
 import com.eru.rlbot.bot.path.Plan;
 import com.eru.rlbot.bot.prediction.BallPrediction;
@@ -10,6 +10,7 @@ import com.eru.rlbot.bot.utils.StopWatch;
 import com.eru.rlbot.common.input.BallData;
 import com.eru.rlbot.common.input.CarData;
 import com.eru.rlbot.common.input.DataPacket;
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import org.apache.logging.log4j.LogManager;
@@ -23,6 +24,8 @@ public class Marker {
   private static final Logger logger = LogManager.getLogger("Marker");
 
   private static final ConcurrentHashMap<Integer, Marker> MARKERS = new ConcurrentHashMap<>();
+
+  private static final long MARKER_DEADLINE_NANOS = 5 * 1_000_000;
 
   private final int ownerBot;
   private volatile int index;
@@ -40,6 +43,7 @@ public class Marker {
   }
 
   public void mark(DataPacket input, int botIndex) {
+    long startNanos = System.nanoTime();
     StopWatch watch = StopWatch.start("Marker");
 
     CarData car = input.allCars.stream()
@@ -47,17 +51,22 @@ public class Marker {
         .findFirst()
         .orElseThrow(() -> new RuntimeException("Cannot find car."));
 
-    // Only plan for cars that are on the ground.
-    if (!car.hasWheelContact) {
-      return;
+    int predictionSlicesMarked = 0;
+    List<BallPrediction> predictions = BallPredictionUtil.get(ownerBot).getPredictions();
+    for (BallPrediction prediction : predictions) {
+      mark(prediction, car);
+      predictionSlicesMarked++;
+
+      long elapsedTime = System.nanoTime() - startNanos;
+      if (elapsedTime > MARKER_DEADLINE_NANOS) {
+        break;
+      }
     }
 
-    BallPredictionUtil.get(ownerBot).getPredictions().stream()
-        .limit((long) (BallPredictionUtil.PREDICTION_LIMIT * (ownerBot == botIndex ? .75 : .5)))
-        .forEach(ballPrediction -> mark(ballPrediction, car));
     double timeMs = watch.stop() * 1000;
+
     if (timeMs > 5) {
-      logger.debug("Marking for car {} done: {}", botIndex, String.format("%.2fms", timeMs));
+      logger.debug("Marked {} frames in {}", predictionSlicesMarked, String.format("%.2fms", timeMs));
     }
   }
 
@@ -65,7 +74,7 @@ public class Marker {
     BallData ball = ballPrediction.ball;
     BallPrediction.Potential potential = ballPrediction.forCar(car.serialNumber);
 
-    if (ball.position.distance(car.position) / Constants.BOOSTED_MAX_SPEED
+    if (Accels.minTimeToDistance(car, ball.position.distance(car.position)).time
         > ballPrediction.ball.time - car.elapsedSeconds) {
 
       // The ball is too far away to hit.

@@ -165,6 +165,10 @@ public class Moment {
       return this;
     }
 
+    public Builder setTime(double time) {
+      return setTime((float) time);
+    }
+
     public Builder setTime(float time) {
       this.time = time;
       return this;

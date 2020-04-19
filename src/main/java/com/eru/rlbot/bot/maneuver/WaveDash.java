@@ -73,10 +73,10 @@ public class WaveDash extends Maneuver {
       } else {
         output.withJump(jumpManager.canJumpAccelerate());
 
-        Matrix3 targetOrientation = targetOrientation(profile);
+        Orientation targetOrientation = Orientation.fromOrientationMatrix(targetOrientation(profile));
 
         CarData desiredCar = input.car.toBuilder()
-            .setOrientation(Orientation.fromOrientationMatrix(targetOrientation))
+            .setOrientation(targetOrientation)
             .build();
         botRenderer.renderHitBox(Color.MAGENTA, desiredCar);
 

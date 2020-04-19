@@ -133,7 +133,6 @@ public class DiagonalFlipCancel extends Maneuver {
       output
           .withBoost(boost)
           .withSlide();
-//      Angles3.setControlsForFlatLanding(input.car, output);
       Angles3.setControlsFor(input.car, Orientation.fromFlatVelocity(target.minus(input.car.position)), output);
     }
   }
