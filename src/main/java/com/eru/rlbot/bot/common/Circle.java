@@ -47,6 +47,13 @@ public final class Circle {
     return pointOnCircle(center, radius, radians);
   }
 
+  public static Vector2 pointOnCircle(Vector2 center, double radius, double radians) {
+    double x = center.x + (radius * Math.cos(radians));
+    double y = center.y + (radius * Math.sin(radians));
+
+    return Vector2.of(x, y);
+  }
+
   public static Vector3 pointOnCircle(Vector3 center, double radius, double radians) {
     double x = center.x + (radius * Math.cos(radians));
     double y = center.y + (radius * Math.sin(radians));

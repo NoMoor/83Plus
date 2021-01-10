@@ -122,7 +122,7 @@ public class PathTest {
         .addEarlierSegment(Segment.straight(startingCar.position, targetCar.position))
         .build();
 
-    straightPath.lockAndSegment();
+    straightPath.lockAndSegment(true);
   }
 
   @Test

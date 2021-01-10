@@ -17,12 +17,12 @@ public class AerialLookUp {
   private static final Logger logger = LogManager.getLogger("AerialLookUp");
 
   // Height rounded to nearest 50
-  private static TreeMap<Long, List<AerialInfo>> APEX_MAP = new TreeMap<>();
+  private static final TreeMap<Long, List<AerialInfo>> APEX_MAP = new TreeMap<>();
 
   /**
    * Maps from <boost,height> to a list of ways to get to that boost / height.
    */
-  private static Table<Long, Long, List<AerialInfo>> BOOST_HEIGHT_LOOKUP = HashBasedTable.create();
+  private static final Table<Long, Long, List<AerialInfo>> BOOST_HEIGHT_LOOKUP = HashBasedTable.create();
 
   public static final Vector3 FAST_AERIAL_VELOCITY = Vector3.of(0, 50, 690);
   public static double FAST_AERIAL_TIME = .25;
@@ -30,11 +30,13 @@ public class AerialLookUp {
   public static double AERIAL_EFFICIENCY = .25;
 
   static {
-    for (double r = .75; r <= Math.PI / 2; r += .1) {
-      for (int i = 5; i <= 100; i++) {
-        AerialInfo result = computeAerialResult(r, i);
+    if (false) {
+      for (double r = .75; r <= Math.PI / 2; r += .1) {
+        for (int i = 5; i <= 100; i++) {
+          AerialInfo result = computeAerialResult(r, i);
 
-        APEX_MAP.computeIfAbsent(toKey(result.height), (key) -> new ArrayList<>()).add(result);
+          APEX_MAP.computeIfAbsent(toKey(result.height), (key) -> new ArrayList<>()).add(result);
+        }
       }
     }
   }

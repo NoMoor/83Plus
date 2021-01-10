@@ -122,14 +122,14 @@ public class PathExecutor {
       Accels.AccelResult boostTime =
           Accels.boostedTimeToDistance(input.car.velocity.magnitude(), distanceDiff.magnitude());
 
-      if (boostTime.time > Path.LEAD_TIME) {
+      if (boostTime.getTime() > Path.LEAD_TIME) {
         output
             .withBoost(!input.car.isSupersonic)
             .withThrottle(1.0);
       } else {
         Accels.AccelResult accelTime = Accels.nonBoostedTimeToDistance(input.car.velocity.magnitude(), distanceDiff.magnitude());
 
-        double savings = timeToTarget - accelTime.time;
+        double savings = timeToTarget - accelTime.getTime();
         output.withThrottle((savings * 10) / Path.LEAD_TIME);
       }
     } else if (timeToTarget > Path.LEAD_TIME * .4) {

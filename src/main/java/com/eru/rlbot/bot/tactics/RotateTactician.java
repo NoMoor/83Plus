@@ -8,6 +8,7 @@ import com.eru.rlbot.bot.common.Constants;
 import com.eru.rlbot.bot.common.Goal;
 import com.eru.rlbot.bot.common.Teams;
 import com.eru.rlbot.bot.main.ApolloGuidanceComputer;
+import com.eru.rlbot.bot.maneuver.AirDribble;
 import com.eru.rlbot.bot.maneuver.Recover;
 import com.eru.rlbot.bot.maneuver.WallHelper;
 import com.eru.rlbot.bot.path.Path;
@@ -45,6 +46,11 @@ public class RotateTactician extends Tactician {
 
   @Override
   void internalExecute(DataPacket input, Controls output, Tactic tactic) {
+    if (false) {
+      delegateTo(new AirDribble());
+      return;
+    }
+
     Rotations rotations = Rotations.get(input);
     locked = input.car.boost < 20 && Teams.getTeamSize(input.car.team) > 1 && !rotations.isLastManBack();
 

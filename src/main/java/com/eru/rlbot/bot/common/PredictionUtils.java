@@ -36,7 +36,7 @@ public final class PredictionUtils {
 
       double distance = ballLocation.flatten().distance(input.car.position.flatten());
 
-      double timeToBall = Accels.minTimeToDistance(input.car, distance).time;
+      double timeToBall = Accels.minTimeToDistance(input.car, distance).getTime();
       float timeToPrediction = predictionSlice.gameSeconds() - input.car.elapsedSeconds;
 
       if (timeToBall < timeToPrediction) {

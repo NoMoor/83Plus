@@ -63,6 +63,10 @@ public class Orientation {
   }
 
   public static Orientation noseWithRoofBias(Vector3 noseVector, Vector3 roofBias) {
+    if (roofBias.isZero()) {
+      return noseAnyDirection(noseVector, roofBias.addY(1));
+    }
+
     noseVector = noseVector.normalize();
 
     Vector3 sideVector = noseVector.cross(roofBias);
@@ -75,10 +79,25 @@ public class Orientation {
     return Orientation.noseRoof(noseVector, roofVector);
   }
 
+  private static Orientation noseAnyDirection(Vector3 noseVector, Vector3 roofVector) {
+    Vector3 nose = noseVector.normalize();
+    Vector3 sideDoor = nose.cross(roofVector.toMagnitude(-1));
+    if (sideDoor.isZero()) {
+      sideDoor = nose.cross(roofVector.addX(.1).toMagnitude(-1));
+    }
+    Vector3 roofOrientation = nose.cross(sideDoor);
+    return Orientation.noseRoof(nose, roofOrientation);
+  }
+
   public static Orientation roofWithNoseBias(Vector3 roofVector, Vector3 noseBias) {
     roofVector = roofVector.normalize();
 
-    Vector3 sideVector = roofVector.cross(noseBias).toMagnitude(-1);
+    Vector3 sideVector = roofVector.cross(noseBias);
+    if (sideVector.isZero()) {
+      sideVector = roofVector.cross(roofVector.addX(.1));
+    }
+    sideVector = sideVector.toMagnitude(-1);
+
     Vector3 noseVector = roofVector.cross(sideVector);
     return Orientation.noseRoof(noseVector, roofVector);
   }

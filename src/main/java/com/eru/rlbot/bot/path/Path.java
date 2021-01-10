@@ -24,19 +24,19 @@ public class Path {
 
   private static final Logger logger = LogManager.getLogger("Path");
 
-  private ImmutableList<Segment> terseNodes;
+  private final ImmutableList<Segment> terseNodes;
   private ImmutableList<Segment> nodes;
   // Alternatively, we could move the target forward...
   private Segment extension;
 
   private final CarData start;
   private final CarData target;
-  private float targetTime;
+  private final float targetTime;
 
   private int currentIndex;
   private boolean isOffCourse;
 
-  private Map<Pair<Double, Double>, Plan> planMap = new HashMap<>();
+  private final Map<Pair<Double, Double>, Plan> planMap = new HashMap<>();
 
   private Path(CarData car, CarData targetCar, ImmutableList<Segment> nodes) {
     this.terseNodes = nodes;
@@ -178,7 +178,7 @@ public class Path {
 
   public static final class Builder {
 
-    private LinkedList<Segment> segments = new LinkedList<>();
+    private final LinkedList<Segment> segments = new LinkedList<>();
     private CarData startingCar;
     private CarData targetCar;
 
@@ -233,9 +233,9 @@ public class Path {
 
     // Need to break
     Accels.AccelResult breaking = Accels.distanceToSlow(start.velocity.magnitude(), targetBreakingSpeed);
-    double remainingDistance = length() - breaking.distance;
+    double remainingDistance = length() - breaking.getDistance();
     Accels.AccelResult striking = Accels.nonBoostedTimeToDistance(targetBreakingSpeed, remainingDistance);
-    double coastingTime = targetTime - breaking.time - striking.time;
+    double coastingTime = targetTime - breaking.getTime() - striking.getTime();
 
     // TODO: Account for jump time.
 
@@ -254,13 +254,13 @@ public class Path {
       targetBreakingSpeed = (minBreakingSpeed + maxBreakingSpeed) / 2;
 
       breaking = Accels.distanceToSlow(start.velocity.magnitude(), targetBreakingSpeed);
-      remainingDistance = length() - breaking.distance;
+      remainingDistance = length() - breaking.getDistance();
       striking = Accels.nonBoostedTimeToDistance(targetBreakingSpeed, remainingDistance);
-      coastingTime = targetTime - breaking.time - striking.time;
+      coastingTime = targetTime - breaking.getTime() - striking.getTime();
     }
 
     Plan.Builder planBuilder = Plan.builder().setPath(this);
-    double breakingTime = breaking.time;
+    double breakingTime = breaking.getTime();
     while (breakingTime > 0) {
       planBuilder.addThrottleInput(false, Plan.ControlInput.REVERSE);
       breakingTime -= STEP_SIZE;
@@ -271,15 +271,15 @@ public class Path {
       coastingTime -= STEP_SIZE;
     }
 
-    double accelerationTime = striking.time;
-    double boostUsed = striking.boost;
+    double accelerationTime = striking.getTime();
+    double boostUsed = striking.getBoost();
     while (accelerationTime > 0) {
       planBuilder.addThrottleInput(boostUsed > 0, 1);
       accelerationTime -= STEP_SIZE;
     }
 
     Plan plan = planBuilder
-        .setBoostUsed(striking.boost)
+        .setBoostUsed(striking.getBoost())
         .setTacticType(Tactic.TacticType.STRIKE)
         .build(targetTime);
 
@@ -578,7 +578,7 @@ public class Path {
     }
 
     Accels.AccelResult slowingDistance = Accels.distanceToSlow(currentVelocity, endSegmentSpeedTarget);
-    return slowingDistance.distance + SLOWING_BUFFER < segmentRemainingDistance;
+    return slowingDistance.getDistance() + SLOWING_BUFFER < segmentRemainingDistance;
   }
 
   public Segment getTerseSegment(DataPacket input) {
@@ -628,7 +628,7 @@ public class Path {
       return false;
     }
 
-    double slowingDistance = Accels.distanceToSlow(groundSpeed, goalSpeed).distance;
+    double slowingDistance = Accels.distanceToSlow(groundSpeed, goalSpeed).getDistance();
     return slowingDistance > 0 && slowingDistance + SLOWING_BUFFER > distance;
   }
 

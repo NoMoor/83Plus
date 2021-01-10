@@ -60,8 +60,8 @@ public class BotRenderer {
   private static final int SMOOTHING_INTERVAL = 5;
   private static final double FULL_CIRCLE = Math.PI * 2;
 
-  private static ConcurrentHashMap<Integer, BotRenderer> INSTANCES = new ConcurrentHashMap<>();
-  private static ThreadLocal<BotRenderer> INSTANCE = new ThreadLocal<>();
+  private static final ConcurrentHashMap<Integer, BotRenderer> INSTANCES = new ConcurrentHashMap<>();
+  private static final ThreadLocal<BotRenderer> INSTANCE = new ThreadLocal<>();
 
   private float initialIngameTime = 0;
   private long ingameTicks = 0;
@@ -69,8 +69,8 @@ public class BotRenderer {
   private long initialWallClockTime = 0;
   private float wallclockFps = 0;
   private int wallClockTicks = 0;
-  private LinkedList<Vector3> previousVelocities = new LinkedList<>();
-  private LinkedList<Float> previousVelocityTimes = new LinkedList<>();
+  private final LinkedList<Vector3> previousVelocities = new LinkedList<>();
+  private final LinkedList<Float> previousVelocityTimes = new LinkedList<>();
 
   private static final int TEXT_LIST_START_X = 300;
   private static final int TEXT_LIST_START_Y = 300;
@@ -125,7 +125,7 @@ public class BotRenderer {
     renderText(Color.ORANGE, 300, 150, 4, "State Setting Enabled");
   }
 
-  private static double VISUAL_OFFSET = 1.2;
+  private static final double VISUAL_OFFSET = 1.2;
 
   public void renderRotation(CarData car, int rotationNumber, boolean hasPriority) {
     Circle coverage = Circle.forPath(car.position, car.groundSpeed);
@@ -157,12 +157,70 @@ public class BotRenderer {
     renderText(Color.GREEN, car.position.addZ(100), String.format(format, args));
   }
 
+  public void renderAirDribble(CarData car, BallData ball) {
+    getRenderer().drawString3d("Air Dribble", Color.CYAN, car.position.addZ(50), 2, 2);
+
+    double radius = 100;
+
+    // ---------------------------------- Radial Top down view --------------------------------------------------
+
+    // Draw top-down view
+    Vector2 topDownCenter = Vector2.of(1750, 150);
+    ImmutableList<Vector2> topDownCircle = to2dCirclePoints(topDownCenter, radius);
+    for (Vector2 point : topDownCircle) {
+      getRenderer().drawRectangle2d(Color.CYAN, new Point((int) point.x, (int) point.y), 5, 5, true);
+    }
+
+
+    // ---------------------------------- Radial Right side view --------------------------------------------------
+
+    // Draw right-side view
+    Vector2 rightSideCenter = Vector2.of(1500, 150);
+    ImmutableList<Vector2> rightSide = to2dCirclePoints(rightSideCenter, radius);
+    for (Vector2 point : rightSide) {
+      getRenderer().drawRectangle2d(Color.MAGENTA, new Point((int) point.x, (int) point.y), 5, 5, true);
+    }
+
+    // ---------------------------------- Vertical bar chart --------------------------------------------------
+
+    // Draw vertical velocity
+    int ballVz = (int) ball.velocity.z;
+    int chartWidth = 50;
+    int chartAnchorY = 50;
+    int chartAnchorX = (1500 - 150 - chartWidth); // Left circle - spacing - width;
+    int barHeight = (ballVz / 5) + 100;
+    int barStartY = (int) (chartAnchorY + (radius * 2) - barHeight);
+    Color velocityColor = Math.abs(ballVz) < 100 ? Color.GREEN : Color.RED;
+
+    // Draw the legend
+    getRenderer().drawString2d("500", Color.WHITE, new Point(chartAnchorX - 50, chartAnchorY), 1, 1);
+    getRenderer().drawRectangle2d(Color.WHITE, new Point(chartAnchorX - 14, chartAnchorY), 5, 2, true);
+    getRenderer().drawString2d("0", Color.WHITE, new Point(chartAnchorX - 30, chartAnchorY + 90), 1, 1);
+    getRenderer().drawRectangle2d(Color.WHITE, new Point(chartAnchorX - 14, chartAnchorY + 98), 5, 2, true);
+    getRenderer().drawString2d("-500", Color.WHITE, new Point(chartAnchorX - 60, chartAnchorY + 190), 1, 1);
+    getRenderer().drawRectangle2d(Color.WHITE, new Point(chartAnchorX - 14, chartAnchorY + 200), 5, 2, true);
+
+    // Vertical bar
+    getRenderer().drawRectangle2d(Color.WHITE, new Point(chartAnchorX - 10, chartAnchorY), 2, 200, true);
+    getRenderer().drawRectangle2d(velocityColor, new Point(chartAnchorX, barStartY), chartWidth, barHeight, true);
+  }
+
+  private static final int TWOD_CIRCLE_POINTS = 100;
+
+  private ImmutableList<Vector2> to2dCirclePoints(Vector2 center, double radius) {
+    double radians = Math.PI * 2;
+    return IntStream.range(0, TWOD_CIRCLE_POINTS)
+        .mapToDouble(index -> index * radians / TWOD_CIRCLE_POINTS) // Map to angle radians
+        .mapToObj(nextRadian -> Circle.pointOnCircle(center, radius, nextRadian))
+        .collect(toImmutableList());
+  }
+
   private static class RenderRequest {
     private final float renderTimeEnd;
     private final Vector3 source;
     private final Vector3 target;
     private final Color color;
-    private String label;
+    private final String label;
 
     public RenderRequest(float renderTimeEnd, Vector3 source, Vector3 target, Color color, String label) {
       this.renderTimeEnd = renderTimeEnd;
@@ -227,7 +285,7 @@ public class BotRenderer {
     renderText(color, 500, 100, "Impact: %.2fs - Pressure: %.2fs", timeToTouch, timeToSecond - timeToTouch);
   }
 
-  private PriorityQueue<RenderRequest> renderRequests =
+  private final PriorityQueue<RenderRequest> renderRequests =
       new PriorityQueue<>(Comparator.comparingDouble(rr -> rr.renderTimeEnd));
 
   // TODO: Refactor this to put color first.
@@ -514,7 +572,7 @@ public class BotRenderer {
   }
 
   private float alertTimeSeconds;
-  private Color[] alertColors = {Color.PINK, Color.WHITE, Color.CYAN};
+  private final Color[] alertColors = {Color.PINK, Color.WHITE, Color.CYAN};
   private String alertText;
   private int alertColor;
 

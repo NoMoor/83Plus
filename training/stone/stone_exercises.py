@@ -1,7 +1,9 @@
+from stone.stone_shot_on_goal import Setup
+
 stone_exercises = [
     # Setup('Too Close for turning', ball_x=0, ball_y=100, car_x=120, car_y=-50),
 
-    # Setup('Stationary centered mid-field', ball_x=0, ball_y=100, car_y=-2200),
+    Setup('Stationary centered mid-field', ball_x=0, ball_y=100, car_y=-2200),
     # Setup('Stationary left mid-field', ball_x=400, ball_y=100, car_y=-2200),
     # Setup('Stationary car very close to ball', ball_y=100, car_y=-200),
     # Setup('Rolling away left mid-field', ball_x=400, ball_y=100, ball_vy=400, car_y=-2200),

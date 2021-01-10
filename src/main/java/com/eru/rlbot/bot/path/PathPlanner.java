@@ -95,7 +95,7 @@ public class PathPlanner {
 
       Vector3 position = makeGroundCar(orientation, moment);
       double speed = Accels.boostedTimeToDistance(
-          car.boost * .5, car.groundSpeed, Math.max(approachBall.magnitude() - 300, 0)).speed;
+          car.boost * .5, car.groundSpeed, Math.max(approachBall.magnitude() - 300, 0)).getSpeed();
       Vector3 velocity = approachBall.toMagnitude(speed);
 
       return Optional.of(CarData.builder()
@@ -142,8 +142,8 @@ public class PathPlanner {
     return Optional.of(intersectionCar);
   }
 
-  private static Matrix3 ccwRotation = Orientation.convert(0, -.26, 0).getOrientationMatrix();
-  private static Matrix3 cwRotation = Orientation.convert(0, .26, 0).getOrientationMatrix();
+  private static final Matrix3 ccwRotation = Orientation.convert(0, -.26, 0).getOrientationMatrix();
+  private static final Matrix3 cwRotation = Orientation.convert(0, .26, 0).getOrientationMatrix();
 
   private static Vector3 getFrontToBackAngle(Vector3 intersection, Circle circle, boolean isClockwise) {
     return intersection.minus(circle.center)

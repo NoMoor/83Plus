@@ -74,7 +74,7 @@ public class Marker {
     BallData ball = ballPrediction.ball;
     BallPrediction.Potential potential = ballPrediction.forCar(car.serialNumber);
 
-    if (Accels.minTimeToDistance(car, ball.position.distance(car.position)).time
+    if (Accels.minTimeToDistance(car, ball.position.distance(car.position)).getTime()
         > ballPrediction.ball.time - car.elapsedSeconds) {
 
       // The ball is too far away to hit.

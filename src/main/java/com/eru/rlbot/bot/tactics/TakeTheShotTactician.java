@@ -60,7 +60,10 @@ public class TakeTheShotTactician extends Tactician {
     } else if (!input.car.hasWheelContact) {
       delegateTo(new Recover(input.ball.position));
       return;
-    } else if ((path == null || path.isOffCourse() || BallPredictionUtil.get(input.car).wasTouched() || pathEndWithoutBall(path))
+    } else if ((path == null
+        || path.isOffCourse()
+        || BallPredictionUtil.get(input.car).wasTouched()
+        || pathEndWithoutBall(path))
         && input.car.hasWheelContact)
     // Do not re-plan once we have jumped.
     {

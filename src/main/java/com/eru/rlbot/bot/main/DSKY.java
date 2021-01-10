@@ -7,6 +7,7 @@ import com.eru.rlbot.bot.flags.PerBotDebugOptions;
 import com.eru.rlbot.common.Pair;
 import com.eru.rlbot.common.StateLogger;
 import com.eru.rlbot.common.util.BuildInfo;
+import com.eru.rlbot.testing.eval.EvalGui;
 import com.google.common.base.Preconditions;
 import java.awt.Color;
 import java.awt.Dimension;
@@ -139,6 +140,13 @@ public class DSKY {
     }
 
     frame.getJMenuBar().add(Box.createHorizontalGlue());
+
+    JMenu evalMenu = new JMenu("Eval");
+    JMenuItem evalButton = new JMenuItem("Eval");
+    evalButton.addActionListener(e -> EvalGui.show());
+    evalMenu.add(evalButton);
+    frame.getJMenuBar().add(evalMenu);
+
     frame.getJMenuBar().add(versionMenu);
   }
 

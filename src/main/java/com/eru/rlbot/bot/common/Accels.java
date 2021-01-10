@@ -9,6 +9,7 @@ import com.eru.rlbot.common.input.CarData;
 import com.eru.rlbot.common.input.Orientation;
 import com.eru.rlbot.common.jump.JumpManager;
 import com.eru.rlbot.common.vector.Vector3;
+import com.google.auto.value.AutoValue;
 import com.google.common.base.Preconditions;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
@@ -61,7 +62,7 @@ public class Accels {
       t -= STEP_SIZE;
     }
 
-    return new AccelResult(velocity, t, initialDistance, 0);
+    return AccelResult.create(velocity, t, initialDistance, 0);
   }
 
   /** Returns the time to travel the given distance using unlimited boost. */
@@ -79,7 +80,7 @@ public class Accels {
       t += STEP_SIZE;
       boostUsed += Constants.BOOST_RATE / STEP_SIZE;
     }
-    return new AccelResult(velocity, t, initialDistance, boostUsed);
+    return AccelResult.create(velocity, t, initialDistance, boostUsed);
   }
 
   /** Returns the time to travel the given distance using unlimited boost. */
@@ -100,7 +101,7 @@ public class Accels {
         boost -= STEP_SIZE * 33;
       }
     }
-    return new AccelResult(velocity, t, initialDistance, initialBoost - boost);
+    return AccelResult.create(velocity, t, initialDistance, initialBoost - boost);
   }
 
   /** The amount of time needed to get to a given height or Optional.empty. */
@@ -186,7 +187,7 @@ public class Accels {
       currentVelocity -= Constants.BREAKING_DECELERATION * STEP_SIZE;
       time += STEP_SIZE;
     }
-    return new AccelResult(finalVelocity, time, d, 0);
+    return AccelResult.create(finalVelocity, time, d, 0);
   }
 
   public static AccelResult accelerateForTime(double initialVelocity, double initialTime, double initialBoost) {
@@ -207,7 +208,7 @@ public class Accels {
         boostRemaining -= STEP_SIZE * Constants.BOOST_RATE;
       }
     }
-    return new AccelResult(currentVelocity, initialTime, distanceTraveled, initialBoost - boostRemaining);
+    return AccelResult.create(currentVelocity, initialTime, distanceTraveled, initialBoost - boostRemaining);
   }
 
   // TODO: Change to AccelResult.
@@ -242,17 +243,19 @@ public class Accels {
   /**
    * The result of an acceleration simulation.
    */
-  public static class AccelResult {
-    public final double distance;
-    public final double speed;
-    public final double time;
-    public final double boost;
+  @AutoValue
+  public static abstract class AccelResult {
 
-    private AccelResult(double speed, double time, double distance, double boost) {
-      this.speed = speed;
-      this.time = time;
-      this.distance = distance;
-      this.boost = boost;
+    public abstract double getDistance();
+
+    public abstract double getSpeed();
+
+    public abstract double getTime();
+
+    public abstract double getBoost();
+
+    public static AccelResult create(double newDistance, double newSpeed, double newTime, double newBoost) {
+      return new AutoValue_Accels_AccelResult(newDistance, newSpeed, newTime, newBoost);
     }
   }
 

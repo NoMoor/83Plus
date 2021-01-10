@@ -32,7 +32,7 @@ public class RotateStrategist extends Strategist {
     double distanceToGoal = input.car.position.distance(ownGoal.center);
     Accels.AccelResult estimatedTimeToGoal =
         Accels.boostedTimeToDistance(input.car.boost, input.car.groundSpeed, distanceToGoal);
-    double timeAtArrival = input.car.elapsedSeconds + estimatedTimeToGoal.time;
+    double timeAtArrival = input.car.elapsedSeconds + estimatedTimeToGoal.getTime();
     BallData ballAtArrival = BallPredictionUtil.get(input.car).getPredictions().stream()
         .filter(ballPrediction -> ballPrediction.ball.time > timeAtArrival)
         .findFirst()

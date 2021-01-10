@@ -260,14 +260,14 @@ public class AerialTactician extends Tactician {
 
     // Max distance on the (ground + distance in the air) / time
     double maxHorizontalDistance
-        = (maxAccelResult.distance + (maxAccelResult.speed * jumpTime) + aerialInfo.horizontalTravel);
+        = (maxAccelResult.getDistance() + (maxAccelResult.getSpeed() * jumpTime) + aerialInfo.horizontalTravel);
 
     // If we have time before we have to jump
     // And the distance we would have to travel on the ground is travelable
     // and we have enough boost to get there.
     return timeToJump > 0
         && maxHorizontalDistance > oneTurn.length()
-        && car.boost >= aerialInfo.boostUsed + maxAccelResult.boost;
+        && car.boost >= aerialInfo.boostUsed + maxAccelResult.getBoost();
   }
 
   private static Optional<Plan> inAirPlanning(CarData car, BallData ball) {
@@ -286,7 +286,7 @@ public class AerialTactician extends Tactician {
     return Optional.empty();
   }
 
-  private boolean freestyle = false;
+  private final boolean freestyle = false;
 
   private void humanExecution(DataPacket input, Controls output, FlightPlan plan, FlightLog second) {
 

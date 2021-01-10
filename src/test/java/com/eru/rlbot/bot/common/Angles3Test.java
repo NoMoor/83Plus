@@ -42,7 +42,7 @@ public class Angles3Test {
 
     Controls output = Controls.create();
 
-    Angles3.setControlsFor(car, target, output);
+    Angles3.setControlsFor(car, Orientation.fromOrientationMatrix(target), output);
 
     assertThat("Pitch", (double) output.getPitch(), is(closeTo(-1.0, .01)));
     assertThat("Roll", (double) output.getRoll(), is(closeTo(0.0, .01)));
@@ -66,7 +66,7 @@ public class Angles3Test {
 
     Controls output = Controls.create();
 
-    Angles3.setControlsFor(car, target, output);
+    Angles3.setControlsFor(car, Orientation.fromOrientationMatrix(target), output);
 
     assertThat("Pitch", (double) output.getPitch(), is(closeTo(0.0, .01)));
     assertThat("Roll", (double) output.getRoll(), is(closeTo(0.0, .01)));
@@ -90,7 +90,7 @@ public class Angles3Test {
 
     Controls output = Controls.create();
 
-    Angles3.setControlsFor(car, target, output);
+    Angles3.setControlsFor(car, Orientation.fromOrientationMatrix(target), output);
 
     assertThat("Pitch", (double) output.getPitch(), is(closeTo(0.0, .01)));
     assertThat("Roll", (double) output.getRoll(), is(closeTo(-.96, .01))); //???
@@ -114,7 +114,7 @@ public class Angles3Test {
 
     Controls output = Controls.create();
 
-    Angles3.setControlsFor(car, target, output);
+    Angles3.setControlsFor(car, Orientation.fromOrientationMatrix(target), output);
 
     assertThat("Pitch", (double) output.getPitch(), is(closeTo(0.0, .01)));
     assertThat("Roll", (double) output.getRoll(), is(closeTo(1, .01)));
@@ -137,7 +137,7 @@ public class Angles3Test {
 
     Controls output = Controls.create();
 
-    Angles3.setControlsFor(car, target, output);
+    Angles3.setControlsFor(car, Orientation.fromOrientationMatrix(target), output);
 
     assertThat("Pitch", (double) output.getPitch(), is(closeTo(0.0, .01)));
     assertThat("Roll", (double) output.getRoll(), is(closeTo(0.0, .01)));
@@ -160,7 +160,7 @@ public class Angles3Test {
 
     Controls output = Controls.create();
 
-    Angles3.setControlsFor(car, target, output);
+    Angles3.setControlsFor(car, Orientation.fromOrientationMatrix(target), output);
 
     assertThat("Pitch", (double) output.getPitch(), is(closeTo(1.0, .01)));
     assertThat("Roll", (double) output.getRoll(), is(closeTo(.3, .01)));
