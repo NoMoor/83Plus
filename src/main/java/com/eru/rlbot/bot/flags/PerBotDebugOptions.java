@@ -17,7 +17,7 @@ public final class PerBotDebugOptions {
   private volatile boolean renderCarTrails;
   private volatile boolean renderBallPrediction;
 
-  private volatile boolean immobilizeCar;
+  private volatile boolean immobilizeCar = true;
   private volatile boolean prerenderNextFrame;
   private volatile boolean renderCarPredictions;
   private volatile boolean renderRotations;

@@ -164,13 +164,14 @@ public class AttackStrategist extends Strategist {
 
   @Override
   public Strategy.Type getDelegate() {
-    return Strategy.Type.ROTATE;
+    return Strategy.Type.ATTACK;
   }
 
   @Override
   public boolean isComplete(DataPacket input) {
+    // TODO: Don't bail on a kickoff.
     Rotations rotations = Rotations.get(input);
 
-    return !CarBall.ballIsUpfield(input) || rotations.isLastManBack();
+    return !CarBall.ballIsUpfield(input) || rotations.isLastManBack() || !tacticManager.hasTactic();
   }
 }

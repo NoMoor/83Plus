@@ -101,7 +101,7 @@ public class Rotations {
   public boolean isLastManBack() {
     switch (teamSize) {
       case 1:
-        return one.serialNumber == playerIndex;
+        return false;
       case 2:
         return two.serialNumber == playerIndex;
       case 3:

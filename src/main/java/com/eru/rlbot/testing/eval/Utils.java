@@ -17,7 +17,8 @@ public class Utils {
     return new BallState()
         .withPhysics(new PhysicsState()
             .withLocation(Vector3.of(ball.getPos(0), ball.getPos(1), ball.getPos(2)).toDesired())
-            .withVelocity(Vector3.of(ball.getVel(0), ball.getVel(1), ball.getVel(2)).toDesired()));
+            .withVelocity(Vector3.of(ball.getVel(0), ball.getVel(1), ball.getVel(2)).toDesired())
+            .withAngularVelocity(Vector3.zero().toDesired()));
   }
 
   public static CarState toDesired(ScenarioProtos.Scenario.CarState car) {

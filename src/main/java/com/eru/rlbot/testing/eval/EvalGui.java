@@ -8,8 +8,11 @@ import com.eru.rlbot.common.ScenarioProtos.Scenario;
 import com.eru.rlbot.common.ScenarioProtos.Suite;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
+import com.google.flatbuffers.FlatBufferBuilder;
 import com.google.protobuf.util.JsonFormat;
+import java.awt.Color;
 import java.awt.Dimension;
+import java.awt.Point;
 import java.awt.event.ActionEvent;
 import java.io.BufferedReader;
 import java.io.File;
@@ -19,8 +22,8 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Optional;
 import java.util.Timer;
 import java.util.TimerTask;
 import javax.swing.BoxLayout;
@@ -42,6 +45,8 @@ import org.apache.logging.log4j.Logger;
 import rlbot.cppinterop.RLBotDll;
 import rlbot.cppinterop.RLBotInterfaceException;
 import rlbot.gamestate.GameState;
+import rlbot.render.RenderPacket;
+import rlbot.render.Renderer;
 
 /**
  * A GUI to create and execute unit test suites for a bot.
@@ -56,8 +61,10 @@ public class EvalGui {
 
   private static final Logger log2Console = LogManager.getLogger("EvalGuiConsole");
 
-  private static final List<Scenario> scenarioLibrary = new ArrayList<>();
-  private static final List<Suite> suiteLibrary = new ArrayList<>();
+  private static final EvalRenderer evalRenderer = new EvalRenderer();
+
+  private static final LinkedHashMap<Long, Scenario> scenarioLibrary = new LinkedHashMap<>();
+  private static final LinkedHashMap<Long, Suite> suiteLibrary = new LinkedHashMap<>();
 
   private static SpinnerNumberModel bvxModel;
   private static SpinnerNumberModel bxModel;
@@ -91,7 +98,6 @@ public class EvalGui {
   private static JButton removeSuiteScenarioButton;
   private static JButton addSuiteScenarioButton;
   private static SpinnerNumberModel timeoutModel;
-  private static boolean evalRunning;
   private static Timer evalTimer;
 
   // Table
@@ -113,7 +119,7 @@ public class EvalGui {
 
       @Override
       public Object getValueAt(int row, int column) {
-        Suite suite = suiteLibrary.get(row);
+        Suite suite = Iterables.get(suiteLibrary.values(), row);
 
         switch (column) {
           case 0:
@@ -122,7 +128,9 @@ public class EvalGui {
             return suite.getName();
           case 2:
           default:
-            return String.valueOf(suite.getEntriesCount());
+            long enabledEntries = suite.getEntriesList().stream().filter(Suite.Entry::getEnabled).count();
+            long entryCount = suite.getEntriesCount();
+            return (enabledEntries != entryCount) ? String.format("%d/%d", enabledEntries, entryCount) : entryCount;
         }
       }
     };
@@ -200,11 +208,7 @@ public class EvalGui {
             return String.valueOf(suiteEntry.getScenarioId());
           default:
           case 2:
-            return scenarioLibrary.stream()
-                .filter(scenario -> scenario.getId() == suiteEntry.getScenarioId())
-                .findFirst()
-                .map(Scenario::getName)
-                .orElse("<Unknown>");
+            return scenarioLibrary.get(suiteEntry.getScenarioId()).getName();
         }
       }
 
@@ -221,15 +225,12 @@ public class EvalGui {
             return;
           default:
           case 2:
-            Optional<Scenario> scenarioOptional = scenarioLibrary.stream()
-                .filter(scenario -> scenario.getId() == suiteEntry.getScenarioId())
-                .findFirst();
+            Scenario scenario = getScenario(suiteEntry);
 
-            if (!scenarioOptional.isPresent()) {
+            if (scenario == null) {
               return;
             }
 
-            Scenario scenario = scenarioOptional.get();
             updateScenario(scenario.toBuilder().setName((String) value).build());
         }
       }
@@ -268,7 +269,7 @@ public class EvalGui {
         Suite.Entry entry = selectedSuite.getEntries(index);
 
         int associatedScenarioIndex =
-            Iterables.indexOf(scenarioLibrary, scenario -> scenario.getId() == entry.getScenarioId());
+            Iterables.indexOf(scenarioLibrary.values(), scenario -> scenario.getId() == entry.getScenarioId());
         scenarioLibraryTable.getSelectionModel().setSelectionInterval(associatedScenarioIndex, associatedScenarioIndex);
       }
     });
@@ -327,7 +328,7 @@ public class EvalGui {
 
       @Override
       public String getValueAt(int row, int column) {
-        Scenario scenario = scenarioLibrary.get(row);
+        Scenario scenario = Iterables.get(scenarioLibrary.values(), row);
 
         switch (column) {
           case 0:
@@ -387,7 +388,7 @@ public class EvalGui {
   }
 
   private static void updateScenario(Scenario scenario) {
-    int index = Iterables.indexOf(scenarioLibrary, entry -> entry.getId() == scenario.getId());
+    int index = Iterables.indexOf(scenarioLibrary.values(), entry -> entry.getId() == scenario.getId());
     if (index == -1) {
       return;
     }
@@ -398,8 +399,7 @@ public class EvalGui {
 
     Scenario selectedScenario = getSelectedScenario();
 
-    scenarioLibrary.remove(index);
-    scenarioLibrary.add(index, scenario);
+    scenarioLibrary.put(scenario.getId(), scenario);
 
     if (suiteScenarioIndex != -1) {
       suiteScenarioTable.getSelectionModel().setSelectionInterval(suiteScenarioIndex, suiteScenarioIndex);
@@ -436,7 +436,7 @@ public class EvalGui {
 
   private static Suite getSelectedSuite() {
     int selectedRow = getSelectedSuiteIndex();
-    return selectedRow == -1 ? null : suiteLibrary.get(selectedRow);
+    return selectedRow == -1 ? null : Iterables.get(suiteLibrary.values(), selectedRow);
   }
 
   private static void updateSuiteScenarioButtonStates() {
@@ -449,7 +449,7 @@ public class EvalGui {
 
   private static Scenario getSelectedScenario() {
     int selection = scenarioLibraryTable.getSelectionModel().getAnchorSelectionIndex();
-    return selection == -1 ? null : scenarioLibrary.get(selection);
+    return selection == -1 ? null : Iterables.get(scenarioLibrary.values(), selection);
   }
 
   private static int getSelectedSuiteScenarioIndex() {
@@ -469,25 +469,21 @@ public class EvalGui {
   }
 
   private static void addSuite(Suite suite) {
-    suiteLibrary.add(suite);
+    suiteLibrary.put(suite.getId(), suite);
     suiteLibraryTableModel.fireTableDataChanged();
     writeToFile();
   }
 
   private static void removeSuite(int index) {
-    suiteLibrary.remove(index);
+    suiteLibrary.remove(Iterables.get(suiteLibrary.values(), index).getId());
     suiteLibraryTableModel.fireTableDataChanged();
     writeToFile();
   }
 
   private static void updateSuite(Suite updatedSuite) {
-    int updatedIndex = Iterables.indexOf(suiteLibrary, suite -> suite.getId() == updatedSuite.getId());
-    if (updatedIndex == -1) {
-      suiteLibrary.add(updatedSuite);
-    } else {
-      suiteLibrary.remove(updatedIndex);
-      suiteLibrary.add(updatedIndex, updatedSuite);
-    }
+    int updatedIndex = Iterables.indexOf(suiteLibrary.values(), suite -> suite.getId() == updatedSuite.getId());
+
+    suiteLibrary.put(updatedSuite.getId(), updatedSuite);
     suiteLibraryTableModel.fireTableDataChanged();
 
     suiteLibraryTable.getSelectionModel().setSelectionInterval(updatedIndex, updatedIndex);
@@ -513,8 +509,10 @@ public class EvalGui {
   }
 
   private static volatile ImmutableList<Suite.Entry> evalList;
+  private static volatile List<Boolean> evalResultList;
   private static volatile int currentIndex = 0;
   private static volatile float startTime = 0;
+  private static volatile int longestScenarioName = 0;
   private static boolean needsStart;
 
   private static void doEval() {
@@ -523,29 +521,28 @@ public class EvalGui {
     Suite selectedSuite = getSelectedSuite();
 
     // Check that the list of ones to run is the same.
-    if (evalList == null) {
-      evalList = selectedSuite.getEntriesList()
-          .stream()
-          .filter(Suite.Entry::getEnabled)
-          .collect(toImmutableList());
-      needsStart = true;
-    } else {
-      ImmutableList<Suite.Entry> newEvalList = selectedSuite.getEntriesList()
-          .stream()
-          .filter(Suite.Entry::getEnabled)
-          .collect(toImmutableList());
+    ImmutableList<Suite.Entry> newEvalList = selectedSuite.getEntriesList()
+        .stream()
+        .filter(Suite.Entry::getEnabled)
+        .collect(toImmutableList());
 
-      if (!evalList.equals(newEvalList)) {
-        evalList = newEvalList;
-        currentIndex = 0;
-        needsStart = true;
-      }
+    if (evalList == null || !evalList.equals(newEvalList)) {
+      evalList = newEvalList;
+      evalResultList = new ArrayList<>(evalList.size());
+      currentIndex = 0;
+      needsStart = true;
+
+      longestScenarioName = evalList.stream()
+          .map(Suite.Entry::getScenarioId)
+          .map(scenarioLibrary::get)
+          .map(Scenario::getName)
+          .mapToInt(String::length)
+          .max()
+          .orElse(0);
     }
 
     Suite.Entry currentEntry = evalList.get(currentIndex);
-    Scenario scenario = scenarioLibrary.stream()
-        .filter(scenarioCandidate -> scenarioCandidate.getId() == currentEntry.getScenarioId()).findFirst()
-        .orElse(null);
+    Scenario scenario = getScenario(currentEntry);
 
     boolean isScenarioDone = false;
     if (scenario == null) {
@@ -564,7 +561,7 @@ public class EvalGui {
 
       // Check Timer
       if (startTime + (scenario.getTimeOutMs() / 1000.0f) <= getCurrentGameTime()) {
-        // TODO: Fail
+        evalResultList.add(Boolean.FALSE);
         isScenarioDone = true;
       }
     }
@@ -572,7 +569,42 @@ public class EvalGui {
     if (isScenarioDone) {
       currentIndex = (currentIndex + 1) % evalList.size();
       needsStart = true;
+
+      if (currentIndex == 0) {
+        evalResultList.clear();
+      }
     }
+
+    renderEval();
+  }
+
+  private static void renderEval() {
+    evalRenderer.initTick();
+
+    for (int i = 0; i < evalList.size(); i++) {
+      Suite.Entry entry = evalList.get(i);
+
+      Scenario scenario = getScenario(entry);
+      if (scenario == null) {
+        continue;
+      }
+
+      int y = i * 25;
+      evalRenderer.render2dText(Color.gray, 0, y, scenario.getName());
+
+      int startX = longestScenarioName * 30;
+      if (evalResultList.size() <= i) {
+        evalRenderer.render2dText(Color.yellow, startX, y, "-");
+      } else {
+        evalRenderer.render2dText(evalResultList.get(i) ? Color.green : Color.red, startX, y, evalResultList.get(i) ? "Pass" : "Fail");
+      }
+    }
+
+    evalRenderer.sendData();
+  }
+
+  private static Scenario getScenario(Suite.Entry entry) {
+    return scenarioLibrary.get(entry.getScenarioId());
   }
 
   private static float lastTimeSeen = 0;
@@ -742,7 +774,7 @@ public class EvalGui {
     cYawModel = new SpinnerNumberModel(0, -Math.PI, Math.PI, Math.PI / 4);
     JSpinner cyawspinner = new JSpinner(cYawModel);
 
-    JLabel crolllabel = new JLabel("Car vZ");
+    JLabel crolllabel = new JLabel("Car roll");
     cRollModel = new SpinnerNumberModel(0, -Math.PI, Math.PI, Math.PI / 4);
     JSpinner crollspinner = new JSpinner(cRollModel);
     carOr.add(cpitchlabel);
@@ -775,10 +807,12 @@ public class EvalGui {
 
     JButton createButton = new JButton("Create");
     createButton.addActionListener(e -> {
-      scenarioLibrary.add(fromFields()
-          .setId(nextScenarioId())
-          .setCreated(System.currentTimeMillis())
-          .build());
+      long nextId = nextScenarioId();
+      scenarioLibrary.put(nextId,
+          fromFields()
+              .setId(nextId)
+              .setCreated(System.currentTimeMillis())
+              .build());
       scenarioLibraryTableModel.fireTableDataChanged();
       writeToFile();
     });
@@ -788,11 +822,12 @@ public class EvalGui {
       int selectedRow = scenarioLibraryTable.getSelectedRow();
 
       if (selectedRow != -1) {
-        Scenario oldScenario = scenarioLibrary.remove(selectedRow);
+        Scenario oldScenario = Iterables.get(scenarioLibrary.values(), selectedRow);
         Scenario scenario = fromFields().setId(oldScenario.getId())
             .setUpdated(System.currentTimeMillis())
             .build();
-        scenarioLibrary.add(selectedRow, scenario);
+
+        scenarioLibrary.put(scenario.getId(), scenario);
         scenarioLibraryTableModel.fireTableDataChanged();
         suiteScenarioTableModel.fireTableDataChanged();
         scenarioLibraryTable.getSelectionModel().setSelectionInterval(selectedRow, selectedRow);
@@ -844,14 +879,14 @@ public class EvalGui {
   }
 
   private static long nextSuiteId() {
-    return suiteLibrary.stream()
+    return suiteLibrary.values().stream()
         .mapToLong(Suite::getId)
         .max()
         .orElse(-1L) + 1;
   }
 
   private static long nextSuiteEntyId() {
-    return suiteLibrary.stream()
+    return suiteLibrary.values().stream()
         .map(Suite::getEntriesList)
         .flatMap(Collection::stream)
         .mapToLong(Suite.Entry::getId)
@@ -859,7 +894,7 @@ public class EvalGui {
   }
 
   private static long nextScenarioId() {
-    return scenarioLibrary.stream()
+    return scenarioLibrary.values().stream()
         .mapToLong(Scenario::getId)
         .max()
         .orElse(-1L) + 1;
@@ -873,8 +908,9 @@ public class EvalGui {
     try (BufferedReader reader = new BufferedReader(new FileReader(fileName))) {
       ScenarioProtos.EvalLibrary.Builder builder = ScenarioProtos.EvalLibrary.newBuilder();
       JsonFormat.parser().merge(reader, builder);
-      scenarioLibrary.addAll(builder.getScenariosList());
-      suiteLibrary.addAll(builder.getSuitesList());
+
+      builder.getScenariosList().forEach(scenario -> scenarioLibrary.put(scenario.getId(), scenario));
+      builder.getSuitesList().forEach(suite -> suiteLibrary.put(suite.getId(), suite));
     } catch (IOException e) {
       e.printStackTrace();
     }
@@ -892,8 +928,8 @@ public class EvalGui {
     String fileName = folderName + FILE_NAME + ".dat";
 
     ScenarioProtos.EvalLibrary evalLibrary = ScenarioProtos.EvalLibrary.newBuilder()
-        .addAllScenarios(scenarioLibrary)
-        .addAllSuites(suiteLibrary)
+        .addAllScenarios(scenarioLibrary.values())
+        .addAllSuites(suiteLibrary.values())
         .build();
 
     try (PrintWriter printWriter = new PrintWriter(new FileWriter(fileName))) {
@@ -906,5 +942,38 @@ public class EvalGui {
   @SuppressWarnings("ResultOfMethodCallIgnored")
   private static void ensureFolderExists(String folderName) {
     new File(folderName).mkdirs();
+  }
+
+  private static class EvalRenderer extends Renderer {
+
+    // The offset in render group index to not collide with the cars.
+    private static final int EVAL_RENDERER_OFFSET = 65;
+
+    // Non-static members.
+    private RenderPacket previousPacket;
+
+    private EvalRenderer() {
+      super(EVAL_RENDERER_OFFSET);
+    }
+
+    private void initTick() {
+      builder = new FlatBufferBuilder(1000);
+    }
+
+    private void sendData() {
+      RenderPacket packet = doFinishPacket();
+      if (!packet.equals(previousPacket)) {
+        RLBotDll.sendRenderPacket(packet);
+        previousPacket = packet;
+      }
+    }
+
+    boolean isInitialized() {
+      return builder != null;
+    }
+
+    public void render2dText(Color color, int x, int y, String text) {
+      drawString2d(text, color, new Point(x, y), 2, 2);
+    }
   }
 }
