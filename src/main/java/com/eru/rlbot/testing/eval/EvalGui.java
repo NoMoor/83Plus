@@ -1,13 +1,18 @@
 package com.eru.rlbot.testing.eval;
 
 import com.eru.rlbot.bot.common.Constants;
-import com.eru.rlbot.common.input.BallData;
-import com.eru.rlbot.common.input.CarData;
-import com.eru.rlbot.common.input.Orientation;
-import com.eru.rlbot.common.vector.Vector3;
+import com.eru.rlbot.common.ScenarioProtos;
+import com.google.protobuf.util.JsonFormat;
 import java.awt.Dimension;
 import java.awt.event.ActionEvent;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.PrintWriter;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
@@ -22,15 +27,17 @@ import javax.swing.ListSelectionModel;
 import javax.swing.SpinnerNumberModel;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.table.DefaultTableModel;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import rlbot.cppinterop.RLBotDll;
-import rlbot.gamestate.BallState;
-import rlbot.gamestate.CarState;
 import rlbot.gamestate.GameState;
-import rlbot.gamestate.PhysicsState;
 
 public class EvalGui {
 
-  private static final List<Scenario> scenarios = new ArrayList<>();
+  private static final Logger log2Console = LogManager.getLogger("EvalGuiConsole");
+
+  private static final List<ScenarioProtos.Scenario> scenarioLibrary = new ArrayList<>();
+
   private static DefaultTableModel tableModel;
 
   private static SpinnerNumberModel bvxModel;
@@ -68,23 +75,26 @@ public class EvalGui {
     tableModel = new DefaultTableModel() {
       @Override
       public int getRowCount() {
-        return scenarios.size();
+        return scenarioLibrary.size();
       }
 
       @Override
-      public Object getValueAt(int row, int column) {
-        Scenario scenario = scenarios.get(row);
+      public String getValueAt(int row, int column) {
+        ScenarioProtos.Scenario scenario = scenarioLibrary.get(row);
 
         switch (column) {
           case 0:
-            return scenario.getName();
+            return String.valueOf(scenario.getId());
           case 1:
+            return scenario.getName();
+          case 2:
           default:
-            return scenario.getBall().toCsv();
+            return Utils.toString(scenario.getBall());
         }
       }
     };
 
+    tableModel.addColumn("Scenario #");
     tableModel.addColumn("Scenario Name");
     tableModel.addColumn("Ball Info");
     scenarioTable.setModel(tableModel);
@@ -113,21 +123,12 @@ public class EvalGui {
       return;
     }
 
-    Scenario scenario = scenarios.get(selection);
+    ScenarioProtos.Scenario scenario = scenarioLibrary.get(selection);
 
     // TODO: Have a timeout and title rendering.
     RLBotDll.setGameState(new GameState()
-        .withBallState(new BallState()
-            .withPhysics(new PhysicsState()
-                .withLocation(scenario.getBall().position.toDesired())
-                .withVelocity(scenario.getBall().velocity.toDesired())))
-        .withCarState(0, new CarState()
-            .withBoostAmount((float) scenario.getCar().boost)
-            .withPhysics(new PhysicsState()
-                .withLocation(scenario.getCar().position.toDesired())
-                .withVelocity(scenario.getCar().velocity.toDesired())
-                .withAngularVelocity(scenario.getCar().angularVelocity.toDesired())
-                .withRotation(scenario.getCar().orientation.toEuclidianVector())))
+        .withBallState(Utils.toDesired(scenario.getBall()))
+        .withCarState(0, Utils.toDesired(scenario.getCar(0)))
         .buildPacket());
   }
 
@@ -142,25 +143,27 @@ public class EvalGui {
       return;
     }
 
-    Scenario scenario = scenarios.get(selection);
+    ScenarioProtos.Scenario scenario = scenarioLibrary.get(selection);
     nameField.setText(scenario.getName());
-    bxModel.setValue(scenario.getBall().position.x);
-    byModel.setValue(scenario.getBall().position.y);
-    bzModel.setValue(scenario.getBall().position.z);
-    bvxModel.setValue(scenario.getBall().velocity.x);
-    bvyModel.setValue(scenario.getBall().velocity.y);
-    bvzModel.setValue(scenario.getBall().velocity.z);
+    bxModel.setValue(scenario.getBall().getPos(0));
+    byModel.setValue(scenario.getBall().getPos(1));
+    bzModel.setValue(scenario.getBall().getPos(2));
+    bvxModel.setValue(scenario.getBall().getVel(0));
+    bvyModel.setValue(scenario.getBall().getVel(1));
+    bvzModel.setValue(scenario.getBall().getVel(2));
 
-    cxModel.setValue(scenario.getCar().position.x);
-    cyModel.setValue(scenario.getCar().position.y);
-    czModel.setValue(scenario.getCar().position.z);
-    cvxModel.setValue(scenario.getCar().velocity.x);
-    cvyModel.setValue(scenario.getCar().velocity.y);
-    cvzModel.setValue(scenario.getCar().velocity.z);
-    cPitchModel.setValue(scenario.getCar().orientation.toEuclidianVector().pitch);
-    cYawModel.setValue(scenario.getCar().orientation.toEuclidianVector().yaw);
-    cRollModel.setValue(scenario.getCar().orientation.toEuclidianVector().roll);
-    boostModel.setValue(scenario.getCar().boost);
+    cxModel.setValue(scenario.getCar(0).getPos(0));
+    cyModel.setValue(scenario.getCar(0).getPos(1));
+    czModel.setValue(scenario.getCar(0).getPos(2));
+    cvxModel.setValue(scenario.getCar(0).getVel(0));
+    cvyModel.setValue(scenario.getCar(0).getVel(1));
+    cvzModel.setValue(scenario.getCar(0).getVel(2));
+
+    cPitchModel.setValue(scenario.getCar(0).getOrientation(0));
+    cYawModel.setValue(scenario.getCar(0).getOrientation(1));
+    cRollModel.setValue(scenario.getCar(0).getOrientation(2));
+
+    boostModel.setValue(scenario.getCar(0).getBoost());
   }
 
   private static JPanel createSetterPanel() {
@@ -188,7 +191,7 @@ public class EvalGui {
     JSpinner yspinner = new JSpinner(byModel);
 
     JLabel zlabel = new JLabel("Ball Z");
-    bzModel = new SpinnerNumberModel(0, 0 + Constants.BALL_RADIUS, Constants.FIELD_HEIGHT - Constants.BALL_RADIUS, 20);
+    bzModel = new SpinnerNumberModel(Constants.BALL_RADIUS, 0 + Constants.BALL_RADIUS, Constants.FIELD_HEIGHT - Constants.BALL_RADIUS, 20);
     JSpinner zspinner = new JSpinner(bzModel);
 
     ballPos.add(xlabel);
@@ -237,7 +240,7 @@ public class EvalGui {
     JSpinner cyspinner = new JSpinner(cyModel);
 
     JLabel czlabel = new JLabel("Car Z");
-    czModel = new SpinnerNumberModel(0, Constants.CAR_AT_REST, Constants.FIELD_HEIGHT, 20);
+    czModel = new SpinnerNumberModel(Constants.CAR_AT_REST, Constants.CAR_AT_REST, Constants.FIELD_HEIGHT, 20);
     JSpinner czspinner = new JSpinner(czModel);
     carPos.add(cxlabel);
     carPos.add(cxspinner);
@@ -301,49 +304,27 @@ public class EvalGui {
 
     JButton createButton = new JButton("Create");
     createButton.addActionListener(e -> {
-      BallData data = BallData.builder()
-          .setPosition(Vector3.of(bxModel.getNumber().doubleValue(), byModel.getNumber().doubleValue(), bzModel.getNumber().doubleValue()))
-          .setVelocity(Vector3.of(bvxModel.getNumber().doubleValue(), bvyModel.getNumber().doubleValue(), bvzModel.getNumber().doubleValue()))
-          .build();
-
-      CarData car = CarData.builder()
-          .setPosition(Vector3.of(cxModel.getNumber().doubleValue(), cyModel.getNumber().doubleValue(), czModel.getNumber().doubleValue()))
-          .setVelocity(Vector3.of(cvxModel.getNumber().doubleValue(), cvyModel.getNumber().doubleValue(), cvzModel.getNumber().doubleValue()))
-          .setOrientation(Orientation.convert(cPitchModel.getNumber().doubleValue(), cYawModel.getNumber().doubleValue(), cRollModel.getNumber().doubleValue()))
-          .setBoost(boostModel.getNumber().doubleValue())
-          .setAngularVelocity(Vector3.zero())
-          .build();
-
-      Scenario scenario = new Scenario(nameField.getText().equals("") ? "Scenario " + scenarios.size() : nameField.getText(), data, car);
-      scenarios.add(scenario);
+      scenarioLibrary.add(fromFields()
+          .setId(nextScenarioId())
+          .setCreated(System.currentTimeMillis())
+          .build());
       tableModel.fireTableDataChanged();
+      writeToFile();
     });
 
     JButton updateButton = new JButton("Update");
     updateButton.addActionListener(e -> {
-      BallData data = BallData.builder()
-          .setPosition(Vector3.of(bxModel.getNumber().doubleValue(), byModel.getNumber().doubleValue(), bzModel.getNumber().doubleValue()))
-          .setVelocity(Vector3.of(bvxModel.getNumber().doubleValue(), bvyModel.getNumber().doubleValue(), bvzModel.getNumber().doubleValue()))
-          .build();
-
-      CarData car = CarData.builder()
-          .setPosition(Vector3.of(cxModel.getNumber().doubleValue(), cyModel.getNumber().doubleValue(), czModel.getNumber().doubleValue()))
-          .setVelocity(Vector3.of(cvxModel.getNumber().doubleValue(), cvyModel.getNumber().doubleValue(), cvzModel.getNumber().doubleValue()))
-          .setOrientation(Orientation.convert(cPitchModel.getNumber().doubleValue(), cYawModel.getNumber().doubleValue(), cRollModel.getNumber().doubleValue()))
-          .setBoost(boostModel.getNumber().doubleValue())
-          .setAngularVelocity(Vector3.zero())
-          .build();
-
       int selectedRow = scenarioTable.getSelectedRow();
 
       if (selectedRow != -1) {
-        Scenario oldScenario = scenarios.remove(selectedRow);
-        Scenario scenario = new Scenario(oldScenario.getName().endsWith(" (updated)")
-            ? oldScenario.getName()
-            : (oldScenario.getName() + " (updated)"), data, car);
-        scenarios.add(selectedRow, scenario);
+        ScenarioProtos.Scenario oldScenario = scenarioLibrary.remove(selectedRow);
+        ScenarioProtos.Scenario scenario = fromFields().setId(oldScenario.getId())
+            .setUpdated(System.currentTimeMillis())
+            .build();
+        scenarioLibrary.add(selectedRow, scenario);
         tableModel.fireTableDataChanged();
         scenarioTable.getSelectionModel().setSelectionInterval(selectedRow, selectedRow);
+        writeToFile();
       }
     });
 
@@ -351,5 +332,88 @@ public class EvalGui {
     creationPanel.add(updateButton);
 
     return creationPanel;
+  }
+
+  private static ScenarioProtos.Scenario.Builder fromFields() {
+    ScenarioProtos.Scenario.BallState data = ScenarioProtos.Scenario.BallState.newBuilder()
+        .addPos(bxModel.getNumber().floatValue())
+        .addPos(byModel.getNumber().floatValue())
+        .addPos(bzModel.getNumber().floatValue())
+        .addVel(bvxModel.getNumber().floatValue())
+        .addVel(bvyModel.getNumber().floatValue())
+        .addVel(bvzModel.getNumber().floatValue())
+        .build();
+
+    ScenarioProtos.Scenario.CarState car = ScenarioProtos.Scenario.CarState.newBuilder()
+        .setId(0)
+        .setTeam(0)
+        .addPos(cxModel.getNumber().floatValue())
+        .addPos(cyModel.getNumber().floatValue())
+        .addPos(czModel.getNumber().floatValue())
+        .addVel(cvxModel.getNumber().floatValue())
+        .addVel(cvyModel.getNumber().floatValue())
+        .addVel(cvzModel.getNumber().floatValue())
+        .addOrientation(cPitchModel.getNumber().floatValue())
+        .addOrientation(cYawModel.getNumber().floatValue())
+        .addOrientation(cRollModel.getNumber().floatValue())
+        .setBoost(boostModel.getNumber().intValue())
+        .addSpin(0)
+        .addSpin(0)
+        .addSpin(0)
+        .build();
+
+    return ScenarioProtos.Scenario.newBuilder()
+        .setId(nextScenarioId())
+        .setName(nameField.getText().equals("") ? "Scenario " + scenarioLibrary.size() : nameField.getText())
+        .setBall(data)
+        .addCar(car);
+  }
+
+  private static long nextScenarioId() {
+    return scenarioLibrary.stream()
+        .max(Comparator.comparing(ScenarioProtos.Scenario::getId))
+        .map(ScenarioProtos.Scenario::getId)
+        .orElse(-1L) + 1;
+  }
+
+  public static void readFromFile() {
+    String folderName = "eval/library/";
+    ensureFolderExists(folderName);
+    String fileName = folderName + FILE_NAME + ".dat";
+
+    try (BufferedReader reader = new BufferedReader(new FileReader(fileName))) {
+      ScenarioProtos.EvalLibrary.Builder builder = ScenarioProtos.EvalLibrary.newBuilder();
+      JsonFormat.parser().merge(reader, builder);
+      scenarioLibrary.addAll(builder.getScenariosList());
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+  }
+
+  private static final String FILE_NAME = "eval_library";
+  private static final JsonFormat.Printer JSON_PRINTER = JsonFormat.printer()
+      .includingDefaultValueFields()
+      .preservingProtoFieldNames()
+      .omittingInsignificantWhitespace();
+
+  private static void writeToFile() {
+    String folderName = "eval/library/";
+    ensureFolderExists(folderName);
+    String fileName = folderName + FILE_NAME + ".dat";
+
+    ScenarioProtos.EvalLibrary evalLibrary = ScenarioProtos.EvalLibrary.newBuilder()
+        .addAllScenarios(scenarioLibrary)
+        .build();
+
+    try (PrintWriter printWriter = new PrintWriter(new FileWriter(fileName))) {
+      printWriter.append(JSON_PRINTER.print(evalLibrary));
+    } catch (IOException e) {
+      log2Console.error("Cannot write state", e);
+    }
+  }
+
+  @SuppressWarnings("ResultOfMethodCallIgnored")
+  private static void ensureFolderExists(String folderName) {
+    new File(folderName).mkdirs();
   }
 }

@@ -124,6 +124,8 @@ public class DSKY {
 
     dskyFrame.pack();
     dskyFrame.setVisible(true);
+
+    EvalGui.readFromFile();
   }
 
   private void registerBuildInfo(JFrame frame) {

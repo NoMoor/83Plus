@@ -1,0 +1,71 @@
+syntax = "proto2";
+
+// Command to regenerate the python version
+// C:\Code\Protobuf\protoc\bin\protoc -I=C:\Code\AGC\src\main\proto --python_out=C:\Code\AGC\visualization C:\Code\AGC\src\main\proto\scenario.proto
+
+package gamestate;
+
+option java_package = "com.eru.rlbot.common";
+option java_outer_classname = "ScenarioProtos";
+
+message Scenario {
+    optional int64 id = 1;
+    optional string name = 2;
+    repeated CarState car = 3;
+    optional BallState ball = 4;
+    optional int64 created = 5;
+    optional int64 updated = 6;
+
+    //       Evaluators
+    optional int32 time_out_ms = 7;
+
+    message CarState {
+        required int32 id = 1;
+        required int32 team = 2;
+        repeated float pos = 3;
+        repeated float vel = 4;
+        repeated float spin = 5;
+        repeated float orientation = 6;
+        required int32 boost = 7;
+    }
+
+    message BallState {
+        repeated float pos = 1;
+        repeated float vel = 2;
+        repeated float spin = 3;
+    }
+}
+
+message HistoricalEntry {
+    required int64 timestamp = 1;
+    required int64 scenario_id = 2;
+    required bool pass = 3;
+}
+
+message Suite {
+    message Entry {
+        required bool enabled = 1;
+        required int64 scenario_id = 2;
+    }
+
+    repeated Entry entries = 1;
+}
+
+message EvalLibrary {
+    repeated Scenario scenarios = 1;
+    repeated Suite suites = 2;
+    repeated HistoricalEntry history = 3;
+}
+// Eval Library
+//    Scenarios
+//       Evaluators
+//       Time out
+//    Suite
+//       Entry
+//          Enabled
+//          Suite #
+//    History
+//       Entry
+//          Date
+//          Suite #
+//          Result
