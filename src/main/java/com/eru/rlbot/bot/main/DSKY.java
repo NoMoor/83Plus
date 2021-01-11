@@ -17,6 +17,8 @@ import java.awt.GridBagLayout;
 import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.KeyEvent;
+import java.awt.event.KeyListener;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Hashtable;
@@ -63,6 +65,7 @@ public class DSKY {
   private JPanel rocketPanel;
   private JPanel optionsPanel;
   private JTable rocketTrackingTable;
+  private final boolean showEval = true;
 
   /** Assembles a display. */
   public static void assemble(VehicleAssemblyBuilding vehicleAssemblyBuilding, Integer port) {
@@ -126,6 +129,25 @@ public class DSKY {
     dskyFrame.setVisible(true);
 
     EvalGui.readFromFile();
+    dskyFrame.setFocusable(true);
+    dskyFrame.addKeyListener(new KeyListener() {
+      @Override
+      public void keyTyped(KeyEvent e) {
+
+      }
+
+      @Override
+      public void keyPressed(KeyEvent e) {
+        if ((e.isAltDown() || e.isControlDown()) && e.getKeyChar() == 'e') {
+          EvalGui.show();
+        }
+      }
+
+      @Override
+      public void keyReleased(KeyEvent e) {
+
+      }
+    });
   }
 
   private void registerBuildInfo(JFrame frame) {
@@ -145,6 +167,7 @@ public class DSKY {
 
     JMenu evalMenu = new JMenu("Eval");
     JMenuItem evalButton = new JMenuItem("Eval");
+    evalButton.setMnemonic('e');
     evalButton.addActionListener(e -> EvalGui.show());
     evalMenu.add(evalButton);
     frame.getJMenuBar().add(evalMenu);

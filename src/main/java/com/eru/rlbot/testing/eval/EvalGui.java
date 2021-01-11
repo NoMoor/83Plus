@@ -1,7 +1,13 @@
 package com.eru.rlbot.testing.eval;
 
+import static com.google.common.collect.ImmutableList.toImmutableList;
+
 import com.eru.rlbot.bot.common.Constants;
 import com.eru.rlbot.common.ScenarioProtos;
+import com.eru.rlbot.common.ScenarioProtos.Scenario;
+import com.eru.rlbot.common.ScenarioProtos.Suite;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
 import com.google.protobuf.util.JsonFormat;
 import java.awt.Dimension;
 import java.awt.event.ActionEvent;
@@ -12,12 +18,16 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
-import java.util.Comparator;
+import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
+import java.util.Timer;
+import java.util.TimerTask;
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JSpinner;
@@ -30,15 +40,24 @@ import javax.swing.table.DefaultTableModel;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import rlbot.cppinterop.RLBotDll;
+import rlbot.cppinterop.RLBotInterfaceException;
 import rlbot.gamestate.GameState;
 
+/**
+ * A GUI to create and execute unit test suites for a bot.
+ *
+ * <p>A suite consists of a list of scenarios, each of which can be turned on or off. Each scenario has a starting
+ * state for cars and ball, a name, timeout, and success criteria.
+ *
+ * <p>Executing a suite will start a loop through each scenario which is turned on. Each Scenario will be run in series.
+ * Once each scenario is run, the suite will be restarted.
+ */
 public class EvalGui {
 
   private static final Logger log2Console = LogManager.getLogger("EvalGuiConsole");
 
-  private static final List<ScenarioProtos.Scenario> scenarioLibrary = new ArrayList<>();
-
-  private static DefaultTableModel tableModel;
+  private static final List<Scenario> scenarioLibrary = new ArrayList<>();
+  private static final List<Suite> suiteLibrary = new ArrayList<>();
 
   private static SpinnerNumberModel bvxModel;
   private static SpinnerNumberModel bxModel;
@@ -58,9 +77,22 @@ public class EvalGui {
   private static SpinnerNumberModel czModel;
   private static SpinnerNumberModel boostModel;
 
-  private static JTable scenarioTable;
+  private static JTable suiteLibraryTable;
+  private static DefaultTableModel suiteLibraryTableModel;
+  private static JTable suiteScenarioTable;
+  private static DefaultTableModel suiteScenarioTableModel;
+  private static JTable scenarioLibraryTable;
+  private static DefaultTableModel scenarioLibraryTableModel;
+
   private static JTextField nameField;
   private static JButton startButton;
+  private static JButton stopButton;
+
+  private static JButton removeSuiteScenarioButton;
+  private static JButton addSuiteScenarioButton;
+  private static SpinnerNumberModel timeoutModel;
+  private static boolean evalRunning;
+  private static Timer evalTimer;
 
   // Table
   // Input elements
@@ -68,11 +100,226 @@ public class EvalGui {
   // Write to file
   public static void show() {
     JFrame frame = new JFrame("Eval");
-    frame.setSize(500, 500);
+    frame.setSize(1000, 700);
     frame.setVisible(true);
 
-    scenarioTable = new JTable();
-    tableModel = new DefaultTableModel() {
+    // Suite Library
+    suiteLibraryTable = new JTable();
+    suiteLibraryTableModel = new DefaultTableModel() {
+      @Override
+      public int getRowCount() {
+        return suiteLibrary.size();
+      }
+
+      @Override
+      public Object getValueAt(int row, int column) {
+        Suite suite = suiteLibrary.get(row);
+
+        switch (column) {
+          case 0:
+            return String.valueOf(suite.getId());
+          case 1:
+            return suite.getName();
+          case 2:
+          default:
+            return String.valueOf(suite.getEntriesCount());
+        }
+      }
+    };
+
+    suiteLibraryTableModel.addColumn("Suite #");
+    suiteLibraryTableModel.addColumn("Suite Name");
+    suiteLibraryTableModel.addColumn("Scenario count");
+    suiteLibraryTable.setModel(suiteLibraryTableModel);
+    suiteLibraryTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+
+    JScrollPane suiteTableScrollPane = new JScrollPane(suiteLibraryTable);
+    suiteTableScrollPane.setPreferredSize(new Dimension(400, 200));
+
+    JPanel suiteLibraryButtonPanel = new JPanel();
+    suiteLibraryButtonPanel.setLayout(new BoxLayout(suiteLibraryButtonPanel, BoxLayout.Y_AXIS));
+    JButton addSuiteButton = new JButton("+");
+    addSuiteButton.setPreferredSize(new Dimension(50, 40));
+    addSuiteButton.addActionListener(e -> {
+      String name = JOptionPane.showInputDialog("Suite Name");
+      if (name != null) {
+        long nextId = nextSuiteId();
+        if (name.isEmpty()) {
+          name = "Suite " + nextId;
+        }
+        Suite newSuite = Suite.newBuilder()
+            .setId(nextId)
+            .setName(name)
+            .build();
+        addSuite(newSuite);
+      }
+    });
+    JButton removeSuiteButton = new JButton("-");
+    removeSuiteButton.setEnabled(false);
+    removeSuiteButton.setPreferredSize(new Dimension(50, 40));
+    removeSuiteButton.addActionListener(e -> {
+      int selectionIndex = suiteLibraryTable.getSelectionModel().getAnchorSelectionIndex();
+      if (selectionIndex == -1) {
+        return;
+      }
+      removeSuite(selectionIndex);
+    });
+    suiteLibraryTable.getSelectionModel().addListSelectionListener(e -> {
+      if (e.getValueIsAdjusting()) {
+        return;
+      }
+
+      int selectionIndex = suiteLibraryTable.getSelectionModel().getAnchorSelectionIndex();
+      removeSuiteButton.setEnabled(selectionIndex != -1);
+      startButton.setEnabled(selectionIndex != -1);
+      updateSuiteScenarioButtonStates();
+      suiteScenarioTableModel.fireTableDataChanged();
+    });
+    suiteLibraryButtonPanel.add(addSuiteButton);
+    suiteLibraryButtonPanel.add(removeSuiteButton);
+
+
+    // Suite Scenario List
+    suiteScenarioTable = new JTable();
+    suiteScenarioTableModel = new DefaultTableModel() {
+      @Override
+      public int getRowCount() {
+        Suite selectedSuite = getSelectedSuite();
+        return selectedSuite == null ? 0 : selectedSuite.getEntriesCount();
+      }
+
+      @Override
+      public Object getValueAt(int row, int column) {
+        Suite selectedSuite = getSelectedSuite();
+        Suite.Entry suiteEntry = selectedSuite.getEntries(row);
+
+        switch (column) {
+          case 0:
+            return suiteEntry.getEnabled();
+          case 1:
+            return String.valueOf(suiteEntry.getScenarioId());
+          default:
+          case 2:
+            return scenarioLibrary.stream()
+                .filter(scenario -> scenario.getId() == suiteEntry.getScenarioId())
+                .findFirst()
+                .map(Scenario::getName)
+                .orElse("<Unknown>");
+        }
+      }
+
+      @Override
+      public void setValueAt(Object value, int row, int column) {
+        Suite selectedSuite = getSelectedSuite();
+        Suite.Entry suiteEntry = selectedSuite.getEntries(row);
+        switch (column) {
+          case 0:
+            updateSuiteEntry(suiteEntry.toBuilder()
+                .setEnabled((boolean) value)
+                .build());
+          case 1:
+            return;
+          default:
+          case 2:
+            Optional<Scenario> scenarioOptional = scenarioLibrary.stream()
+                .filter(scenario -> scenario.getId() == suiteEntry.getScenarioId())
+                .findFirst();
+
+            if (!scenarioOptional.isPresent()) {
+              return;
+            }
+
+            Scenario scenario = scenarioOptional.get();
+            updateScenario(scenario.toBuilder().setName((String) value).build());
+        }
+      }
+
+      @Override
+      public Class<?> getColumnClass(int columnIndex) {
+        switch (columnIndex) {
+          case 0:
+            return Boolean.class;
+          case 1:
+          case 2:
+          default:
+            return String.class;
+        }
+      }
+    };
+
+    suiteScenarioTableModel.addColumn("Enabled");
+    suiteScenarioTableModel.addColumn("Scenario #");
+    suiteScenarioTableModel.addColumn("Scenario Name");
+    suiteScenarioTable.setModel(suiteScenarioTableModel);
+    suiteScenarioTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+    suiteScenarioTable.getSelectionModel().addListSelectionListener(e -> {
+      if (e.getValueIsAdjusting()) {
+        return;
+      }
+
+      updateSuiteScenarioButtonStates();
+      int index = getSelectedSuiteScenarioIndex();
+      if (index == -1) {
+        return;
+      }
+
+      Suite selectedSuite = getSelectedSuite();
+      if (selectedSuite != null && selectedSuite.getEntriesCount() > index) {
+        Suite.Entry entry = selectedSuite.getEntries(index);
+
+        int associatedScenarioIndex =
+            Iterables.indexOf(scenarioLibrary, scenario -> scenario.getId() == entry.getScenarioId());
+        scenarioLibraryTable.getSelectionModel().setSelectionInterval(associatedScenarioIndex, associatedScenarioIndex);
+      }
+    });
+
+    JScrollPane suiteScenarioTableScrollPane = new JScrollPane(suiteScenarioTable);
+    suiteScenarioTableScrollPane.setPreferredSize(new Dimension(400, 200));
+
+    JPanel suiteScenarioButtonPanel = new JPanel();
+    suiteScenarioButtonPanel.setLayout(new BoxLayout(suiteScenarioButtonPanel, BoxLayout.Y_AXIS));
+    addSuiteScenarioButton = new JButton("+");
+    addSuiteScenarioButton.setEnabled(false);
+    addSuiteScenarioButton.addActionListener(e -> {
+      int index = getSelectedSuiteScenarioIndex();
+      Suite suite = getSelectedSuite();
+      Scenario scenario = getSelectedScenario();
+      if (scenario == null || suite == null) {
+        return;
+      }
+
+      Suite updatedSuite = suite.toBuilder()
+          .addEntries(Suite.Entry.newBuilder()
+              .setId(nextSuiteEntyId())
+              .setEnabled(true)
+              .setScenarioId(scenario.getId()))
+          .build();
+
+      updateSuite(updatedSuite);
+      suiteScenarioTable.getSelectionModel().setSelectionInterval(index, index);
+    });
+    removeSuiteScenarioButton = new JButton("-");
+    removeSuiteScenarioButton.setEnabled(false);
+    removeSuiteScenarioButton.addActionListener(e -> {
+      int selectedRow = suiteScenarioTable.getSelectedRow();
+      Suite suite = getSelectedSuite();
+
+      if (selectedRow == -1 || suite == null) {
+        return;
+      }
+
+      Suite updatedSuite = suite.toBuilder()
+          .removeEntries(selectedRow)
+          .build();
+
+      updateSuite(updatedSuite);
+    });
+    suiteScenarioButtonPanel.add(addSuiteScenarioButton);
+    suiteScenarioButtonPanel.add(removeSuiteScenarioButton);
+
+    // Scenario Library
+    scenarioLibraryTable = new JTable();
+    scenarioLibraryTableModel = new DefaultTableModel() {
       @Override
       public int getRowCount() {
         return scenarioLibrary.size();
@@ -80,7 +327,7 @@ public class EvalGui {
 
       @Override
       public String getValueAt(int row, int column) {
-        ScenarioProtos.Scenario scenario = scenarioLibrary.get(row);
+        Scenario scenario = scenarioLibrary.get(row);
 
         switch (column) {
           case 0:
@@ -94,42 +341,257 @@ public class EvalGui {
       }
     };
 
-    tableModel.addColumn("Scenario #");
-    tableModel.addColumn("Scenario Name");
-    tableModel.addColumn("Ball Info");
-    scenarioTable.setModel(tableModel);
-    scenarioTable.setSelectionMode(ListSelectionModel.SINGLE_INTERVAL_SELECTION);
-    scenarioTable.getSelectionModel().addListSelectionListener(EvalGui::updatePickers);
+    scenarioLibraryTableModel.addColumn("Scenario #");
+    scenarioLibraryTableModel.addColumn("Scenario Name");
+    scenarioLibraryTableModel.addColumn("Ball Info");
+    scenarioLibraryTable.setModel(scenarioLibraryTableModel);
+    scenarioLibraryTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+    scenarioLibraryTable.getSelectionModel().addListSelectionListener(EvalGui::updatePickers);
 
-    JScrollPane tableScrollPane = new JScrollPane(scenarioTable);
-    tableScrollPane.setPreferredSize(new Dimension(400, 200));
+    JScrollPane scenarioLibraryTableScrollPane = new JScrollPane(scenarioLibraryTable);
+    scenarioLibraryTableScrollPane.setPreferredSize(new Dimension(400, 200));
 
     JPanel panel = new JPanel();
+    panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
 
+    JPanel suitePanel = new JPanel();
+
+    // Start/Stop button panel
+    JPanel startStopButtonPanel = new JPanel();
+    startStopButtonPanel.setLayout(new BoxLayout(startStopButtonPanel, BoxLayout.Y_AXIS));
     startButton = new JButton("Start");
-    startButton.addActionListener(EvalGui::setState);
+    startButton.addActionListener(EvalGui::startEval);
     startButton.setEnabled(false);
 
-    panel.add(startButton);
-    panel.add(tableScrollPane);
-    panel.add(createSetterPanel());
+    stopButton = new JButton("Stop");
+    stopButton.addActionListener(EvalGui::stopEval);
+    stopButton.setEnabled(false);
+
+    startStopButtonPanel.add(startButton);
+    startStopButtonPanel.add(stopButton);
+
+    suitePanel.add(startStopButtonPanel);
+    suitePanel.add(suiteTableScrollPane);
+    suitePanel.add(suiteLibraryButtonPanel);
+    suitePanel.add(suiteScenarioTableScrollPane);
+    suitePanel.add(suiteScenarioButtonPanel);
+
+    JPanel scenarioPanel = new JPanel();
+    scenarioPanel.add(scenarioLibraryTableScrollPane);
+    scenarioPanel.add(createSetterPanel());
+
+    panel.add(suitePanel);
+    panel.add(scenarioPanel);
 
     frame.add(panel);
   }
 
-  private static void setState(ActionEvent actionEvent) {
-    int selection = scenarioTable.getSelectionModel().getAnchorSelectionIndex();
-    if (selection == -1) {
+  private static void updateScenario(Scenario scenario) {
+    int index = Iterables.indexOf(scenarioLibrary, entry -> entry.getId() == scenario.getId());
+    if (index == -1) {
       return;
     }
 
-    ScenarioProtos.Scenario scenario = scenarioLibrary.get(selection);
+    // Retain scenario library selection
+    // Retain Suite scenario selection
+    int suiteScenarioIndex = getSelectedSuiteScenarioIndex();
 
-    // TODO: Have a timeout and title rendering.
-    RLBotDll.setGameState(new GameState()
-        .withBallState(Utils.toDesired(scenario.getBall()))
-        .withCarState(0, Utils.toDesired(scenario.getCar(0)))
-        .buildPacket());
+    Scenario selectedScenario = getSelectedScenario();
+
+    scenarioLibrary.remove(index);
+    scenarioLibrary.add(index, scenario);
+
+    if (suiteScenarioIndex != -1) {
+      suiteScenarioTable.getSelectionModel().setSelectionInterval(suiteScenarioIndex, suiteScenarioIndex);
+    }
+
+    if (selectedScenario != null) {
+      scenarioLibraryTable.getSelectionModel().setSelectionInterval(index, index);
+    }
+  }
+
+  private static void updateSuiteEntry(Suite.Entry updatedEntry) {
+    int suiteIndex = getSelectedSuiteIndex();
+    Suite suite = getSelectedSuite();
+
+    int suiteScenarioIndex = Iterables.indexOf(suite.getEntriesList(), entry -> entry.getId() == updatedEntry.getId());
+
+    Suite updatedSuite = suite.toBuilder()
+        .removeEntries(suiteScenarioIndex)
+        .addEntries(suiteScenarioIndex, updatedEntry)
+        .build();
+    updateSuite(updatedSuite);
+
+    if (suiteIndex != -1) {
+      suiteLibraryTable.getSelectionModel().setSelectionInterval(suiteIndex, suiteIndex);
+    }
+    if (suiteScenarioIndex != -1) {
+      suiteScenarioTable.getSelectionModel().setSelectionInterval(suiteScenarioIndex, suiteScenarioIndex);
+    }
+  }
+
+  private static int getSelectedSuiteIndex() {
+    return suiteLibraryTable.getSelectedRow();
+  }
+
+  private static Suite getSelectedSuite() {
+    int selectedRow = getSelectedSuiteIndex();
+    return selectedRow == -1 ? null : suiteLibrary.get(selectedRow);
+  }
+
+  private static void updateSuiteScenarioButtonStates() {
+    Suite suite = getSelectedSuite();
+    Scenario scenario = getSelectedScenario();
+
+    addSuiteScenarioButton.setEnabled(suite != null && scenario != null);
+    removeSuiteScenarioButton.setEnabled(getSelectedSuiteScenario() != null);
+  }
+
+  private static Scenario getSelectedScenario() {
+    int selection = scenarioLibraryTable.getSelectionModel().getAnchorSelectionIndex();
+    return selection == -1 ? null : scenarioLibrary.get(selection);
+  }
+
+  private static int getSelectedSuiteScenarioIndex() {
+    return suiteScenarioTable.getSelectedRow();
+  }
+
+  private static Suite.Entry getSelectedSuiteScenario() {
+    int selectedRow = getSelectedSuiteScenarioIndex();
+    if (selectedRow == -1) {
+      return null;
+    }
+    Suite selectedSuite = getSelectedSuite();
+
+    return selectedSuite == null || selectedSuite.getEntriesCount() <= selectedRow
+        ? null
+        : selectedSuite.getEntries(selectedRow);
+  }
+
+  private static void addSuite(Suite suite) {
+    suiteLibrary.add(suite);
+    suiteLibraryTableModel.fireTableDataChanged();
+    writeToFile();
+  }
+
+  private static void removeSuite(int index) {
+    suiteLibrary.remove(index);
+    suiteLibraryTableModel.fireTableDataChanged();
+    writeToFile();
+  }
+
+  private static void updateSuite(Suite updatedSuite) {
+    int updatedIndex = Iterables.indexOf(suiteLibrary, suite -> suite.getId() == updatedSuite.getId());
+    if (updatedIndex == -1) {
+      suiteLibrary.add(updatedSuite);
+    } else {
+      suiteLibrary.remove(updatedIndex);
+      suiteLibrary.add(updatedIndex, updatedSuite);
+    }
+    suiteLibraryTableModel.fireTableDataChanged();
+
+    suiteLibraryTable.getSelectionModel().setSelectionInterval(updatedIndex, updatedIndex);
+
+    writeToFile();
+  }
+
+  private static void startEval(ActionEvent actionEvent) {
+    Suite selectedSuite = getSelectedSuite();
+    if (selectedSuite == null) {
+      return;
+    }
+
+    stopButton.setEnabled(true);
+
+    evalTimer = new Timer();
+    evalTimer.schedule(new TimerTask() {
+      @Override
+      public void run() {
+        doEval();
+      }
+    }, 0, 5);
+  }
+
+  private static volatile ImmutableList<Suite.Entry> evalList;
+  private static volatile int currentIndex = 0;
+  private static volatile float startTime = 0;
+  private static boolean needsStart;
+
+  private static void doEval() {
+    // TODO: Timer that gets called back every 5ms.
+
+    Suite selectedSuite = getSelectedSuite();
+
+    // Check that the list of ones to run is the same.
+    if (evalList == null) {
+      evalList = selectedSuite.getEntriesList()
+          .stream()
+          .filter(Suite.Entry::getEnabled)
+          .collect(toImmutableList());
+      needsStart = true;
+    } else {
+      ImmutableList<Suite.Entry> newEvalList = selectedSuite.getEntriesList()
+          .stream()
+          .filter(Suite.Entry::getEnabled)
+          .collect(toImmutableList());
+
+      if (!evalList.equals(newEvalList)) {
+        evalList = newEvalList;
+        currentIndex = 0;
+        needsStart = true;
+      }
+    }
+
+    Suite.Entry currentEntry = evalList.get(currentIndex);
+    Scenario scenario = scenarioLibrary.stream()
+        .filter(scenarioCandidate -> scenarioCandidate.getId() == currentEntry.getScenarioId()).findFirst()
+        .orElse(null);
+
+    boolean isScenarioDone = false;
+    if (scenario == null) {
+      isScenarioDone = true;
+    } else {
+      if (needsStart) {
+        // Start next scenario
+        RLBotDll.setGameState(new GameState()
+            .withBallState(Utils.toDesired(scenario.getBall()))
+            .withCarState(0, Utils.toDesired(scenario.getCar(0)))
+            .buildPacket());
+        startTime = getCurrentGameTime();
+        needsStart = false;
+      }
+      // TODO: Evaluate the scenario
+
+      // Check Timer
+      if (startTime + (scenario.getTimeOutMs() / 1000.0f) <= getCurrentGameTime()) {
+        // TODO: Fail
+        isScenarioDone = true;
+      }
+    }
+
+    if (isScenarioDone) {
+      currentIndex = (currentIndex + 1) % evalList.size();
+      needsStart = true;
+    }
+  }
+
+  private static float lastTimeSeen = 0;
+
+  private static float getCurrentGameTime() {
+    try {
+      lastTimeSeen = RLBotDll.getCurrentFlatbufferPacket().gameInfo().secondsElapsed();
+    } catch (RLBotInterfaceException e) {
+      e.printStackTrace();
+    }
+    return lastTimeSeen;
+  }
+
+  private static void stopEval(ActionEvent actionEvent) {
+    if (evalTimer != null) {
+      evalTimer.cancel();
+      evalTimer = null;
+    }
+    stopButton.setEnabled(false);
   }
 
   private static void updatePickers(ListSelectionEvent listSelectionEvent) {
@@ -137,13 +599,13 @@ public class EvalGui {
       return;
     }
 
-    int selection = scenarioTable.getSelectionModel().getAnchorSelectionIndex();
-    startButton.setEnabled(selection != -1);
-    if (selection == -1) {
+    updateSuiteScenarioButtonStates();
+
+    Scenario scenario = getSelectedScenario();
+    if (scenario == null) {
       return;
     }
 
-    ScenarioProtos.Scenario scenario = scenarioLibrary.get(selection);
     nameField.setText(scenario.getName());
     bxModel.setValue(scenario.getBall().getPos(0));
     byModel.setValue(scenario.getBall().getPos(1));
@@ -164,6 +626,7 @@ public class EvalGui {
     cRollModel.setValue(scenario.getCar(0).getOrientation(2));
 
     boostModel.setValue(scenario.getCar(0).getBoost());
+    timeoutModel.setValue(scenario.getTimeOutMs() / 1000);
   }
 
   private static JPanel createSetterPanel() {
@@ -302,40 +765,50 @@ public class EvalGui {
     creationPanel.add(carOr);
     creationPanel.add(carBoost);
 
+    // Scenario Timeout
+    JPanel timeoutPanel = new JPanel();
+    JLabel timeoutLabel = new JLabel("Timeout (s)");
+    timeoutModel = new SpinnerNumberModel(5, -1, 60, 1);
+    JSpinner timeoutSpinner = new JSpinner(timeoutModel);
+    timeoutPanel.add(timeoutLabel);
+    timeoutPanel.add(timeoutSpinner);
+
     JButton createButton = new JButton("Create");
     createButton.addActionListener(e -> {
       scenarioLibrary.add(fromFields()
           .setId(nextScenarioId())
           .setCreated(System.currentTimeMillis())
           .build());
-      tableModel.fireTableDataChanged();
+      scenarioLibraryTableModel.fireTableDataChanged();
       writeToFile();
     });
 
     JButton updateButton = new JButton("Update");
     updateButton.addActionListener(e -> {
-      int selectedRow = scenarioTable.getSelectedRow();
+      int selectedRow = scenarioLibraryTable.getSelectedRow();
 
       if (selectedRow != -1) {
-        ScenarioProtos.Scenario oldScenario = scenarioLibrary.remove(selectedRow);
-        ScenarioProtos.Scenario scenario = fromFields().setId(oldScenario.getId())
+        Scenario oldScenario = scenarioLibrary.remove(selectedRow);
+        Scenario scenario = fromFields().setId(oldScenario.getId())
             .setUpdated(System.currentTimeMillis())
             .build();
         scenarioLibrary.add(selectedRow, scenario);
-        tableModel.fireTableDataChanged();
-        scenarioTable.getSelectionModel().setSelectionInterval(selectedRow, selectedRow);
+        scenarioLibraryTableModel.fireTableDataChanged();
+        suiteScenarioTableModel.fireTableDataChanged();
+        scenarioLibraryTable.getSelectionModel().setSelectionInterval(selectedRow, selectedRow);
         writeToFile();
       }
     });
 
+    creationPanel.add(timeoutPanel);
     creationPanel.add(createButton);
     creationPanel.add(updateButton);
 
     return creationPanel;
   }
 
-  private static ScenarioProtos.Scenario.Builder fromFields() {
-    ScenarioProtos.Scenario.BallState data = ScenarioProtos.Scenario.BallState.newBuilder()
+  private static Scenario.Builder fromFields() {
+    Scenario.BallState data = Scenario.BallState.newBuilder()
         .addPos(bxModel.getNumber().floatValue())
         .addPos(byModel.getNumber().floatValue())
         .addPos(bzModel.getNumber().floatValue())
@@ -344,7 +817,7 @@ public class EvalGui {
         .addVel(bvzModel.getNumber().floatValue())
         .build();
 
-    ScenarioProtos.Scenario.CarState car = ScenarioProtos.Scenario.CarState.newBuilder()
+    Scenario.CarState car = Scenario.CarState.newBuilder()
         .setId(0)
         .setTeam(0)
         .addPos(cxModel.getNumber().floatValue())
@@ -362,17 +835,33 @@ public class EvalGui {
         .addSpin(0)
         .build();
 
-    return ScenarioProtos.Scenario.newBuilder()
+    return Scenario.newBuilder()
         .setId(nextScenarioId())
         .setName(nameField.getText().equals("") ? "Scenario " + scenarioLibrary.size() : nameField.getText())
+        .setTimeOutMs((int) timeoutModel.getNumber().floatValue() * 1000)
         .setBall(data)
         .addCar(car);
   }
 
+  private static long nextSuiteId() {
+    return suiteLibrary.stream()
+        .mapToLong(Suite::getId)
+        .max()
+        .orElse(-1L) + 1;
+  }
+
+  private static long nextSuiteEntyId() {
+    return suiteLibrary.stream()
+        .map(Suite::getEntriesList)
+        .flatMap(Collection::stream)
+        .mapToLong(Suite.Entry::getId)
+        .max().orElse(-1) + 1;
+  }
+
   private static long nextScenarioId() {
     return scenarioLibrary.stream()
-        .max(Comparator.comparing(ScenarioProtos.Scenario::getId))
-        .map(ScenarioProtos.Scenario::getId)
+        .mapToLong(Scenario::getId)
+        .max()
         .orElse(-1L) + 1;
   }
 
@@ -385,6 +874,7 @@ public class EvalGui {
       ScenarioProtos.EvalLibrary.Builder builder = ScenarioProtos.EvalLibrary.newBuilder();
       JsonFormat.parser().merge(reader, builder);
       scenarioLibrary.addAll(builder.getScenariosList());
+      suiteLibrary.addAll(builder.getSuitesList());
     } catch (IOException e) {
       e.printStackTrace();
     }
@@ -403,6 +893,7 @@ public class EvalGui {
 
     ScenarioProtos.EvalLibrary evalLibrary = ScenarioProtos.EvalLibrary.newBuilder()
         .addAllScenarios(scenarioLibrary)
+        .addAllSuites(suiteLibrary)
         .build();
 
     try (PrintWriter printWriter = new PrintWriter(new FileWriter(fileName))) {

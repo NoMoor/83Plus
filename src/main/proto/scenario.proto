@@ -44,11 +44,14 @@ message HistoricalEntry {
 
 message Suite {
     message Entry {
-        required bool enabled = 1;
-        required int64 scenario_id = 2;
+        required int64 id = 1;
+        required bool enabled = 2;
+        required int64 scenario_id = 3;
     }
 
-    repeated Entry entries = 1;
+    required int64 id = 1;
+    required string name = 2;
+    repeated Entry entries = 3;
 }
 
 message EvalLibrary {
