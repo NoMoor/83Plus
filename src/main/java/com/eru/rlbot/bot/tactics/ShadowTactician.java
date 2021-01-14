@@ -34,7 +34,7 @@ public class ShadowTactician extends Tactician {
       float ballToTargetTime = tactic.subject.time - input.car.elapsedSeconds;
       double carToTargetTime = Accels.nonBoostedTimeToDistance(
           input.car.velocity.magnitude(),
-          input.car.position.distance(tactic.subject.position)).getTime();
+          input.car.position.distance(tactic.subject.position)).getDuration();
 
       output
           .withSteer(targetCorrectionAngle * 5)
@@ -70,7 +70,7 @@ public class ShadowTactician extends Tactician {
     Vector3 goalLocation = Vector3.of(slice.get().physics().location());
     double distanceToSave = input.car.position.distance(goalLocation);
 
-    return Accels.nonBoostedTimeToDistance(input.car.velocity.flatten().magnitude(), distanceToSave).getTime();
+    return Accels.nonBoostedTimeToDistance(input.car.velocity.flatten().magnitude(), distanceToSave).getDuration();
   }
 
   private float getBallToGoalTime(DataPacket input) {

@@ -4,7 +4,6 @@ import com.eru.rlbot.bot.common.Accels;
 import com.eru.rlbot.bot.common.Angles;
 import com.eru.rlbot.bot.common.Angles3;
 import com.eru.rlbot.bot.common.Constants;
-import com.eru.rlbot.bot.maneuver.Flip;
 import com.eru.rlbot.bot.maneuver.Recover;
 import com.eru.rlbot.bot.renderer.BotRenderer;
 import com.eru.rlbot.bot.tactics.Tactic;
@@ -67,14 +66,15 @@ public class PathExecutor {
       }
     }
 
-    if (path.getExtension() != null) {
-      if (input.car.position.distance(path.getExtension().start) < 200) {
-        BotRenderer.forIndex(input.car.serialNumber).addAlertText("Flipping into ball!");
-        tactician.requestDelegate(Flip.builder()
-            .setTarget(path.getExtension().getProgress(.5))
-            .build());
-      }
-    }
+    // TODO: Add flip into ball sometimes.
+//    if (path.getExtension() != null) {
+//      if (input.car.position.distance(path.getExtension().start) < 200) {
+//        BotRenderer.forIndex(input.car.serialNumber).addAlertText("Flipping into ball!");
+//        tactician.requestDelegate(Flip.builder()
+//            .setTarget(path.getExtension().getProgress(.5))
+//            .build());
+//      }
+//    }
 
     if (currentSegment.type == Segment.Type.JUMP) {
       output.withJump();
@@ -122,14 +122,14 @@ public class PathExecutor {
       Accels.AccelResult boostTime =
           Accels.boostedTimeToDistance(input.car.velocity.magnitude(), distanceDiff.magnitude());
 
-      if (boostTime.getTime() > Path.LEAD_TIME) {
+      if (boostTime.getDuration() > Path.LEAD_TIME) {
         output
             .withBoost(!input.car.isSupersonic)
             .withThrottle(1.0);
       } else {
         Accels.AccelResult accelTime = Accels.nonBoostedTimeToDistance(input.car.velocity.magnitude(), distanceDiff.magnitude());
 
-        double savings = timeToTarget - accelTime.getTime();
+        double savings = timeToTarget - accelTime.getDuration();
         output.withThrottle((savings * 10) / Path.LEAD_TIME);
       }
     } else if (timeToTarget > Path.LEAD_TIME * .4) {
@@ -147,11 +147,11 @@ public class PathExecutor {
     if (hasSpeed && isStraight && hasTime && straightSteer && travelingForward) {
 
 
-      this.tactician.requestDelegate(
-          Flip.builder()
-              .setTarget(currentSegment.end)
-              .flipEarly()
-              .build());
+//      this.tactician.requestDelegate(
+//          Flip.builder()
+//              .setTarget(currentSegment.end)
+//              .flipEarly()
+//              .build());
     }
   }
 

@@ -62,7 +62,12 @@ public class Accels {
       t -= STEP_SIZE;
     }
 
-    return AccelResult.create(velocity, t, initialDistance, 0);
+    return AccelResult.builder()
+        .setEndSpeed(velocity)
+        .setDuration(t)
+        .setDistanceCovered(initialDistance)
+        .setBoostUsed(0)
+        .build();
   }
 
   /** Returns the time to travel the given distance using unlimited boost. */
@@ -80,7 +85,12 @@ public class Accels {
       t += STEP_SIZE;
       boostUsed += Constants.BOOST_RATE / STEP_SIZE;
     }
-    return AccelResult.create(velocity, t, initialDistance, boostUsed);
+    return AccelResult.builder()
+        .setEndSpeed(velocity)
+        .setDuration(t)
+        .setDistanceCovered(initialDistance)
+        .setBoostUsed(boostUsed)
+        .build();
   }
 
   /** Returns the time to travel the given distance using unlimited boost. */
@@ -101,7 +111,12 @@ public class Accels {
         boost -= STEP_SIZE * 33;
       }
     }
-    return AccelResult.create(velocity, t, initialDistance, initialBoost - boost);
+    return AccelResult.builder()
+        .setDistanceCovered(initialDistance)
+        .setEndSpeed(velocity)
+        .setDuration(t)
+        .setBoostUsed(initialBoost - boost)
+        .build();
   }
 
   /** The amount of time needed to get to a given height or Optional.empty. */
@@ -187,7 +202,12 @@ public class Accels {
       currentVelocity -= Constants.BREAKING_DECELERATION * STEP_SIZE;
       time += STEP_SIZE;
     }
-    return AccelResult.create(finalVelocity, time, d, 0);
+    return AccelResult.builder()
+        .setEndSpeed(finalVelocity)
+        .setDuration(time)
+        .setDistanceCovered(d)
+        .setBoostUsed(0)
+        .build();
   }
 
   public static AccelResult accelerateForTime(double initialVelocity, double initialTime, double initialBoost) {
@@ -208,7 +228,12 @@ public class Accels {
         boostRemaining -= STEP_SIZE * Constants.BOOST_RATE;
       }
     }
-    return AccelResult.create(currentVelocity, initialTime, distanceTraveled, initialBoost - boostRemaining);
+    return AccelResult.builder()
+        .setEndSpeed(currentVelocity)
+        .setDuration(initialTime)
+        .setDistanceCovered(distanceTraveled)
+        .setBoostUsed(initialBoost - boostRemaining)
+        .build();
   }
 
   // TODO: Change to AccelResult.
@@ -246,16 +271,29 @@ public class Accels {
   @AutoValue
   public static abstract class AccelResult {
 
-    public abstract double getDistance();
+    public abstract double getDistanceCovered();
 
-    public abstract double getSpeed();
+    public abstract double getEndSpeed();
 
-    public abstract double getTime();
+    public abstract double getDuration();
 
-    public abstract double getBoost();
+    public abstract double getBoostUsed();
 
-    public static AccelResult create(double newDistance, double newSpeed, double newTime, double newBoost) {
-      return new AutoValue_Accels_AccelResult(newDistance, newSpeed, newTime, newBoost);
+    static Builder builder() {
+      return new AutoValue_Accels_AccelResult.Builder();
+    }
+
+    @AutoValue.Builder
+    abstract static class Builder {
+      abstract Builder setDistanceCovered(double distance);
+
+      abstract Builder setEndSpeed(double speed);
+
+      abstract Builder setDuration(double time);
+
+      abstract Builder setBoostUsed(double boost);
+
+      abstract AccelResult build();
     }
   }
 

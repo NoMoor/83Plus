@@ -95,7 +95,7 @@ public class PathPlanner {
 
       Vector3 position = makeGroundCar(orientation, moment);
       double speed = Accels.boostedTimeToDistance(
-          car.boost * .5, car.groundSpeed, Math.max(approachBall.magnitude() - 300, 0)).getSpeed();
+          car.boost * .5, car.groundSpeed, Math.max(approachBall.magnitude() - 300, 0)).getEndSpeed();
       Vector3 velocity = approachBall.toMagnitude(speed);
 
       return Optional.of(CarData.builder()

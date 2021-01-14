@@ -235,10 +235,10 @@ public class BotRenderer {
     PerBotDebugOptions renderOptions = PerBotDebugOptions.get(input.serialNumber);
     if (renderOptions.isRenderLines()) {
       renderProjections(input);
-      // renderHitBox(input.car); // TODO: Add checkbox for rendering the hitbox.
+      renderHitBox(input.car); // TODO: Add checkbox for rendering the hitbox.
       // renderTurningRadius(input);
 
-//      renderTacticLines(input.car);
+      renderTacticLines(input.car);
       //    renderPredictionDiff(input);
       //    renderRelativeBallData(input);
       //    renderTouchIndicator(input);
@@ -249,10 +249,11 @@ public class BotRenderer {
       renderDebugText();
       renderAlert(input);
 
-      renderControls(output);
+//      renderControls(output);
+//      renderCarAccel(input);
 
 //      renderBallVel(input);
-      renderCarAccel(input);
+
 //      renderCarLocation(input);
       renderChallengeData(input);
     }

@@ -233,9 +233,9 @@ public class Path {
 
     // Need to break
     Accels.AccelResult breaking = Accels.distanceToSlow(start.velocity.magnitude(), targetBreakingSpeed);
-    double remainingDistance = length() - breaking.getDistance();
+    double remainingDistance = length() - breaking.getDistanceCovered();
     Accels.AccelResult striking = Accels.nonBoostedTimeToDistance(targetBreakingSpeed, remainingDistance);
-    double coastingTime = targetTime - breaking.getTime() - striking.getTime();
+    double coastingTime = targetTime - breaking.getDuration() - striking.getDuration();
 
     // TODO: Account for jump time.
 
@@ -254,13 +254,13 @@ public class Path {
       targetBreakingSpeed = (minBreakingSpeed + maxBreakingSpeed) / 2;
 
       breaking = Accels.distanceToSlow(start.velocity.magnitude(), targetBreakingSpeed);
-      remainingDistance = length() - breaking.getDistance();
+      remainingDistance = length() - breaking.getDistanceCovered();
       striking = Accels.nonBoostedTimeToDistance(targetBreakingSpeed, remainingDistance);
-      coastingTime = targetTime - breaking.getTime() - striking.getTime();
+      coastingTime = targetTime - breaking.getDuration() - striking.getDuration();
     }
 
     Plan.Builder planBuilder = Plan.builder().setPath(this);
-    double breakingTime = breaking.getTime();
+    double breakingTime = breaking.getDuration();
     while (breakingTime > 0) {
       planBuilder.addThrottleInput(false, Plan.ControlInput.REVERSE);
       breakingTime -= STEP_SIZE;
@@ -271,15 +271,15 @@ public class Path {
       coastingTime -= STEP_SIZE;
     }
 
-    double accelerationTime = striking.getTime();
-    double boostUsed = striking.getBoost();
+    double accelerationTime = striking.getDuration();
+    double boostUsed = striking.getBoostUsed();
     while (accelerationTime > 0) {
       planBuilder.addThrottleInput(boostUsed > 0, 1);
       accelerationTime -= STEP_SIZE;
     }
 
     Plan plan = planBuilder
-        .setBoostUsed(striking.getBoost())
+        .setBoostUsed(striking.getBoostUsed())
         .setTacticType(Tactic.TacticType.STRIKE)
         .build(targetTime);
 
@@ -578,7 +578,7 @@ public class Path {
     }
 
     Accels.AccelResult slowingDistance = Accels.distanceToSlow(currentVelocity, endSegmentSpeedTarget);
-    return slowingDistance.getDistance() + SLOWING_BUFFER < segmentRemainingDistance;
+    return slowingDistance.getDistanceCovered() + SLOWING_BUFFER < segmentRemainingDistance;
   }
 
   public Segment getTerseSegment(DataPacket input) {
@@ -628,7 +628,7 @@ public class Path {
       return false;
     }
 
-    double slowingDistance = Accels.distanceToSlow(groundSpeed, goalSpeed).getDistance();
+    double slowingDistance = Accels.distanceToSlow(groundSpeed, goalSpeed).getDistanceCovered();
     return slowingDistance > 0 && slowingDistance + SLOWING_BUFFER > distance;
   }
 

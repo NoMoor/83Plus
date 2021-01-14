@@ -59,7 +59,7 @@ public class AttackStrategist extends Strategist {
     if (!challengeDataOptional.isPresent()) {
       bot.botRenderer.addAlertText("Cannot get challenge data.");
       // The ball cannot be hit by anyone. Grab boost and go on defense
-      return Teams.getTeamSize(input.car.team) > 1
+      return Teams.getTeamSize(input.car.team) == 1
           ? getStrikingTactic(input)
           : getSupportTactic(input, input.ball);
     }

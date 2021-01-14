@@ -33,7 +33,7 @@ public class BallPredictionUtil {
   public static final int PREDICTION_FPS = 60;
   public static final long PREDICTION_LIMIT = PREDICTION_TIME_LIMIT * PREDICTION_FPS;
 
-  private static ConcurrentHashMap<Integer, BallPredictionUtil> MAP = new ConcurrentHashMap<>();
+  private static final ConcurrentHashMap<Integer, BallPredictionUtil> MAP = new ConcurrentHashMap<>();
   private static boolean wasTouched;
 
   private final int serialNumber;
@@ -115,7 +115,7 @@ public class BallPredictionUtil {
       ballIterator.remove();
     }
 
-    if (PREDICTION_LIMIT > balls.size()) {
+    if (!balls.isEmpty() && PREDICTION_LIMIT > balls.size()) {
       float lastTime = Iterables.getLast(balls).ball.time;
 
       stream(prediction)
